@@ -10,7 +10,15 @@ This plan separates a visual prototype from a dependable correspondence product.
 - [x] First-pass creation canvas with local state.
 - [x] Detailed README and product/architecture documentation.
 - [x] Review and establish the colourful contemporary mail-club visual direction.
-- [ ] Add How it Works, Features, Privacy and Terms pages.
+- [x] Add About and How it Works pages.
+- [x] Add Privacy, Terms and Acceptable Use policies.
+- [x] Add Cookie notice and Accessibility statement.
+- [x] Add Contact page and complete public footer navigation.
+- [ ] Confirm legal operator details, support contact and jurisdiction; obtain legal review before public launch.
+
+## Public information and policy pages
+
+The public site now includes About, How it Works, Contact, Privacy, Terms, Acceptable Use, Cookies and Accessibility routes. Policy copy reflects the current browser-local editor and explicitly distinguishes planned capabilities. These documents are working product drafts. The legal operator name, address, privacy/support contact, governing law, actual hosting providers and deployment data flows must be confirmed and reviewed before public launch.
 
 ## Milestone 2 — Creation editor
 - [ ] Integrate a rich-text engine and define a versioned document schema.
