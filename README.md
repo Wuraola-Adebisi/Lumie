@@ -296,3 +296,8 @@ The current document is stored in this browser's local storage. It is not synced
 ## Status
 
 **Current status: frontend foundation, Creation Studio and public information/policy pages.** The legal drafts and contact page still require operator details and legal review before production launch. This is not yet a production correspondence service.
+
+
+## Creation Studio exports
+
+The Creation Studio can download a composition as a 3× PNG or open a format-sized print workflow. Choose “Save as PDF” in the browser's print dialog for a PDF. Print dimensions are US Letter (8.5 × 11 in), postcard (6 × 4 in), photo card (5 × 5 in), collage (8 × 8 in), and memory page (8 × 10 in). PNG output is raster; PDF output uses the browser print engine to retain selectable text and clickable links where supported. Actual printer margins and colour output depend on the browser and printer settings.

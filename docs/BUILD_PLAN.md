@@ -29,7 +29,7 @@ The public site now includes About, How it Works, Contact, Privacy, Terms, Accep
 - [x] Add draggable text, stamp and decoration layers.
 - [x] Add browser-local draft autosave and restore.
 - [x] Add browser print layout.
-- [ ] Add direct PNG and PDF export.
+- [x] Add high-resolution PNG export (3× pixel ratio) and format-sized print/PDF output.
 - [x] Add keyboard selection and arrow-key layer positioning, including larger Shift+arrow movements.
 - [x] Add accessible names, pressed states, visible focus treatment and keyboard-operable photo upload.
 - [ ] Add automated editor accessibility and keyboard tests.
@@ -80,3 +80,8 @@ The first Creation Studio implementation is available at `/app/create`. It suppo
 ## Definition of done
 
 A feature is not complete because its screen exists. It is complete when its data model, permissions, loading/error/empty states, accessibility, tests and user-facing copy are implemented and reviewed. Any functionality that remains sample-only must be labelled as such.
+
+
+### Creation editor — export and document output
+
+The Creation Studio provides a high-resolution PNG download and a print/PDF workflow. PNG export waits for web fonts and uploaded images, captures the composition at 3× pixel density, and excludes editor selection outlines. PDF output uses the browser's native print engine so text remains selectable and links remain links where supported. The print sheet is sized to the selected format: US Letter (8.5 × 11 in), postcard (6 × 4 in), square photo card (5 × 5 in), square collage (8 × 8 in), or memory page (8 × 10 in). Choose “Save as PDF” in the browser print dialog to create the PDF. Printer driver margins, colour handling and font availability remain controlled by the browser and printer.
