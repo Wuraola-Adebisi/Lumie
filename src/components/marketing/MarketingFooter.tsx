@@ -1,0 +1,2 @@
+import BrandMark from '../ui/BrandMark'
+export default function MarketingFooter(){return <footer className="marketing-footer"><div className="footer-top"><div><BrandMark/><p>A little place for everything<br/>you want to say.</p></div><div className="footer-links"><a href="#how-it-works">How it works</a><a href="#what-you-can-make">Features</a><a href="mailto:hello@lumie.app">Contact</a><a href="#privacy">Privacy</a></div></div><div className="footer-bottom"><span>© {new Date().getFullYear()} Lumie</span><span>Made for the things that matter.</span></div></footer>}
