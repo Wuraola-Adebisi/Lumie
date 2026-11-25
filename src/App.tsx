@@ -1,0 +1,10 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
+import HomePage from './pages/HomePage'
+import DashboardPage from './pages/DashboardPage'
+import InboxPage from './pages/InboxPage'
+import ArchivePage from './pages/ArchivePage'
+import CollectionsPage from './pages/CollectionsPage'
+import OpenWhenPage from './pages/OpenWhenPage'
+import CreatePage from './pages/CreatePage'
+import AppShell from './components/app/AppShell'
+export default function App(){return <Routes><Route path="/" element={<HomePage/>}/><Route path="/app" element={<AppShell/>}><Route index element={<DashboardPage/>}/><Route path="create" element={<CreatePage/>}/><Route path="inbox" element={<InboxPage/>}/><Route path="archive" element={<ArchivePage/>}/><Route path="collections" element={<CollectionsPage/>}/><Route path="open-when" element={<OpenWhenPage/>}/></Route><Route path="*" element={<Navigate to="/" replace/>}/></Routes>}
