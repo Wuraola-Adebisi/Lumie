@@ -33,3 +33,16 @@
 @media(prefers-reduced-motion:reduce){
   .studio-page *, .studio-page *::before, .studio-page *::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
+
+
+/* Export output: remove editor chrome and honour each format's physical trim size. */
+@media print {
+  @page { margin: 0 }
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  .studio-paper { overflow: hidden !important; }
+  .studio-paper-grain { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .studio-element { outline: none !important; }
+  .studio-element.is-selected { outline: none !important; background: transparent !important; }
+  .studio-element.is-dragging { filter: none !important; }
+  .studio-paper:after { display: none !important; }
+}
