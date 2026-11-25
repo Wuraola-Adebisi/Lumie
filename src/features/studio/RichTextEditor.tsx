@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
@@ -15,6 +15,9 @@ interface Props {
 }
 
 export default function RichTextEditor({ elementId, value, legacyText = '', onChange }: Props) {
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ heading: { levels: [2, 3] } }),
@@ -29,7 +32,7 @@ export default function RichTextEditor({ elementId, value, legacyText = '', onCh
         spellcheck: 'true',
       },
     },
-    onUpdate: ({ editor: current }) => onChange(current.getJSON() as StudioRichTextNode),
+    onUpdate: ({ editor: current }) => onChangeRef.current(current.getJSON() as StudioRichTextNode),
   }, [elementId])
 
   useEffect(() => {
