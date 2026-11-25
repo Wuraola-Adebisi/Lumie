@@ -19,10 +19,15 @@ This plan separates a visual prototype from a dependable correspondence product.
 - [x] Add local image uploads and draggable media placement.
 - [x] Add draggable text, stamp and decoration layers.
 - [x] Add browser-local draft autosave and restore.
-- [x] Add browser print layout.\n- [ ] Add direct PNG and PDF export.
+- [x] Add browser print layout.
+- [ ] Add direct PNG and PDF export.
 - [ ] Add editor accessibility and keyboard tests.
 
-### Creation editor — first implementation\n\nThe first Creation Studio implementation is available at `/app/create`. It supports five starting formats, draggable composition layers, editable text, font selection, ink colour, paper colours, stamps, decorations, local image uploads (3 MB limit), undo/redo, duplication, local draft persistence and a print stylesheet. Drafts are stored in the current browser only. There is no account sync, remote media storage, direct PNG export or connected sending yet.\n\n## Milestone 3 — Accounts and persistence
+### Creation editor — first implementation
+
+The first Creation Studio implementation is available at `/app/create`. It supports five starting formats, draggable composition layers, editable text, font selection, ink colour, paper colours, stamps, decorations, local image uploads (3 MB limit), undo/redo, duplication, local draft persistence and a print stylesheet. Drafts are stored in the current browser only. There is no account sync, remote media storage, direct PNG export or connected sending yet.
+
+## Milestone 3 — Accounts and persistence
 - [ ] Create Supabase project and local environment setup.
 - [ ] Add migrations for profiles and creations.
 - [ ] Add RLS policies and policy tests.
