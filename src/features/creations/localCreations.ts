@@ -80,7 +80,12 @@ export function renameLocalCreation(id: string, name: string, storage: StoragePo
 }
 
 function collectText(node: StudioRichTextNode): string {
-  return [node.text ?? '', ...(node.content ?? []).map(collectText)].filter(Boolean).join(node.type === 'hardBreak' ? ' ' : '')
+  if (node.type === 'text') return node.text ?? ''
+  if (node.type === 'hardBreak') return ' '
+  const children = (node.content ?? []).map(collectText).filter(Boolean)
+  return ['paragraph', 'heading', 'listItem', 'blockquote'].includes(node.type)
+    ? children.join('')
+    : children.join(' ')
 }
 
 export function getCreationExcerpt(document: StudioDocument, maxLength = 140): string {
