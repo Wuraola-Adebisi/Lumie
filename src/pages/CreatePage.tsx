@@ -65,6 +65,17 @@ export default function CreatePage() {
     setDocument((current) => ({ ...current, elements: current.elements.map((item) => item.id === id ? { ...item, x, y } : item), updatedAt: new Date().toISOString() }))
   }, [])
 
+  const nudgeElement = useCallback((id: string, dx: number, dy: number) => {
+    const element = document.elements.find((item) => item.id === id)
+    if (!element) return
+    commit({
+      ...document,
+      elements: document.elements.map((item) => item.id === id
+        ? { ...item, x: Math.max(0, Math.min(92, item.x + dx)), y: Math.max(0, Math.min(92, item.y + dy)) }
+        : item),
+    })
+  }, [commit, document])
+
   const addElement = (element: StudioElement) => {
     commit({ ...document, elements: [...document.elements, element] })
     setSelectedId(element.id)
@@ -107,6 +118,33 @@ export default function CreatePage() {
     setSelectedId(null)
   }
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target
+      if (target instanceof HTMLElement && target.closest('input, textarea, select, [contenteditable="true"]')) return
+
+      const modifier = event.metaKey || event.ctrlKey
+      if (modifier && event.key.toLowerCase() === 'z') {
+        event.preventDefault()
+        if (event.shiftKey) redo()
+        else undo()
+      } else if (modifier && event.key.toLowerCase() === 'y') {
+        event.preventDefault()
+        redo()
+      } else if (modifier && event.key.toLowerCase() === 'd' && selected) {
+        event.preventDefault()
+        duplicateSelected()
+      } else if ((event.key === 'Delete' || event.key === 'Backspace') && selectedId) {
+        event.preventDefault()
+        deleteSelected()
+      } else if (event.key === 'Escape') {
+        setSelectedId(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selected, selectedId, duplicateSelected, deleteSelected, undo, redo])
+
   const saveDraft = () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(document))
@@ -121,24 +159,24 @@ export default function CreatePage() {
       <header className="studio-heading">
         <Link to="/app" className="back-link"><ArrowLeft size={15}/> Back to your space</Link>
         <div className="studio-heading-actions">
-          <span className="studio-save-state">{savedAt ? `Saved on this device · ${savedAt}` : 'Saving locally…'}</span>
-          <button className="button button-quiet button-small" onClick={undo} disabled={!history.length} aria-label="Undo"><Undo2 size={14}/> Undo</button>
-          <button className="button button-quiet button-small" onClick={redo} disabled={!future.length} aria-label="Redo"><Redo2 size={14}/> Redo</button>
-          <button className="button button-quiet button-small" onClick={duplicateSelected} disabled={!selected}><Copy size={14}/> Duplicate</button>
-          <button className="button button-quiet button-small" onClick={() => window.print()}><Printer size={14}/> Print</button>
-          <button className="button button-dark button-small" onClick={saveDraft}><Save size={14}/> Save draft</button>
+          <span className="studio-save-state" role="status">{savedAt ? `Saved on this device · ${savedAt}` : 'Saving locally…'}</span>
+          <button type="button" className="button button-quiet button-small" onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl or Command + Z)"><Undo2 size={14}/> Undo</button>
+          <button type="button" className="button button-quiet button-small" onClick={redo} disabled={!future.length} aria-label="Redo (Ctrl or Command + Shift + Z)"><Redo2 size={14}/> Redo</button>
+          <button type="button" className="button button-quiet button-small" onClick={duplicateSelected} disabled={!selected}><Copy size={14}/> Duplicate</button>
+          <button type="button" className="button button-quiet button-small" onClick={() => window.print()}><Printer size={14}/> Print</button>
+          <button type="button" className="button button-dark button-small" onClick={saveDraft}><Save size={14}/> Save draft</button>
         </div>
       </header>
 
       <div className="studio-workspace">
-        <section className="studio-left-panel">
+        <section className="studio-left-panel" aria-label="Choose a composition format">
           <span className="section-kicker">MAKE SOMETHING TO KEEP</span>
           <h2>Start with a format.</h2>
           <p>Pick a shape to begin. The details, words and arrangement are yours to change.</p>
           <div className="studio-format-list">
             {studioFormats.map((format) => (
-              <button key={format.id} className={document.format === format.id ? 'studio-format-option active' : 'studio-format-option'} onClick={() => changeFormat(format.id)}>
-                <span className="studio-format-icon">{format.id === 'postcard' ? '▰' : format.id === 'photo-card' ? '▣' : format.id === 'collage' ? '▧' : format.id === 'memory' ? '▤' : '▯'}</span>
+              <button type="button" key={format.id} className={document.format === format.id ? 'studio-format-option active' : 'studio-format-option'} aria-pressed={document.format === format.id} onClick={() => changeFormat(format.id)}>
+                <span className="studio-format-icon" aria-hidden="true">{format.id === 'postcard' ? '▰' : format.id === 'photo-card' ? '▣' : format.id === 'collage' ? '▧' : format.id === 'memory' ? '▤' : '▯'}</span>
                 <span><strong>{format.label}</strong><small>{format.id === 'letter' ? 'A page for your words' : format.id === 'postcard' ? 'A note with a view' : format.id === 'photo-card' ? 'A picture and a thought' : format.id === 'collage' ? 'Layers of little things' : 'A page for remembering'}</small></span>
               </button>
             ))}
@@ -146,7 +184,7 @@ export default function CreatePage() {
           <div className="studio-left-note"><strong>A little room to play.</strong><br/>Drag any layer on the paper. Add more words, photos or postal details as you go.</div>
         </section>
 
-        <StudioCanvas document={document} selectedId={selectedId} onSelect={setSelectedId} onMove={moveElement}/>
+        <StudioCanvas document={document} selectedId={selectedId} onSelect={setSelectedId} onDeselect={() => setSelectedId(null)} onMove={moveElement} onNudge={nudgeElement}/>
 
         <StudioInspector
           document={document}
