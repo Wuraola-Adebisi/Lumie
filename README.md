@@ -281,6 +281,12 @@ Only public client configuration belongs in variables prefixed with `VITE_`. Nev
 - Avoid committing credentials, real personal correspondence or private user data.
 - Prefer small, reviewable changes with clear commit messages.
 
+## Creation Studio
+
+Open the editor at `/app/create`. Choose a letter, postcard, photo card, collage or memory page. Add and drag text, stamp, decoration and photo layers; edit typeface, size, ink colour, rotation and width; change the paper colour; and use undo/redo, duplicate, Save draft or Print. Uploaded images are limited to 3 MB in this local-first implementation.
+
+The current document is stored in this browser's local storage. It is not synced to an account or uploaded to a server. Print uses the browser's print dialog; direct PNG and PDF export are still planned.
+
 ## Status
 
-**Current status: first-pass frontend foundation.** This is not yet a production correspondence service. The README will be updated as real functionality replaces sample data.
+**Current status: frontend foundation plus first Creation Studio implementation.** This is not yet a production correspondence service.
