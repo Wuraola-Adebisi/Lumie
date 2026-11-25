@@ -91,10 +91,10 @@ export default function StudioCanvas({ document, selectedId, onSelect, onDeselec
             style={{ left: `${element.x}%`, top: `${element.y}%`, width: `${element.width}%`, transform: `rotate(${element.rotation ?? 0}deg)`, color: element.color ?? undefined }}
             onPointerDown={(event) => startDrag(event, element)}
             onClick={(event) => { event.stopPropagation(); onSelect(element.id) }}
-            role="button"
+            role="group"
             tabIndex={0}
             aria-label={`Select ${element.kind} layer. Use arrow keys to move; hold Shift to move faster.`}
-            aria-pressed={selectedId === element.id}
+            aria-label={`Selected layer: ${element.kind}`}
             onKeyDown={(event) => handleKeyDown(event, element)}
           >
             {element.kind === 'text' && (
