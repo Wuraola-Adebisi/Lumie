@@ -22,7 +22,7 @@ function createMemoryStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeIte
 describe('local creation library', () => {
   it('saves and lists multiple independent documents newest first', () => {
     const storage = createMemoryStorage()
-    const first = createDocument('letter')
+    const first = { ...createDocument('letter'), updatedAt: '2026-11-24T12:00:00.000Z' }
     const second = { ...createDocument('postcard'), updatedAt: '2026-11-25T12:00:00.000Z' }
 
     expect(saveLocalCreation(first, storage)).toBe(true)
