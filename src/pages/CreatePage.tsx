@@ -4,22 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import StudioCanvas from '../features/studio/StudioCanvas'
 import StudioInspector from '../features/studio/StudioInspector'
-import { createDocument, createId, migrateStudioDocument, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
+import { createDocument, createId, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
+import { getLocalCreation, saveLocalCreation } from '../features/creations/localCreations'
 import type { StudioDocument, StudioElement, StudioFormat } from '../features/studio/studioTypes'
 import '../studio.css'
 
-const STORAGE_KEY = 'lumie-studio-draft-v1'
-
-function readDraft(format: StudioFormat): StudioDocument {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const migrated = migrateStudioDocument(JSON.parse(raw))
-      if (migrated) return migrated
-    }
-  } catch {
-    // Ignore invalid or unavailable local storage and start a fresh composition.
-  }
+function readDraft(format: StudioFormat, draftId: string | null): StudioDocument {
+  if (draftId) return getLocalCreation(draftId) ?? createDocument(format)
   return createDocument(format)
 }
 
@@ -27,7 +18,7 @@ export default function CreatePage() {
   const [params] = useSearchParams()
   const requestedFormat = (params.get('type') ?? 'letter') as StudioFormat
   const initialFormat = studioFormats.some((item) => item.id === requestedFormat) ? requestedFormat : 'letter'
-  const [document, setDocument] = useState<StudioDocument>(() => readDraft(initialFormat))
+  const [document, setDocument] = useState<StudioDocument>(() => readDraft(initialFormat, params.get('draft')))
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [history, setHistory] = useState<StudioDocument[]>([])
   const [future, setFuture] = useState<StudioDocument[]>([])
@@ -36,11 +27,10 @@ export default function CreatePage() {
   const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(document))
+    if (saveLocalCreation(document)) {
       setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
-    } catch {
-      setToast('This composition is too large to save in this browser. Try a smaller photo.')
+    } else {
+      setToast('This composition could not be saved. Try removing a large photo.')
     }
   }, [document])
 
@@ -212,18 +202,13 @@ export default function CreatePage() {
   }
 
   const saveDraft = () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(document))
-      setToast('Saved on this device.')
-    } catch {
-      setToast('Could not save. This composition may be too large.')
-    }
+    setToast(saveLocalCreation(document) ? 'Saved to your creations on this device.' : 'Could not save. This composition may be too large.')
   }
 
   return (
     <div className="create-page studio-page">
       <header className="studio-heading">
-        <Link to="/app" className="back-link"><ArrowLeft size={15}/> Back to your space</Link>
+        <Link to="/app/archive" className="back-link"><ArrowLeft size={15}/> Back to your creations</Link>
         <div className="studio-heading-actions">
           <span className="studio-save-state" role="status">{savedAt ? `Saved on this device · ${savedAt}` : 'Saving locally…'}</span>
           <button type="button" className="button button-quiet button-small" onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl or Command + Z)"><Undo2 size={14}/> Undo</button>
@@ -238,6 +223,7 @@ export default function CreatePage() {
       <div className="studio-workspace">
         <section className="studio-left-panel" aria-label="Choose a composition format">
           <span className="section-kicker">MAKE SOMETHING TO KEEP</span>
+          <label className="studio-title-field"><span>Give it a name</span><input value={document.name} maxLength={80} onChange={(event) => commit({ ...document, name: event.target.value })} /></label>
           <h2>Start with a format.</h2>
           <p>Pick a shape to begin. The details, words and arrangement are yours to change.</p>
           <div className="studio-format-list">
