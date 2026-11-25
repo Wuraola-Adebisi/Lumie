@@ -128,7 +128,7 @@ test('keeps multiple named creations in the local archive', async ({ page }) => 
   await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Second letter' })).toHaveCount(0)
 
-  await page.getByRole('searchbox', { name: 'Search your creations' }).fill('')
+  await page.getByRole('textbox', { name: 'Search your creations' }).fill('')
   await page.getByRole('link', { name: 'Open creation' }).first().click()
   await expect(page.getByLabel('Give it a name')).toHaveValue('First postcard')
   await page.getByRole('link', { name: 'Back to your creations' }).click()
