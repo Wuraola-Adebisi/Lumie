@@ -262,6 +262,7 @@ export default function CreatePage() {
           onAddStamp={addStamp}
           onAddDecoration={addDecoration}
           onAddPhoto={addPhoto}
+          onPhotoError={setToast}
           onDelete={deleteSelected}
         />
       </div>
