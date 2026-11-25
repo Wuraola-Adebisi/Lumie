@@ -1,4 +1,5 @@
-import { ArrowLeft, Copy, Printer, Redo2, Save, Undo2 } from 'lucide-react'
+import { ArrowLeft, Copy, Download, FileText, Redo2, Save, Undo2 } from 'lucide-react'
+import { toPng } from 'html-to-image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import StudioCanvas from '../features/studio/StudioCanvas'
@@ -32,6 +33,7 @@ export default function CreatePage() {
   const [future, setFuture] = useState<StudioDocument[]>([])
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [toast, setToast] = useState('')
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     try {
@@ -145,6 +147,67 @@ export default function CreatePage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selected, selectedId, duplicateSelected, deleteSelected, undo, redo])
 
+
+  const getPrintDimensions = () => {
+    const dimensions: Record<StudioFormat, { width: string; height: string }> = {
+      letter: { width: '8.5in', height: '11in' },
+      postcard: { width: '6in', height: '4in' },
+      'photo-card': { width: '5in', height: '5in' },
+      collage: { width: '8in', height: '8in' },
+      memory: { width: '8in', height: '10in' },
+    }
+    return dimensions[document.format]
+  }
+
+  const exportPng = async () => {
+    const paper = window.document.querySelector<HTMLElement>('.studio-paper')
+    if (!paper || exporting) return
+    setExporting(true)
+    try {
+      await window.document.fonts.ready
+      await Promise.all(Array.from(paper.querySelectorAll('img')).map((image) => image.decode().catch(() => undefined)))
+      const dataUrl = await toPng(paper, {
+        pixelRatio: 3,
+        cacheBust: true,
+        backgroundColor: document.background,
+        filter: (node) => !(node instanceof HTMLElement && (node.classList.contains('is-selected') || node.classList.contains('is-dragging'))),
+      })
+      const link = window.document.createElement('a')
+      link.download = `lumie-${document.format}-${new Date().toISOString().slice(0, 10)}.png`
+      link.href = dataUrl
+      link.click()
+      setToast('Your high-resolution PNG is ready.')
+    } catch {
+      setToast('PNG export failed. Try removing a large photo or exporting again.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const exportPdf = () => {
+    const { width, height } = getPrintDimensions()
+    const style = window.document.createElement('style')
+    style.id = 'lumie-export-print-rules'
+    style.textContent = `
+      @page { size: ${width} ${height}; margin: 0 }
+      @media print {
+        html, body { width: ${width}; min-width: 0; margin: 0 !important; padding: 0 !important; background: #fff !important }
+        .studio-paper { width: ${width} !important; max-width: none !important; height: ${height} !important; aspect-ratio: auto !important; margin: 0 !important; border: 0 !important; box-shadow: none !important; overflow: hidden !important; print-color-adjust: exact; -webkit-print-color-adjust: exact }
+        .studio-element { outline: none !important; background: transparent !important; filter: none !important }
+        .studio-element.is-selected { outline: none !important }
+        .studio-paper:after { display: none !important }
+      }
+    `
+    window.document.head.appendChild(style)
+    const cleanup = () => {
+      style.remove()
+      window.removeEventListener('afterprint', cleanup)
+    }
+    window.addEventListener('afterprint', cleanup)
+    window.print()
+    window.setTimeout(cleanup, 120000)
+  }
+
   const saveDraft = () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(document))
@@ -163,7 +226,8 @@ export default function CreatePage() {
           <button type="button" className="button button-quiet button-small" onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl or Command + Z)"><Undo2 size={14}/> Undo</button>
           <button type="button" className="button button-quiet button-small" onClick={redo} disabled={!future.length} aria-label="Redo (Ctrl or Command + Shift + Z)"><Redo2 size={14}/> Redo</button>
           <button type="button" className="button button-quiet button-small" onClick={duplicateSelected} disabled={!selected}><Copy size={14}/> Duplicate</button>
-          <button type="button" className="button button-quiet button-small" onClick={() => window.print()}><Printer size={14}/> Print</button>
+          <button type="button" className="button button-quiet button-small" onClick={exportPng} disabled={exporting}><Download size={14}/> {exporting ? 'Exporting…' : 'PNG'}</button>
+          <button type="button" className="button button-quiet button-small" onClick={exportPdf}><FileText size={14}/> PDF / Print</button>
           <button type="button" className="button button-dark button-small" onClick={saveDraft}><Save size={14}/> Save draft</button>
         </div>
       </header>
