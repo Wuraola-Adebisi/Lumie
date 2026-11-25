@@ -80,7 +80,7 @@ Available scripts: npm run dev (development server), npm run build (type-check a
 
 GitHub Actions runs lint, tests and a production build on pushes and pull requests targeting main. Studio unit tests cover document creation, plain-text conversion, v1 draft migration, rich-text link protocol filtering, keyboard movement and movement bounds.
 
-Playwright browser tests run in Chromium and cover Studio loading, keyboard movement, rich-text controls, PNG download and postcard print sizing. Broader coverage is still needed for touch dragging, screen-reader behaviour, image upload edge cases and print output for every format.
+Playwright browser tests run in Chromium and cover Studio loading, keyboard movement, rich-text controls, PNG download, touch-pointer movement, local image upload and its 3 MB size limit, plus print dimensions for all five formats. Screen-reader testing with assistive technology and manual accessibility review remain outstanding.
 
 ## Proposed backend architecture
 
