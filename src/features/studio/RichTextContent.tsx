@@ -1,15 +1,6 @@
 import type { ReactNode } from 'react'
 import type { StudioRichTextMark, StudioRichTextNode } from './studioTypes'
-
-function safeHref(href?: string) {
-  if (!href) return undefined
-  try {
-    const url = new URL(href, window.location.origin)
-    return ['http:', 'https:', 'mailto:', 'tel:'].includes(url.protocol) ? href : undefined
-  } catch {
-    return undefined
-  }
-}
+import { sanitizeRichTextHref } from './richTextUtils'
 
 function renderText(text: string, marks: StudioRichTextMark[] = []): ReactNode {
   return marks.reduce<ReactNode>((node, mark, index) => {
@@ -19,7 +10,7 @@ function renderText(text: string, marks: StudioRichTextMark[] = []): ReactNode {
       case 'strike': return <s key={index}>{node}</s>
       case 'code': return <code key={index}>{node}</code>
       case 'link': {
-        const href = safeHref(mark.attrs?.href)
+        const href = sanitizeRichTextHref(mark.attrs?.href)
         return href ? <a key={index} href={href} target={mark.attrs?.target === '_blank' ? '_blank' : undefined} rel="noopener noreferrer">{node}</a> : node
       }
       default: return node
@@ -44,21 +35,12 @@ function renderNode(node: StudioRichTextNode, index: number): ReactNode {
   }
 }
 
-interface Props {
-  content?: StudioRichTextNode
-  fallbackText?: string
-}
+interface Props { content?: StudioRichTextNode; fallbackText?: string }
 
 export default function RichTextContent({ content, fallbackText = '' }: Props) {
-  const document = content ?? {
-    type: 'doc' as const,
-    content: fallbackText.split(/\n{2,}/).map((paragraph) => ({
-      type: 'paragraph' as const,
-      content: paragraph.split('\n').flatMap((line, index) => [
-        ...(index ? [{ type: 'hardBreak' as const }] : []),
-        ...(line ? [{ type: 'text' as const, text: line }] : []),
-      ]),
-    })),
-  }
+  const document = content ?? { type: 'doc' as const, content: fallbackText.split(/\n{2,}/).map((paragraph) => ({
+    type: 'paragraph' as const,
+    content: paragraph.split('\n').flatMap((line, index) => [...(index ? [{ type: 'hardBreak' as const }] : []), ...(line ? [{ type: 'text' as const, text: line }] : [])]),
+  })) }
   return <div className="studio-rich-content">{(document.content ?? []).map((node, index) => renderNode(node, index))}</div>
 }
