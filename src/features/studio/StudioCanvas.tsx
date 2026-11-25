@@ -94,7 +94,6 @@ export default function StudioCanvas({ document, selectedId, onSelect, onDeselec
             role="group"
             tabIndex={0}
             aria-label={`Select ${element.kind} layer. Use arrow keys to move; hold Shift to move faster.`}
-            aria-label={`Selected layer: ${element.kind}`}
             onKeyDown={(event) => handleKeyDown(event, element)}
           >
             {element.kind === 'text' && (
