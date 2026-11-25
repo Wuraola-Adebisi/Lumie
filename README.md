@@ -118,6 +118,11 @@ lumie/
 │   │       └── BrandMark.tsx
 │   ├── data/
 │   │   └── sampleData.ts
+│   ├── features/
+│   │   └── studio/
+│   │       ├── StudioCanvas.tsx
+│   │       ├── StudioInspector.tsx
+│   │       └── studioTypes.ts
 │   ├── pages/
 │   │   ├── HomePage.tsx
 │   │   ├── DashboardPage.tsx
@@ -127,6 +132,7 @@ lumie/
 │   │   └── OpenWhenPage.tsx
 │   ├── App.tsx
 │   ├── index.css
+│   ├── studio.css
 │   └── main.tsx
 ├── .gitignore
 ├── index.html
