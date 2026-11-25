@@ -91,8 +91,10 @@ export function plainTextToRichText(text: string): StudioRichTextNode {
 export function migrateStudioDocument(value: unknown): StudioDocument | null {
   if (!value || typeof value !== 'object') return null
   const candidate = value as Partial<StudioDocument> & { schemaVersion?: number; elements?: StudioElement[] }
-  if (!candidate.id || !Array.isArray(candidate.elements)) return null
-  const elements = candidate.elements.map((element) => {
+  const id = candidate.id
+  const sourceElements = candidate.elements
+  if (!id || !Array.isArray(sourceElements)) return null
+  const elements = sourceElements.map((element) => {
     if (element.kind !== 'text' || element.richText) return element
     const migrated = plainTextToRichText(element.text ?? '')
     const legacyMarks = [
@@ -115,6 +117,7 @@ export function migrateStudioDocument(value: unknown): StudioDocument | null {
   })
   return {
     ...candidate,
+    id,
     schemaVersion: 2,
     name: candidate.name ?? 'A little composition',
     format: candidate.format ?? 'letter',
