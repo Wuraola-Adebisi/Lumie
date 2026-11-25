@@ -4,7 +4,7 @@
 
 Lumie is a creative correspondence platform for making, sending, receiving and preserving meaningful things. It is designed for everyone: friends, partners, families, communities and people writing to themselves.
 
-This repository contains the first product foundation: a responsive public site and an interactive frontend application shell. The current release is a frontend-first product prototype with realistic sample content. It deliberately does not claim that account creation, message delivery, scheduled unlocking or cloud persistence are operational.
+This repository contains the first product foundation: a responsive public site and an interactive frontend application shell. The current release is a frontend-first product foundation. The Creation Studio supports browser-local composition and draft persistence; account creation, message delivery, scheduled unlocking and cloud persistence are not operational.
 
 ## Product direction
 
@@ -49,7 +49,7 @@ These are intentionally not represented as working backend features in this pass
 - Database persistence and cross-device sync.
 - Actual sending, receiving and reply delivery.
 - Guest invitation links and collection permissions.
-- File uploads and media processing.
+- Remote media storage and media processing.
 - Scheduled delivery and server-enforced time locks.
 - Email notifications.
 - Billing, subscriptions or physical mail fulfilment.
@@ -65,7 +65,7 @@ The app currently uses local UI state and sample data. Refreshing the browser ma
 | Routing | React Router |
 | Styling | Tailwind CSS 3 + CSS variables |
 | Icons | Lucide React |
-| Future editor | Tiptap (planned, not installed in this pass) |
+| Creation editor | Custom structured composition layers (first implementation) |\n| Future rich text | Tiptap (planned, not installed yet) |
 | Future backend | Supabase Auth, PostgreSQL, Storage and server functions |
 | Future email | Resend for transactional notifications |
 | Deployment target | Vercel |
