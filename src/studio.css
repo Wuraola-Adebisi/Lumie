@@ -33,3 +33,36 @@
 @media(prefers-reduced-motion:reduce){
   .studio-page *, .studio-page *::before, .studio-page *::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
+
+
+/* Rich-text editing and composition rendering */
+.studio-rich-editor{border:1px solid #e4ddd2;border-radius:6px;background:#fff;overflow:hidden}
+.studio-rich-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:7px;border-bottom:1px solid #eee8de;background:#fbf9f4}
+.studio-rich-toolbar button{width:29px;height:29px;display:grid;place-items:center;border:1px solid transparent;border-radius:4px;background:transparent;color:#46516b;cursor:pointer}
+.studio-rich-toolbar button:hover{background:#f0edff}
+.studio-rich-toolbar button.active{background:#e9e6ff;border-color:#b8a9fa;color:#253b9b}
+.studio-rich-toolbar button:focus-visible{outline:2px solid #4968f5;outline-offset:2px}
+.studio-rich-editor .ProseMirror{min-height:145px;padding:11px 12px;outline:none;font:11px/1.6 'DM Sans',sans-serif;color:#1d2a45}
+.studio-rich-editor .ProseMirror p{margin:0 0 .7em}
+.studio-rich-editor .ProseMirror p:last-child{margin-bottom:0}
+.studio-rich-editor .ProseMirror h2,.studio-rich-editor .ProseMirror h3{font-family:'MuseoModerno',sans-serif;line-height:1.25;margin:.6em 0 .35em}
+.studio-rich-editor .ProseMirror h2{font-size:17px}
+.studio-rich-editor .ProseMirror h3{font-size:14px}
+.studio-rich-editor .ProseMirror ul,.studio-rich-editor .ProseMirror ol{padding-left:20px;margin:.45em 0}
+.studio-rich-editor .ProseMirror blockquote{border-left:3px solid #b8a9fa;margin:.6em 0;padding-left:10px;color:#68718a}
+.studio-rich-editor .ProseMirror a{color:#3455d1;text-decoration:underline}
+.studio-rich-editor .ProseMirror code{background:#f0edff;padding:1px 3px;border-radius:3px}
+.studio-rich-editor .ProseMirror p.is-editor-empty:first-child:before{content:'Write your words here…';float:left;color:#9aa1b1;pointer-events:none;height:0}
+.studio-rich-editor-help{margin:0;padding:7px 10px;border-top:1px solid #eee8de;background:#fbf9f4;color:#78829a;font-size:8px;line-height:1.5}
+.studio-rich-editor-loading{padding:18px;border:1px solid #e4ddd2;border-radius:6px;color:#78829a;font-size:10px}
+.studio-rich-content{line-height:1.4;overflow-wrap:anywhere}
+.studio-rich-content>p{margin:0 0 .8em;white-space:normal}
+.studio-rich-content>p:last-child{margin-bottom:0}
+.studio-rich-content h2,.studio-rich-content h3{font-family:'MuseoModerno',sans-serif;line-height:1.2;margin:.65em 0 .4em}
+.studio-rich-content h2{font-size:1.35em}
+.studio-rich-content h3{font-size:1.15em}
+.studio-rich-content ul,.studio-rich-content ol{padding-left:1.35em;margin:.5em 0}
+.studio-rich-content li{padding-left:.15em;margin:.2em 0}
+.studio-rich-content blockquote{border-left:3px solid #f05f4c;padding-left:.8em;margin:.7em 0;color:inherit;opacity:.85}
+.studio-rich-content a{color:#3455d1;text-decoration:underline;overflow-wrap:anywhere}
+.studio-rich-content code{background:#ffffff70;padding:1px 3px;border-radius:3px}

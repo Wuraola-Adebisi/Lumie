@@ -1,7 +1,8 @@
-import { AlignCenter, AlignLeft, AlignRight, Bold, ImagePlus, Italic, Plus, Stamp, Type, Trash2 } from 'lucide-react'
+import { ImagePlus, Plus, Stamp, Type, Trash2 } from 'lucide-react'
 import type { ChangeEvent } from 'react'
-import type { StudioDocument, StudioElement } from './studioTypes'
+import type { StudioDocument, StudioElement, StudioRichTextNode } from './studioTypes'
 import { fontOptions, paperOptions } from './studioTypes'
+import RichTextEditor from './RichTextEditor'
 
 interface Props {
   document: StudioDocument
@@ -37,6 +38,8 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
     event.target.value = ''
   }
 
+  const updateRichText = (richText: StudioRichTextNode) => onChange({ richText })
+
   return (
     <aside className="studio-inspector" aria-label="Composition controls">
       <div className="studio-panel-heading"><span>THE LITTLE DETAILS</span><span aria-hidden="true">✳</span></div>
@@ -62,20 +65,11 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
         <section className="studio-inspector-section studio-selected-panel" aria-labelledby="studio-selected-heading">
           <div className="studio-selected-heading"><h3 id="studio-selected-heading">Selected layer</h3><button type="button" className="studio-delete-button" onClick={onDelete} aria-label="Delete selected layer"><Trash2 size={15}/></button></div>
           {selected.kind === 'text' && <>
-            <label className="studio-field-label" htmlFor="studio-layer-text">Your words</label>
-            <textarea id="studio-layer-text" className="studio-field studio-text-field" value={selected.text ?? ''} onChange={(event) => onChange({ text: event.target.value })} rows={5}/>
+            <label className="studio-field-label">Your words</label>
+            <RichTextEditor key={selected.id} elementId={selected.id} value={selected.richText} legacyText={selected.text} onChange={updateRichText}/>
             <label className="studio-field-label" htmlFor="studio-layer-font">Typeface</label>
             <select id="studio-layer-font" className="studio-field" value={selected.fontFamily ?? fontOptions[0].value} onChange={(event) => onChange({ fontFamily: event.target.value })}>{fontOptions.map((font) => <option key={font.label} value={font.value}>{font.label}</option>)}</select>
-            <label className="studio-field-label">Text style</label>
-            <div className="studio-text-toolbar" role="group" aria-label="Text style">
-              <button type="button" className={selected.bold ? 'active' : ''} aria-label="Bold" aria-pressed={Boolean(selected.bold)} onClick={() => onChange({ bold: !selected.bold })}><Bold size={15}/></button>
-              <button type="button" className={selected.italic ? 'active' : ''} aria-label="Italic" aria-pressed={Boolean(selected.italic)} onClick={() => onChange({ italic: !selected.italic })}><Italic size={15}/></button>
-              <span className="studio-toolbar-divider" />
-              <button type="button" className={(selected.textAlign ?? 'left') === 'left' ? 'active' : ''} aria-label="Align text left" aria-pressed={(selected.textAlign ?? 'left') === 'left'} onClick={() => onChange({ textAlign: 'left' })}><AlignLeft size={15}/></button>
-              <button type="button" className={selected.textAlign === 'center' ? 'active' : ''} aria-label="Align text centre" aria-pressed={selected.textAlign === 'center'} onClick={() => onChange({ textAlign: 'center' })}><AlignCenter size={15}/></button>
-              <button type="button" className={selected.textAlign === 'right' ? 'active' : ''} aria-label="Align text right" aria-pressed={selected.textAlign === 'right'} onClick={() => onChange({ textAlign: 'right' })}><AlignRight size={15}/></button>
-            </div>
-            <label className="studio-field-label" htmlFor="studio-layer-size">Text size · {selected.fontSize ?? 16}px</label>
+            <label className="studio-field-label" htmlFor="studio-layer-size">Base text size · {selected.fontSize ?? 16}px</label>
             <input id="studio-layer-size" className="studio-range" type="range" min="11" max="42" value={selected.fontSize ?? 16} onChange={(event) => onChange({ fontSize: Number(event.target.value) })}/>
             <label className="studio-field-label">Ink colour</label>
             <div className="studio-ink-options">{['#1d2a45','#f05f4c','#4968f5','#658b75','#7b5bb5','#ffffff'].map((color) => <button type="button" key={color} className={selected.color === color ? 'active' : ''} style={{ background: color }} onClick={() => onChange({ color })} aria-label={`Set text colour ${color}`} aria-pressed={selected.color === color}/>)}</div>
