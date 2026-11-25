@@ -54,7 +54,7 @@ These are intentionally not represented as working backend features in this pass
 - Email notifications.
 - Billing, subscriptions or physical mail fulfilment.
 
-The app currently uses local UI state and sample data. Refreshing the browser may reset interactions.
+Dashboard, inbox, archive, collections and open-when screens still use sample data. Creation Studio drafts persist in the current browser's local storage; they do not sync across devices or accounts.
 
 ## Technology
 
@@ -65,7 +65,8 @@ The app currently uses local UI state and sample data. Refreshing the browser ma
 | Routing | React Router |
 | Styling | Tailwind CSS 3 + CSS variables |
 | Icons | Lucide React |
-| Creation editor | Custom structured composition layers (first implementation) |\n| Future rich text | Tiptap (planned, not installed yet) |
+| Creation editor | Custom structured composition layers (first implementation) |
+| Future rich text | Tiptap (planned, not installed yet) |
 | Future backend | Supabase Auth, PostgreSQL, Storage and server functions |
 | Future email | Resend for transactional notifications |
 | Deployment target | Vercel |
