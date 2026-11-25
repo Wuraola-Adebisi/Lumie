@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 import process from 'node:process'
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: './e2e',
   fullyParallel: true,
   reporter: 'list',
   use: {
