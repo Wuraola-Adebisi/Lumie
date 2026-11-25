@@ -62,7 +62,7 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
           <button type="button" onClick={onAddStamp}><Stamp aria-hidden="true"/><span>Stamp</span></button>
           <button type="button" onClick={onAddDecoration}><Plus aria-hidden="true"/><span>Decor</span></button>
           <input id="studio-photo-upload" className="studio-visually-hidden" type="file" accept="image/*" aria-label="Choose a photo" onChange={uploadPhoto} />
-          <label className="studio-add-upload" htmlFor="studio-photo-upload" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); document.getElementById('studio-photo-upload')?.click() } }}><ImagePlus aria-hidden="true"/><span>Photo</span></label>
+          <label className="studio-add-upload" htmlFor="studio-photo-upload" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.document.getElementById('studio-photo-upload')?.click() } }}><ImagePlus aria-hidden="true"/><span>Photo</span></label>
         </div>
         <p className="studio-upload-hint" id="studio-photo-hint">Images only · up to 3 MB · stored in this browser</p>
       </section>
