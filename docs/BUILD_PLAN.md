@@ -18,6 +18,9 @@ This plan separates a visual prototype from a dependable correspondence product.
 - [x] Five canvas formats and paper background controls.
 - [x] Local image uploads and draggable composition layers.
 - [x] Browser-local draft autosave and restore.
+- [x] Multiple named local creations with independent editing sessions.
+- [x] Search, reopen and delete saved creations from the archive.
+- [x] Show recent saved creations on the dashboard.
 - [x] Undo/redo, duplicate, delete and keyboard movement.
 - [x] High-resolution PNG export and format-sized browser print/PDF workflow.
 - [x] Automated document, migration, link-safety and keyboard movement tests.
@@ -28,6 +31,10 @@ This plan separates a visual prototype from a dependable correspondence product.
 ### Creation editor — QA status
 
 Vitest covers plain-text conversion, v1-to-v2 draft migration, document creation for all supported formats, rich-text link protocol filtering, keyboard movement increments and movement bounds. Playwright now exercises the live editor route, keyboard movement, rich-text controls, PNG download and postcard print sizing in Chromium. Automated coverage now includes touch-pointer movement, successful local image upload, the 3 MB rejection path and print dimensions for all five formats. Screen-reader testing with assistive technology and manual accessibility review remain outstanding.
+
+### Local creation library
+
+The editor now saves multiple named documents independently in browser local storage. The archive lists, searches, reopens and deletes those documents; the dashboard shows the latest saved work. The previous single-draft key is migrated into the library when it is next read. This is device-local persistence only: it is not account storage, cloud backup or cross-device sync.
 
 ## Milestone 3 — Accounts and persistence
 - [ ] Create Supabase project and local environment setup.
