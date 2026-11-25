@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import type { StudioDocument, StudioElement } from './studioTypes'
 import { studioFormats } from './studioTypes'
+import RichTextContent from './RichTextContent'
 
 interface Props {
   document: StudioDocument
@@ -41,7 +42,7 @@ export default function StudioCanvas({ document, selectedId, onSelect, onDeselec
   }, [onMove])
 
   const startDrag = (event: PointerEvent<HTMLElement>, element: StudioElement) => {
-    if ((event.target as HTMLElement).closest('input, textarea, button, select')) return
+    if ((event.target as HTMLElement).closest('input, textarea, button, select, a, [contenteditable="true"]')) return
     event.preventDefault()
     event.stopPropagation()
     onSelect(element.id)
@@ -101,12 +102,10 @@ export default function StudioCanvas({ document, selectedId, onSelect, onDeselec
                 fontFamily: element.fontFamily,
                 fontSize: `clamp(10px, ${element.fontSize ?? 16}px, 42px)`,
                 color: element.color ?? '#1d2a45',
-                whiteSpace: 'pre-wrap',
-                fontWeight: element.bold ? 700 : 400,
-                fontStyle: element.italic ? 'italic' : 'normal',
-                textAlign: element.textAlign ?? 'left',
                 overflowWrap: 'anywhere',
-              }}>{element.text}</div>
+              }}>
+                <RichTextContent content={element.richText} fallbackText={element.text}/>
+              </div>
             )}
             {element.kind === 'stamp' && <div className="studio-stamp-art"><span>✳</span><strong>{element.value ?? 'POST'}</strong><small>LUMIE · MAIL</small></div>}
             {element.kind === 'decoration' && <div className="studio-decoration-art" style={{ fontSize: element.fontSize ?? 34 }}>{element.value ?? '✳'}</div>}
