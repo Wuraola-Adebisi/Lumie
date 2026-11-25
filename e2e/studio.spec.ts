@@ -37,6 +37,55 @@ test('exports a PNG download with the selected format in its filename', async ({
   expect(download.suggestedFilename()).toMatch(/^lumie-letter-\d{4}-\d{2}-\d{2}\.png$/)
 })
 
+test('supports touch-pointer dragging of a composition layer', async ({ page }) => {
+  const paper = page.locator('.studio-paper')
+  const layer = page.getByRole('group', { name: /Select text layer/ }).first()
+  const bounds = await paper.boundingBox()
+  if (!bounds) throw new Error('Composition canvas is not measurable')
+
+  await layer.dispatchEvent('pointerdown', {
+    pointerId: 7,
+    pointerType: 'touch',
+    isPrimary: true,
+    button: 0,
+    clientX: bounds.x + bounds.width * 0.2,
+    clientY: bounds.y + bounds.height * 0.2,
+  })
+  await page.evaluate(({ x, y }) => {
+    window.dispatchEvent(new PointerEvent('pointermove', {
+      pointerId: 7, pointerType: 'touch', isPrimary: true,
+      clientX: x, clientY: y, bubbles: true,
+    }))
+    window.dispatchEvent(new PointerEvent('pointerup', {
+      pointerId: 7, pointerType: 'touch', isPrimary: true,
+      clientX: x, clientY: y, bubbles: true,
+    }))
+  }, { x: bounds.x + bounds.width * 0.3, y: bounds.y + bounds.height * 0.25 })
+
+  await expect(layer).toHaveAttribute('style', /left: 19%/)
+  await expect(layer).toHaveAttribute('style', /top: 17%/)
+})
+
+test('adds a valid local image to the composition', async ({ page }) => {
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=', 'base64')
+  await page.locator('#studio-photo-upload').setInputFiles({
+    name: 'tiny.png',
+    mimeType: 'image/png',
+    buffer: png,
+  })
+  await expect(page.locator('.studio-element-photo img')).toBeVisible()
+})
+
+test('rejects an image larger than the local upload limit', async ({ page }) => {
+  await page.locator('#studio-photo-upload').setInputFiles({
+    name: 'large.png',
+    mimeType: 'image/png',
+    buffer: Buffer.alloc(3 * 1024 * 1024 + 1),
+  })
+  await expect(page.getByRole('status').filter({ hasText: 'smaller than 3 MB' })).toBeVisible()
+  await expect(page.locator('.studio-element-photo')).toHaveCount(0)
+})
+
 test('uses the correct print dimensions for every composition format', async ({ page }) => {
   const formats = [
     { label: /Letter/, size: '@page { size: 8.5in 11in; margin: 0 }', className: 'studio-paper-letter' },
