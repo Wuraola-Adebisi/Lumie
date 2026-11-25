@@ -66,3 +66,16 @@
 .studio-rich-content blockquote{border-left:3px solid #f05f4c;padding-left:.8em;margin:.7em 0;color:inherit;opacity:.85}
 .studio-rich-content a{color:#3455d1;text-decoration:underline;overflow-wrap:anywhere}
 .studio-rich-content code{background:#ffffff70;padding:1px 3px;border-radius:3px}
+
+
+/* Export output: remove editor chrome and honour each format's physical trim size. */
+@media print {
+  @page { margin: 0 }
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  .studio-paper { overflow: hidden !important; }
+  .studio-paper-grain { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .studio-element { outline: none !important; }
+  .studio-element.is-selected { outline: none !important; background: transparent !important; }
+  .studio-element.is-dragging { filter: none !important; }
+  .studio-paper:after { display: none !important; }
+}
