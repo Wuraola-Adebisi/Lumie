@@ -74,13 +74,13 @@ Requirements: Node.js 20.19+ or 22.12+ and npm 10+.
 
 Clone the repository, run npm install, then npm run dev. Vite prints the local development URL, usually http://localhost:5173.
 
-Available scripts: npm run dev (development server), npm run build (type-check and production build), npm run preview (production preview), npm run lint (ESLint), and npm run test (Vitest).
+Available scripts: npm run dev (development server), npm run build (type-check and production build), npm run preview (production preview), npm run lint (ESLint), npm run test (Vitest), and npm run test:e2e (Playwright browser tests).
 
 ## Quality checks
 
 GitHub Actions runs lint, tests and a production build on pushes and pull requests targeting main. Studio unit tests cover document creation, plain-text conversion, v1 draft migration, rich-text link protocol filtering, keyboard movement and movement bounds.
 
-Browser-level tests are still needed for Tiptap editing, pointer/touch dragging, keyboard and screen-reader interaction, image handling, and PNG/PDF export across browsers.
+Playwright browser tests run in Chromium and cover Studio loading, keyboard movement, rich-text controls, PNG download and postcard print sizing. Broader coverage is still needed for touch dragging, screen-reader behaviour, image upload edge cases and print output for every format.
 
 ## Proposed backend architecture
 
