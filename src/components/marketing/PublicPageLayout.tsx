@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import MarketingHeader from './MarketingHeader'
@@ -13,6 +13,17 @@ interface Props {
 }
 
 export default function PublicPageLayout({ eyebrow, title, intro, children, updated }: Props) {
+  useEffect(() => {
+    const pageTitle = `${title} | Lumie`
+    document.title = pageTitle
+    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+    if (description) description.content = intro
+    const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]')
+    if (ogTitle) ogTitle.content = pageTitle
+    const ogDescription = document.querySelector<HTMLMetaElement>('meta[property="og:description"]')
+    if (ogDescription) ogDescription.content = intro
+  }, [title, intro])
+
   return (
     <div className="marketing-page public-page">
       <MarketingHeader />
