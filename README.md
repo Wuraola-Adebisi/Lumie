@@ -30,7 +30,7 @@ The core loop:
 ## What's in this first pass
 
 - Responsive marketing homepage with product positioning and clear calls to action.
-- Public navigation and footer.
+- Public navigation and footer with direct links to product information, contact and policy pages.
 - App shell with sidebar navigation and mobile navigation.
 - Dashboard with overview cards, recent writing, incoming correspondence and collections.
 - Explore/create entry points for different kinds of writing.
@@ -281,6 +281,12 @@ Only public client configuration belongs in variables prefixed with `VITE_`. Nev
 - Avoid committing credentials, real personal correspondence or private user data.
 - Prefer small, reviewable changes with clear commit messages.
 
+## Public information and policies
+
+The public site includes `/about`, `/how-it-works`, `/contact`, `/privacy`, `/terms`, `/acceptable-use`, `/cookies` and `/accessibility`. Each page has page-specific browser metadata and links through the shared public navigation and footer.
+
+The legal documents describe the current pre-release frontend and identify features that are not active. They are product drafts, not legal advice or a substitute for jurisdiction-specific review. Before public launch, complete the legal operator identity, business address, privacy/support contact, governing law and hosting/provider disclosures. Review the documents against the actual deployment, data flows and applicable law.
+
 ## Creation Studio
 
 Open the editor at `/app/create`. Choose a letter, postcard, photo card, collage or memory page. Add and drag text, stamp, decoration and photo layers; edit typeface, size, ink colour, rotation and width; change the paper colour; and use undo/redo, duplicate, Save draft or Print. Uploaded images are limited to 3 MB in this local-first implementation.
@@ -289,4 +295,4 @@ The current document is stored in this browser's local storage. It is not synced
 
 ## Status
 
-**Current status: frontend foundation plus first Creation Studio implementation.** This is not yet a production correspondence service.
+**Current status: frontend foundation, Creation Studio and public information/policy pages.** The legal drafts and contact page still require operator details and legal review before production launch. This is not yet a production correspondence service.
