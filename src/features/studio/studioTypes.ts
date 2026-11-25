@@ -15,6 +15,9 @@ export interface StudioElement {
   rotation?: number
   value?: string
   image?: string
+  bold?: boolean
+  italic?: boolean
+  textAlign?: 'left' | 'center' | 'right'
 }
 
 export interface StudioDocument {

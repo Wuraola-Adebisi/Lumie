@@ -2,3 +2,34 @@
 @media(max-width:1120px){.studio-workspace{grid-template-columns:220px minmax(0,1fr)}.studio-inspector{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.studio-panel-heading,.studio-inspector-footnote{grid-column:1/-1}.studio-inspector-section{border-right:1px solid #eee8de}.studio-inspector-empty{grid-column:1/-1}}
 @media(max-width:720px){.create-page.studio-page{padding:20px 14px 40px}.studio-heading{align-items:flex-start;flex-direction:column}.studio-heading-actions{width:100%;flex-wrap:wrap}.studio-workspace{grid-template-columns:1fr}.studio-left-panel{order:2}.studio-canvas-wrap{order:1;padding:4px 0 18px}.studio-inspector{order:3;grid-column:auto;display:block}.studio-paper{width:min(100%,520px)}.studio-canvas-meta{font-size:7px}.studio-format-list{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-left-note{margin-top:12px}}
 @media print{@page{margin:12mm}.app-sidebar,.app-topbar,.studio-heading,.studio-left-panel,.studio-inspector,.studio-canvas-meta,.studio-canvas-hint{display:none!important}.app-layout,.app-main,.app-content{display:block!important;background:#fff!important;padding:0!important;margin:0!important}.create-page.studio-page{padding:0!important;max-width:none!important}.studio-workspace{display:block!important}.studio-canvas-wrap{padding:0!important}.studio-paper{width:100%!important;max-width:180mm!important;box-shadow:none!important;border:0!important;break-inside:avoid;print-color-adjust:exact;-webkit-print-color-adjust:exact}.studio-paper-footer{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+
+
+/* Creation Studio refinement: keyboard, touch and small-screen affordances */
+.studio-element:focus{outline:2px solid #4968f5;outline-offset:3px;z-index:9}
+.studio-element:focus:not(:focus-visible){outline:1px dashed #4968f5}
+.studio-element:focus-visible{outline:2px solid #4968f5;outline-offset:3px}
+.studio-text-toolbar{display:flex;align-items:center;gap:5px}
+.studio-text-toolbar button{width:32px;height:32px;display:grid;place-items:center;border:1px solid #e4ddd2;border-radius:5px;background:#fff;color:#46516b;cursor:pointer}
+.studio-text-toolbar button.active{background:#e9e6ff;border-color:#9d8cf0;color:#253b9b}
+.studio-toolbar-divider{width:1px;height:22px;background:#e4ddd2;margin:0 3px}
+.studio-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+#studio-photo-upload:focus-visible+.studio-add-upload{outline:2px solid #4968f5;outline-offset:3px}
+.studio-add-grid button:focus-visible,.studio-add-upload:focus-visible,.studio-format-option:focus-visible,.studio-paper-swatches button:focus-visible,.studio-ink-options button:focus-visible,.studio-decor-options button:focus-visible,.studio-text-toolbar button:focus-visible,.studio-delete-button:focus-visible,.studio-heading-actions button:focus-visible{outline:2px solid #4968f5;outline-offset:3px}
+.studio-add-grid button,.studio-add-upload{min-width:0}
+.studio-field:focus-visible{outline:2px solid #4968f5;outline-offset:2px}
+.studio-paper{touch-action:pan-y}
+.studio-element{max-width:100%}
+.studio-element-photo img{max-width:100%}
+@media(max-width:720px){
+  .studio-heading-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .studio-save-state{grid-column:1/-1}
+  .studio-heading-actions button{justify-content:center;min-height:38px}
+  .studio-canvas-meta{align-items:flex-start;flex-direction:column;gap:5px;letter-spacing:.9px}
+  .studio-canvas-hint{line-height:1.6;padding:0 10px}
+  .studio-inspector-section{padding:16px}
+  .studio-add-grid button,.studio-add-upload{min-height:64px}
+  .studio-paper-swatches button,.studio-ink-options button{width:30px;height:30px}
+}
+@media(prefers-reduced-motion:reduce){
+  .studio-page *, .studio-page *::before, .studio-page *::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
+}

@@ -22,14 +22,21 @@ The public site now includes About, How it Works, Contact, Privacy, Terms, Accep
 
 ## Milestone 2 — Creation editor
 - [ ] Integrate a rich-text engine and define a versioned document schema.
-- [ ] Add text formatting, headings, links and lists.
+- [ ] Add a full rich-text engine with headings, links and lists.
+- [x] Add basic text emphasis and paragraph alignment controls.
 - [x] Add canvas formats and paper background controls.
 - [x] Add local image uploads and draggable media placement.
 - [x] Add draggable text, stamp and decoration layers.
 - [x] Add browser-local draft autosave and restore.
 - [x] Add browser print layout.
 - [ ] Add direct PNG and PDF export.
-- [ ] Add editor accessibility and keyboard tests.
+- [x] Add keyboard selection and arrow-key layer positioning, including larger Shift+arrow movements.
+- [x] Add accessible names, pressed states, visible focus treatment and keyboard-operable photo upload.
+- [ ] Add automated editor accessibility and keyboard tests.
+
+### Creation editor — first implementation and refinement
+
+The current refinement adds bold and italic styling, left/centre/right alignment, keyboard selection and layer movement, Delete/Backspace removal, duplicate and undo/redo shortcuts, clearer accessible labels and responsive control refinements. This is lightweight per-layer text styling, not yet a full rich-text engine: headings, links, lists and inline mixed formatting remain outstanding.
 
 ### Creation editor — first implementation
 
