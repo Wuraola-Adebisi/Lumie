@@ -285,7 +285,7 @@ Only public client configuration belongs in variables prefixed with `VITE_`. Nev
 
 The public site includes `/about`, `/how-it-works`, `/contact`, `/privacy`, `/terms`, `/acceptable-use`, `/cookies` and `/accessibility`. Each page has page-specific browser metadata and links through the shared public navigation and footer.
 
-The legal documents describe the current pre-release frontend and identify features that are not active. They are product drafts, not legal advice or a substitute for jurisdiction-specific review. Before public launch, complete the legal operator identity, business address, privacy/support contact, governing law and hosting/provider disclosures. Review the documents against the actual deployment, data flows and applicable law.
+The legal documents describe the current pre-release frontend and identify features that are not active. They are product drafts, not legal advice or a substitute for jurisdiction-specific review. Before public launch, complete the legal operator identity, business address, privacy/support contact, governing law and hosting/provider disclosures. Review the documents against the actual deployment, data flows and applicable law. Track outstanding items in [the legal launch checklist](docs/LEGAL_LAUNCH_CHECKLIST.md).
 
 ## Creation Studio
 
