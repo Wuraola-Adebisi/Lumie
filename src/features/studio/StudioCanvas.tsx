@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import type { StudioDocument, StudioElement } from './studioTypes'
 import { studioFormats } from './studioTypes'
+import { clampStudioPosition, getStudioKeyboardMovement } from './studioKeyboard'
 import RichTextContent from './RichTextContent'
 
 interface Props {
@@ -27,7 +28,7 @@ export default function StudioCanvas({ document, selectedId, onSelect, onDeselec
       const bounds = canvas.getBoundingClientRect()
       const x = drag.startX + ((event.clientX - drag.pointerX) / bounds.width) * 100
       const y = drag.startY + ((event.clientY - drag.pointerY) / bounds.height) * 100
-      onMove(drag.id, Math.max(0, Math.min(92, x)), Math.max(0, Math.min(92, y)))
+      onMove(drag.id, clampStudioPosition(x), clampStudioPosition(y))
     }
     const up = () => {
       dragRef.current = null
@@ -51,14 +52,7 @@ export default function StudioCanvas({ document, selectedId, onSelect, onDeselec
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>, element: StudioElement) => {
-    const step = event.shiftKey ? 5 : 1
-    const movements: Record<string, [number, number]> = {
-      ArrowLeft: [-step, 0],
-      ArrowRight: [step, 0],
-      ArrowUp: [0, -step],
-      ArrowDown: [0, step],
-    }
-    const movement = movements[event.key]
+    const movement = getStudioKeyboardMovement(event.key, event.shiftKey)
     if (movement) {
       event.preventDefault()
       onSelect(element.id)

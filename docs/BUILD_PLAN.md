@@ -7,40 +7,27 @@ This plan separates a visual prototype from a dependable correspondence product.
 - [x] Public homepage and responsive marketing navigation.
 - [x] Application shell and navigation.
 - [x] Dashboard, inbox, archive, collections and open-when sample views.
-- [x] First-pass creation canvas with local state.
-- [x] Detailed README and product/architecture documentation.
-- [x] Review and establish the colourful contemporary mail-club visual direction.
-- [x] Add About and How it Works pages.
-- [x] Add Privacy, Terms and Acceptable Use policies.
-- [x] Add Cookie notice and Accessibility statement.
-- [x] Add Contact page and complete public footer navigation.
+- [x] Product, architecture and build documentation.
+- [x] Colourful contemporary mail-club visual direction.
+- [x] About, How it Works, Contact and policy pages.
 - [ ] Confirm legal operator details, support contact and jurisdiction; obtain legal review before public launch.
 
-## Public information and policy pages
-
-The public site now includes About, How it Works, Contact, Privacy, Terms, Acceptable Use, Cookies and Accessibility routes. Policy copy reflects the current browser-local editor and explicitly distinguishes planned capabilities. These documents are working product drafts. The legal operator name, address, privacy/support contact, governing law, actual hosting providers and deployment data flows must be confirmed and reviewed before public launch.
-
 ## Milestone 2 — Creation editor
-- [x] Integrate a rich-text engine and define a versioned document schema.
-- [x] Add a full rich-text engine with headings, links and lists.
-- [x] Add basic text emphasis and paragraph alignment controls.
-- [x] Add canvas formats and paper background controls.
-- [x] Add local image uploads and draggable media placement.
-- [x] Add draggable text, stamp and decoration layers.
-- [x] Add browser-local draft autosave and restore.
-- [x] Add browser print layout.
-- [x] Add high-resolution PNG export (3× pixel ratio) and format-sized print/PDF output.
-- [x] Add keyboard selection and arrow-key layer positioning, including larger Shift+arrow movements.
-- [x] Add accessible names, pressed states, visible focus treatment and keyboard-operable photo upload.
-- [ ] Add automated editor accessibility and keyboard tests.
+- [x] Tiptap rich-text editor and versioned structured document schema.
+- [x] Headings, links, lists, emphasis, inline code and paragraph alignment.
+- [x] Five canvas formats and paper background controls.
+- [x] Local image uploads and draggable composition layers.
+- [x] Browser-local draft autosave and restore.
+- [x] Undo/redo, duplicate, delete and keyboard movement.
+- [x] High-resolution PNG export and format-sized browser print/PDF workflow.
+- [x] Automated document, migration, link-safety and keyboard movement tests.
+- [x] Add Playwright browser tests for Studio loading, keyboard movement, rich-text controls, PNG download and postcard print sizing.
+- [x] Expand browser coverage for touch-pointer dragging, image uploads and all five print formats.
+- [ ] Complete screen-reader testing with assistive technology and manual accessibility review.
 
-### Creation editor — first implementation and refinement
+### Creation editor — QA status
 
-The editor now uses Tiptap and stores a JSON document per text layer. It supports mixed inline bold, italic, strikethrough, inline code and links; level-two and level-three headings; bulleted and numbered lists; block quotes; and paragraph alignment. The canvas renders the structured content, and the document carries schema version 2. Existing v1 browser drafts are migrated in memory, including their text, emphasis and alignment, then written back through the existing autosave key. Rich-text editor and document migration tests are still outstanding.
-
-### Creation editor — first implementation
-
-The first Creation Studio implementation is available at `/app/create`. It supports five starting formats, draggable composition layers, editable text, font selection, ink colour, paper colours, stamps, decorations, local image uploads (3 MB limit), undo/redo, duplication, local draft persistence and a print stylesheet. Drafts are stored in the current browser only. There is no account sync, remote media storage, direct PNG export or connected sending yet.
+Vitest covers plain-text conversion, v1-to-v2 draft migration, document creation for all supported formats, rich-text link protocol filtering, keyboard movement increments and movement bounds. Playwright now exercises the live editor route, keyboard movement, rich-text controls, PNG download and postcard print sizing in Chromium. Automated coverage now includes touch-pointer movement, successful local image upload, the 3 MB rejection path and print dimensions for all five formats. Screen-reader testing with assistive technology and manual accessibility review remain outstanding.
 
 ## Milestone 3 — Accounts and persistence
 - [ ] Create Supabase project and local environment setup.
@@ -64,8 +51,7 @@ The first Creation Studio implementation is available at `/app/create`. It suppo
 - [ ] Add personal collections.
 - [ ] Add shared collection membership and role-based permissions.
 - [ ] Add contribution submission and owner moderation.
-- [ ] Add time-based unlock rules.
-- [ ] Add server-side scheduling and access enforcement.
+- [ ] Add time-based unlock rules and server-side enforcement.
 - [ ] Add recipient notifications for unlocked content.
 
 ## Milestone 6 — Production readiness
@@ -81,7 +67,6 @@ The first Creation Studio implementation is available at `/app/create`. It suppo
 
 A feature is not complete because its screen exists. It is complete when its data model, permissions, loading/error/empty states, accessibility, tests and user-facing copy are implemented and reviewed. Any functionality that remains sample-only must be labelled as such.
 
+## Export notes
 
-### Creation editor — export and document output
-
-The Creation Studio provides a high-resolution PNG download and a print/PDF workflow. PNG export waits for web fonts and uploaded images, captures the composition at 3× pixel density, and excludes editor selection outlines. PDF output uses the browser's native print engine so text remains selectable and links remain links where supported. The print sheet is sized to the selected format: US Letter (8.5 × 11 in), postcard (6 × 4 in), square photo card (5 × 5 in), square collage (8 × 8 in), or memory page (8 × 10 in). Choose “Save as PDF” in the browser print dialog to create the PDF. Printer driver margins, colour handling and font availability remain controlled by the browser and printer.
+PNG export waits for web fonts and uploaded image decoding, captures at 3× pixel density and removes editor selection outlines. PDF output uses the browser's native print engine; choose Save as PDF in the print dialog. The print sheet is sized to US Letter (8.5 × 11 in), postcard (6 × 4 in), photo card (5 × 5 in), collage (8 × 8 in) or memory page (8 × 10 in). Browser, printer margins, font availability and colour handling affect final output.
