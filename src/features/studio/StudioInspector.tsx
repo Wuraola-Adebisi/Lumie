@@ -46,8 +46,8 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
           <button type="button" onClick={onAddText}><Type aria-hidden="true"/><span>Text</span></button>
           <button type="button" onClick={onAddStamp}><Stamp aria-hidden="true"/><span>Stamp</span></button>
           <button type="button" onClick={onAddDecoration}><Plus aria-hidden="true"/><span>Decor</span></button>
-          <label className="studio-add-upload" htmlFor="studio-photo-upload"><ImagePlus aria-hidden="true"/><span>Photo</span></label>
           <input id="studio-photo-upload" className="studio-visually-hidden" type="file" accept="image/*" onChange={uploadPhoto} />
+          <label className="studio-add-upload" htmlFor="studio-photo-upload"><ImagePlus aria-hidden="true"/><span>Photo</span></label>
         </div>
       </section>
       <section className="studio-inspector-section" aria-labelledby="studio-paper-heading">
