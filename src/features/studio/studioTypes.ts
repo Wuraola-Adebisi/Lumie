@@ -94,9 +94,23 @@ export function migrateStudioDocument(value: unknown): StudioDocument | null {
   if (!candidate.id || !Array.isArray(candidate.elements)) return null
   const elements = candidate.elements.map((element) => {
     if (element.kind !== 'text' || element.richText) return element
+    const migrated = plainTextToRichText(element.text ?? '')
+    const legacyMarks = [
+      ...(element.bold ? [{ type: 'bold' as const }] : []),
+      ...(element.italic ? [{ type: 'italic' as const }] : []),
+    ]
     return {
       ...element,
-      richText: plainTextToRichText(element.text ?? ''),
+      richText: {
+        ...migrated,
+        content: migrated.content?.map((paragraph) => ({
+          ...paragraph,
+          attrs: element.textAlign ? { textAlign: element.textAlign } : undefined,
+          content: paragraph.content?.map((node) => node.type === 'text' && legacyMarks.length
+            ? { ...node, marks: legacyMarks }
+            : node),
+        })),
+      },
     }
   })
   return {
