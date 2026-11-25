@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import StudioCanvas from '../features/studio/StudioCanvas'
 import StudioInspector from '../features/studio/StudioInspector'
-import { createDocument, createId, studioFormats } from '../features/studio/studioTypes'
+import { createDocument, createId, migrateStudioDocument, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
 import type { StudioDocument, StudioElement, StudioFormat } from '../features/studio/studioTypes'
 import '../studio.css'
 
@@ -13,8 +13,8 @@ function readDraft(format: StudioFormat): StudioDocument {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as StudioDocument
-      if (parsed && Array.isArray(parsed.elements) && parsed.id) return parsed
+      const migrated = migrateStudioDocument(JSON.parse(raw))
+      if (migrated) return migrated
     }
   } catch {
     // Ignore invalid or unavailable local storage and start a fresh composition.
@@ -53,7 +53,7 @@ export default function CreatePage() {
   const commit = useCallback((next: StudioDocument) => {
     setHistory((items) => [...items.slice(-29), document])
     setFuture([])
-    setDocument({ ...next, updatedAt: new Date().toISOString() })
+    setDocument({ ...next, schemaVersion: 2, updatedAt: new Date().toISOString() })
   }, [document])
 
   const updateSelected = (patch: Partial<StudioElement>) => {
@@ -81,7 +81,10 @@ export default function CreatePage() {
     setSelectedId(element.id)
   }
 
-  const addText = () => addElement({ id: createId(), kind: 'text', x: 12, y: 43, width: 66, text: 'Write something lovely…', fontFamily: "'DM Serif Display', serif", fontSize: 19, color: '#1d2a45' })
+  const addText = () => {
+    const text = 'Write something lovely…'
+    addElement({ id: createId(), kind: 'text', x: 12, y: 43, width: 66, text, richText: plainTextToRichText(text), fontFamily: "'DM Serif Display', serif", fontSize: 19, color: '#1d2a45' })
+  }
   const addStamp = () => addElement({ id: createId(), kind: 'stamp', x: 75, y: 65, width: 15, value: 'POST' })
   const addDecoration = () => addElement({ id: createId(), kind: 'decoration', x: 75, y: 75, width: 12, value: '✳', color: '#f05f4c', fontSize: 34 })
   const addPhoto = (image: string) => addElement({ id: createId(), kind: 'photo', x: 48, y: 48, width: 34, image, rotation: 3 })
