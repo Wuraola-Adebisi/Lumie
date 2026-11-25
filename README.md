@@ -35,11 +35,13 @@ Open the editor at /app/create.
 - Typeface, size, ink colour, paper colour, rotation and width controls.
 - Pointer dragging and keyboard layer movement; Shift + arrow moves in larger increments.
 - Undo/redo, duplicate, delete and browser-local autosave/restore.
+- Multiple named creations, each saved independently on this device.
+- A searchable archive with reopen and delete actions, plus recent creations on the dashboard.
 - Local image uploads, limited to 3 MB per image.
 - 3× PNG export after waiting for web fonts and image decoding.
 - Format-sized browser print workflow. Choose Save as PDF in the print dialog. Text and links remain selectable/clickable where supported.
 
-Drafts and uploaded image data are stored in this browser's local storage. They do not sync across devices or accounts. Browser print output depends on the browser's print engine, printer settings, font availability and colour handling. PNG output is raster.
+Creations and uploaded image data are stored in this browser's local storage. They do not sync across devices or accounts and are not backed up online. The previous single-draft storage key is migrated into the creation library when available. Browser print output depends on the browser's print engine, printer settings, font availability and colour handling. PNG output is raster.
 
 ### Not connected yet
 
@@ -94,7 +96,7 @@ Before real users' writing is stored, enable RLS on every user-content table; de
 
 ## Delivery roadmap
 
-1. **Foundation and Creation Studio:** implemented, with browser-level QA still outstanding.
+1. **Foundation and Creation Studio:** implemented, including local creation library; screen-reader and manual accessibility QA remain outstanding.
 2. **Accounts and persistence:** Supabase project, schema, RLS, authentication, private media and cloud-backed drafts.
 3. **Correspondence:** recipients, threads, replies, invitations, inbox/sent queries and notifications.
 4. **Collections and Open When:** shared collections, contributor roles, moderation and server-enforced scheduled access.
@@ -106,4 +108,4 @@ No secrets are required for the current frontend. When Supabase is introduced, p
 
 ## Status
 
-**Current status: frontend foundation, Creation Studio and public information/policy pages.** Lumie is not yet a production correspondence service. The editor supports local composition and export, but drafts remain in the current browser. Backend functionality and browser-level QA remain future work.
+**Current status: frontend foundation, Creation Studio, local creation library and public information/policy pages.** Lumie is not yet a production correspondence service. Creations remain in the current browser; accounts, cloud sync, sending, receiving and collaboration are not connected.
