@@ -22,11 +22,12 @@ This plan separates a visual prototype from a dependable correspondence product.
 - [x] High-resolution PNG export and format-sized browser print/PDF workflow.
 - [x] Automated document, migration, link-safety and keyboard movement tests.
 - [x] Add Playwright browser tests for Studio loading, keyboard movement, rich-text controls, PNG download and postcard print sizing.
-- [ ] Expand browser coverage for touch dragging, screen-reader behaviour, image uploads and all five print formats.
+- [x] Expand browser coverage for touch-pointer dragging, image uploads and all five print formats.
+- [ ] Complete screen-reader testing with assistive technology and manual accessibility review.
 
 ### Creation editor — QA status
 
-Vitest covers plain-text conversion, v1-to-v2 draft migration, document creation for all supported formats, rich-text link protocol filtering, keyboard movement increments and movement bounds. Playwright now exercises the live editor route, keyboard movement, rich-text controls, PNG download and postcard print sizing in Chromium. Touch dragging, screen-reader behaviour, image upload edge cases and print output for every format still need broader verification.
+Vitest covers plain-text conversion, v1-to-v2 draft migration, document creation for all supported formats, rich-text link protocol filtering, keyboard movement increments and movement bounds. Playwright now exercises the live editor route, keyboard movement, rich-text controls, PNG download and postcard print sizing in Chromium. Automated coverage now includes touch-pointer movement, successful local image upload, the 3 MB rejection path and print dimensions for all five formats. Screen-reader testing with assistive technology and manual accessibility review remain outstanding.
 
 ## Milestone 3 — Accounts and persistence
 - [ ] Create Supabase project and local environment setup.
