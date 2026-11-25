@@ -82,3 +82,8 @@
 
 .studio-upload-hint{margin:8px 0 0;color:#7b8498;font-size:8px;line-height:1.5}
 .studio-add-upload:focus-visible{outline:2px solid #4968f5;outline-offset:3px}
+
+.studio-title-field{display:grid;gap:6px;margin:18px 0 22px}
+.studio-title-field span{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7b8498}
+.studio-title-field input{width:100%;min-width:0;border:1px solid #e7e3dc;border-radius:10px;padding:10px 12px;background:#fffdf7;color:#1d2a45;font:inherit;font-size:13px;outline:none}
+.studio-title-field input:focus{border-color:#4968f5;box-shadow:0 0 0 3px #4968f51c}
