@@ -11,7 +11,7 @@ export default function MarketingHeader() {
         <BrandMark />
         <nav className="marketing-nav" aria-label="Main navigation">
           <Link to="/how-it-works">How it works</Link>
-          <Link to="/#what-you-can-make">What you can make</Link>
+          <a href="/#what-you-can-make">What you can make</a>
           <Link to="/about">About Lumie</Link>
         </nav>
         <div className="header-actions">
@@ -24,7 +24,7 @@ export default function MarketingHeader() {
       </div>
       {open && <nav className="mobile-nav-panel" aria-label="Mobile navigation">
         <Link to="/how-it-works" onClick={() => setOpen(false)}>How it works</Link>
-        <Link to="/#what-you-can-make" onClick={() => setOpen(false)}>What you can make</Link>
+        <a href="/#what-you-can-make" onClick={() => setOpen(false)}>What you can make</a>
         <Link to="/about" onClick={() => setOpen(false)}>About Lumie</Link>
         <Link to="/contact" onClick={() => setOpen(false)}>Contact</Link>
         <Link to="/app" onClick={() => setOpen(false)}>Open Lumie <ArrowUpRight size={15}/></Link>
