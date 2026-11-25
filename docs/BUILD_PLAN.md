@@ -21,8 +21,8 @@ This plan separates a visual prototype from a dependable correspondence product.
 The public site now includes About, How it Works, Contact, Privacy, Terms, Acceptable Use, Cookies and Accessibility routes. Policy copy reflects the current browser-local editor and explicitly distinguishes planned capabilities. These documents are working product drafts. The legal operator name, address, privacy/support contact, governing law, actual hosting providers and deployment data flows must be confirmed and reviewed before public launch.
 
 ## Milestone 2 — Creation editor
-- [ ] Integrate a rich-text engine and define a versioned document schema.
-- [ ] Add a full rich-text engine with headings, links and lists.
+- [x] Integrate a rich-text engine and define a versioned document schema.
+- [x] Add a full rich-text engine with headings, links and lists.
 - [x] Add basic text emphasis and paragraph alignment controls.
 - [x] Add canvas formats and paper background controls.
 - [x] Add local image uploads and draggable media placement.
@@ -36,7 +36,7 @@ The public site now includes About, How it Works, Contact, Privacy, Terms, Accep
 
 ### Creation editor — first implementation and refinement
 
-The current refinement adds bold and italic styling, left/centre/right alignment, keyboard selection and layer movement, Delete/Backspace removal, duplicate and undo/redo shortcuts, clearer accessible labels and responsive control refinements. This is lightweight per-layer text styling, not yet a full rich-text engine: headings, links, lists and inline mixed formatting remain outstanding.
+The editor now uses Tiptap and stores a JSON document per text layer. It supports mixed inline bold, italic, strikethrough, inline code and links; level-two and level-three headings; bulleted and numbered lists; block quotes; and paragraph alignment. The canvas renders the structured content, and the document carries schema version 2. Existing v1 browser drafts are migrated in memory, including their text, emphasis and alignment, then written back through the existing autosave key. Rich-text editor and document migration tests are still outstanding.
 
 ### Creation editor — first implementation
 
