@@ -1,4 +1,4 @@
-import { migrateStudioDocument } from './studioTypes'
+import { migrateStudioDocument } from '../studio/studioTypes'
 import type { StudioDocument, StudioRichTextNode } from './studioTypes'
 
 export const CREATIONS_STORAGE_KEY = 'lumie-creations-v1'
