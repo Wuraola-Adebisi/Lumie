@@ -1,6 +1,21 @@
 export type StudioFormat = 'letter' | 'postcard' | 'photo-card' | 'collage' | 'memory'
 
 export type StudioElementKind = 'text' | 'stamp' | 'decoration' | 'photo'
+export type StudioTextAlign = 'left' | 'center' | 'right'
+
+/** JSON-compatible rich-text nodes. The shape follows the Tiptap/ProseMirror document model. */
+export interface StudioRichTextMark {
+  type: 'bold' | 'italic' | 'strike' | 'code' | 'link'
+  attrs?: { href?: string; target?: string; rel?: string }
+}
+
+export interface StudioRichTextNode {
+  type: 'doc' | 'paragraph' | 'heading' | 'bulletList' | 'orderedList' | 'listItem' | 'blockquote' | 'hardBreak' | 'text'
+  attrs?: { level?: number; textAlign?: StudioTextAlign; start?: number }
+  text?: string
+  marks?: StudioRichTextMark[]
+  content?: StudioRichTextNode[]
+}
 
 export interface StudioElement {
   id: string
@@ -8,7 +23,9 @@ export interface StudioElement {
   x: number
   y: number
   width: number
+  /** Legacy plain text retained for backwards compatibility with v1 browser drafts. */
   text?: string
+  richText?: StudioRichTextNode
   fontFamily?: string
   fontSize?: number
   color?: string
@@ -17,10 +34,11 @@ export interface StudioElement {
   image?: string
   bold?: boolean
   italic?: boolean
-  textAlign?: 'left' | 'center' | 'right'
+  textAlign?: StudioTextAlign
 }
 
 export interface StudioDocument {
+  schemaVersion: 2
   id: string
   name: string
   format: StudioFormat
@@ -58,18 +76,53 @@ export function createId() {
   return `el-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`
 }
 
+export function plainTextToRichText(text: string): StudioRichTextNode {
+  const paragraphs = text.split(/\n{2,}/).map((paragraph) => ({
+    type: 'paragraph' as const,
+    content: paragraph.split('\n').flatMap((line, index) => [
+      ...(index ? [{ type: 'hardBreak' as const }] : []),
+      ...(line ? [{ type: 'text' as const, text: line }] : []),
+    ]),
+  }))
+  return { type: 'doc', content: paragraphs.length ? paragraphs : [{ type: 'paragraph' }] }
+}
+
+/** Migrate existing local drafts in memory; callers persist the v2 result on the next autosave. */
+export function migrateStudioDocument(value: unknown): StudioDocument | null {
+  if (!value || typeof value !== 'object') return null
+  const candidate = value as Partial<StudioDocument> & { schemaVersion?: number; elements?: StudioElement[] }
+  if (!candidate.id || !Array.isArray(candidate.elements)) return null
+  const elements = candidate.elements.map((element) => {
+    if (element.kind !== 'text' || element.richText) return element
+    return {
+      ...element,
+      richText: plainTextToRichText(element.text ?? ''),
+    }
+  })
+  return {
+    ...candidate,
+    schemaVersion: 2,
+    name: candidate.name ?? 'A little composition',
+    format: candidate.format ?? 'letter',
+    background: candidate.background ?? '#fffdf7',
+    elements,
+    updatedAt: candidate.updatedAt ?? new Date().toISOString(),
+  }
+}
+
 export function createDocument(format: StudioFormat = 'letter'): StudioDocument {
   const wide = format === 'postcard'
   const square = format === 'photo-card'
   return {
+    schemaVersion: 2,
     id: createId(),
     name: format === 'letter' ? 'A little letter' : format === 'postcard' ? 'A postcard' : format === 'photo-card' ? 'A photo card' : format === 'collage' ? 'A little collage' : 'A memory page',
     format,
     background: '#fffdf7',
     updatedAt: new Date().toISOString(),
     elements: [
-      { id: createId(), kind: 'text', x: 9, y: 12, width: wide ? 72 : 82, text: wide ? 'A little hello' : 'Dear you,', fontFamily: "'DM Serif Display', serif", fontSize: square ? 28 : 32, color: '#1d2a45', rotation: -1 },
-      { id: createId(), kind: 'text', x: 10, y: wide ? 39 : 30, width: 78, text: 'Some things are better when they are sent.\n\nStart with a thought, a memory, or simply a hello. Make it yours, then send it somewhere lovely.', fontFamily: "'DM Serif Display', serif", fontSize: 15, color: '#46516b' },
+      { id: createId(), kind: 'text', x: 9, y: 12, width: wide ? 72 : 82, text: wide ? 'A little hello' : 'Dear you,', richText: plainTextToRichText(wide ? 'A little hello' : 'Dear you,'), fontFamily: "'DM Serif Display', serif", fontSize: square ? 28 : 32, color: '#1d2a45', rotation: -1 },
+      { id: createId(), kind: 'text', x: 10, y: wide ? 39 : 30, width: 78, text: 'Some things are better when they are sent.\n\nStart with a thought, a memory, or simply a hello. Make it yours, then send it somewhere lovely.', richText: plainTextToRichText('Some things are better when they are sent.\n\nStart with a thought, a memory, or simply a hello. Make it yours, then send it somewhere lovely.'), fontFamily: "'DM Serif Display', serif", fontSize: 15, color: '#46516b' },
       { id: createId(), kind: 'stamp', x: 78, y: 8, width: 14, value: 'LOVE\nPOST' },
       { id: createId(), kind: 'decoration', x: 78, y: 80, width: 12, value: '✳', color: '#f05f4c', fontSize: 34 },
     ],
