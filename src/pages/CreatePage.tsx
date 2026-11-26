@@ -223,15 +223,15 @@ export default function CreatePage() {
     }
   }
 
+  const iconSize: Record<StudioFormat, [number, number]> = { letter: [14, 18], postcard: [20, 14], 'photo-card': [17, 17], collage: [16, 17], memory: [14, 18] }
   return (
     <div className="create-page studio-page">
-      <header className="studio-heading">
-        <Link to="/app" className="studio-back"><ArrowLeft size={16}/> Back to your desk</Link>
-        <div className="studio-heading-actions">
+      <header className="studio-top">
+        <div className="studio-top-left">
+          <Link to="/app" className="studio-back"><ArrowLeft size={16}/> Back to your desk</Link>
           <span className="studio-save-state" role="status">{savedAt ? `Saved on this device at ${savedAt}` : 'Saving on this device'}</span>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl or Command + Z)"><Undo2 size={15}/> Undo</button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={redo} disabled={!future.length} aria-label="Redo (Ctrl or Command + Shift + Z)"><Redo2 size={15}/> Redo</button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={duplicateSelected} disabled={!selected}><Copy size={15}/> Duplicate</button>
+        </div>
+        <div className="studio-heading-actions">
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPreview3d((value) => !value); setSelectedId(null) }} aria-pressed={preview3d}><Rotate3d size={15}/> 3D view</button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={exportPng} disabled={exporting}><Download size={15}/> {exporting ? 'Exporting' : 'PNG'}</button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={exportPdf}><FileText size={15}/> PDF / Print</button>
@@ -240,26 +240,27 @@ export default function CreatePage() {
         </div>
       </header>
 
-      <div className="studio-workspace">
-        <section className="studio-left-panel" aria-label="Choose a composition format">
-          <h2>Start with a format.</h2>
-          <p>Pick a shape. Words, photos and layout stay editable.</p>
-          <div className="studio-format-list">
-            {studioFormats.map((format) => {
-              const icon = { letter: [22, 28], postcard: [30, 21], 'photo-card': [26, 26], collage: [24, 26], memory: [22, 27] }[format.id]
-              const note = { letter: 'A full page for your words', postcard: 'A 6 by 4 card with a stamp', 'photo-card': 'A square print with a picture', collage: 'Layers of photos and stickers', memory: 'A page for a trip or a day' }[format.id]
-              return (
-                <button type="button" key={format.id} className={document.format === format.id ? 'studio-format-option active' : 'studio-format-option'} aria-pressed={document.format === format.id} onClick={() => changeFormat(format.id)}>
-                  <span className="studio-format-icon" aria-hidden="true"><i style={{ width: icon[0], height: icon[1] }} /></span>
-                  <span><strong>{format.label}</strong><small>{note}</small></span>
-                </button>
-              )
-            })}
-          </div>
-          <div className="studio-left-note">Print uses the true size of each format. Choose Save as PDF in the print dialog to keep a file.</div>
-        </section>
+      <section className="studio-formats" aria-label="Choose a composition format">
+        <h2>Start with a format.</h2>
+        <div className="studio-format-tabs">
+          {studioFormats.map((format) => (
+            <button type="button" key={format.id} className={document.format === format.id ? 'studio-format-option active' : 'studio-format-option'} aria-pressed={document.format === format.id} onClick={() => changeFormat(format.id)}>
+              <span className="studio-format-icon" aria-hidden="true"><i style={{ width: iconSize[format.id][0], height: iconSize[format.id][1] }} /></span>
+              {format.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
-        <StudioCanvas document={document} selectedId={selectedId} onSelect={setSelectedId} onDeselect={() => setSelectedId(null)} onMove={moveElement} onNudge={nudgeElement} preview={preview3d}/>
+      <div className="studio-workspace">
+        <div className="studio-main">
+          <div className="studio-tools" role="toolbar" aria-label="History">
+            <button type="button" className="btn btn-paper btn-sm" onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl or Command + Z)"><Undo2 size={15}/> Undo</button>
+            <button type="button" className="btn btn-paper btn-sm" onClick={redo} disabled={!future.length} aria-label="Redo (Ctrl or Command + Shift + Z)"><Redo2 size={15}/> Redo</button>
+            <button type="button" className="btn btn-paper btn-sm" onClick={duplicateSelected} disabled={!selected}><Copy size={15}/> Duplicate</button>
+          </div>
+          <StudioCanvas document={document} selectedId={selectedId} onSelect={setSelectedId} onDeselect={() => setSelectedId(null)} onMove={moveElement} onNudge={nudgeElement} preview={preview3d}/>
+        </div>
 
         <StudioInspector
           document={document}

@@ -8,6 +8,7 @@ const titles: Record<string, string> = { '/app': 'Your desk', '/app/create': 'Ne
 export default function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
+  if (pathname === '/app/create') return <div className="app-layout bg-white"><main className="app-main w-full"><div className="app-content"><Outlet /></div></main></div>
   return (
     <div className="app-layout flex min-h-screen bg-cream">
       {menuOpen && <button type="button" className="fixed inset-0 z-20 bg-navy/50 md:hidden" onClick={() => setMenuOpen(false)} aria-label="Close menu" />}

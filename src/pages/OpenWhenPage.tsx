@@ -1,4 +1,5 @@
 import { Clock3, LockKeyhole, Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Envelope from '../components/mail/Envelope'
 import HoloSeal from '../components/mail/HoloSeal'
 import { openWhenItems } from '../data/sampleData'
@@ -8,7 +9,7 @@ const toneMap = { saffron: 'gold', lilac: 'cobalt', moss: 'moss' } as const
 export default function OpenWhenPage() {
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4"><h1 className="display text-[clamp(34px,5vw,54px)]">Open when</h1><button type="button" className="btn btn-primary" disabled><Plus size={18} /> New letter</button></div>
+      <div className="flex flex-wrap items-end justify-between gap-4"><h1 className="display text-[clamp(34px,5vw,54px)]">Open when</h1><Link to="/app/create?type=letter" className="btn btn-primary"><Plus size={18} /> New letter</Link></div>
       <p className="mt-2 max-w-[36rem] text-[17px] text-muted">Write something for a future day, a feeling or a person, and choose when it can be opened.</p>
       <div className="mt-12 grid gap-12 sm:grid-cols-2 lg:grid-cols-3">
         {openWhenItems.map((item) => (
@@ -19,7 +20,6 @@ export default function OpenWhenPage() {
           </article>
         ))}
       </div>
-      <p className="mt-12 text-[14px] text-muted">Unlock dates are examples. Time locks need a server before they can protect private letters.</p>
     </div>
   )
 }

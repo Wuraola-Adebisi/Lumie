@@ -14,7 +14,6 @@ export default function ArchivePage() {
       <label className="mt-8 flex w-full max-w-[420px] items-center gap-2 rounded-xl border-2 border-navy bg-white px-3 py-2.5 shadow-[0_3px_0_#121c5a]"><Search size={17} /><span className="sr-only">Search the archive</span><input className="w-full border-0 bg-transparent text-[16px] outline-none" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search the archive" /></label>
       <div className="mt-10 grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-3">{filtered.map((item) => <PieceCard key={item.id} {...item} />)}</div>
       {filtered.length === 0 && <div className="mt-10 rounded-2xl border-2 border-dashed border-navy/40 p-12 text-center"><h2 className="display text-[24px]">No matches</h2><p className="mt-2 text-muted">Try a different word.</p></div>}
-      <p className="mt-12 text-[14px] text-muted">The archive shows sample pieces. Saved drafts are kept in this browser only.</p>
     </div>
   )
 }

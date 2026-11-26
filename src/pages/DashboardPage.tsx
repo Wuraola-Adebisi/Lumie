@@ -23,7 +23,7 @@ export default function DashboardPage() {
       <section className="mt-8 grid items-center gap-8 overflow-hidden rounded-2xl border-2 border-navy bg-cobalt p-7 pt-24 text-paper shadow-[0_4px_0_#121c5a] md:grid-cols-[1.1fr_1fr] md:p-10 md:pt-24">
         <div>
           <h2 className="display text-[clamp(28px,4vw,42px)]">2 letters in your inbox</h2>
-          <p className="mt-3 max-w-[26rem] text-[17px] leading-relaxed text-paper/85">Alex Morgan and Jamie Smith have written to you. These are sample letters while sending is being built.</p>
+          <p className="mt-3 max-w-[26rem] text-[17px] leading-relaxed text-paper/85">Alex Morgan and Jamie Smith have written to you.</p>
           <Link to="/app/inbox" className="btn btn-saffron mt-6">Read them <ArrowUpRight size={17} /></Link>
         </div>
         <div className="mx-auto w-[min(360px,100%)] -rotate-3">
@@ -45,7 +45,6 @@ export default function DashboardPage() {
           </Link>
         ))}
       </div>
-      <p className="mt-12 text-[14px] leading-relaxed text-muted">Sample content is shown on this page. Your drafts are saved in this browser only.</p>
     </div>
   )
 }

@@ -59,12 +59,6 @@
 .letter-body p { margin: 0 0 2.6cqw; }
 .letter-sign { font: 700 7cqw/1 'Caveat', cursive; margin: 3cqw 0 0; color: #1d3a9c; }
 
-/* ---------- Marquee ---------- */
-.marquee { display: flex; overflow: hidden; background: var(--tomato); color: var(--ink); padding: 0.9rem 0; white-space: nowrap; border-block: 3px solid var(--navy); }
-.marquee-row { display: flex; flex-shrink: 0; min-width: 100%; justify-content: space-around; gap: 2.4rem; padding: 0 1.2rem; margin: 0; list-style: none; animation: marquee 38s linear infinite; }
-.marquee-row li { display: flex; align-items: center; gap: 2.4rem; font: 800 1.7rem/1 'MuseoModerno', sans-serif; letter-spacing: -0.02em; }
-@keyframes marquee { to { transform: translateX(-100%); } }
-
 /* ---------- Hero scene ---------- */
 .scene { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1; container-type: inline-size; perspective: 1700px; margin-inline: auto; }
 .scene-desk { position: absolute; inset: 3% 1%; background: var(--cobalt); border-radius: 30px; transform: rotate(-2deg); box-shadow: 0 3px 0 var(--navy), var(--lift); overflow: hidden; }
@@ -83,7 +77,7 @@
 .share-cobalt { background: var(--cobalt); }
 .share-tomato { background: var(--tomato); }
 .share-graph { background-color: var(--cream); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 27px 27px; }
-.share-gingham { background-color: #fff7f2; background-image: repeating-linear-gradient(0deg, rgba(238, 96, 150, 0.42) 0 36px, transparent 36px 72px), repeating-linear-gradient(90deg, rgba(238, 96, 150, 0.42) 0 36px, transparent 36px 72px); }
+.share-gingham { background-color: #ffffff; background-image: repeating-linear-gradient(0deg, rgba(238, 96, 150, 0.42) 0 36px, transparent 36px 72px), repeating-linear-gradient(90deg, rgba(238, 96, 150, 0.42) 0 36px, transparent 36px 72px); }
 .share > * { position: absolute; }
 .share-env { width: 62%; transform: rotate(-9deg); }
 .share-stage { left: 50%; top: 50%; transform-style: preserve-3d; transform: translate(-50%, -50%) perspective(1800px) rotateX(9deg) rotateY(-13deg) rotateZ(-3deg); }

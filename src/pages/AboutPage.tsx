@@ -6,8 +6,8 @@ const cards = 'rounded-2xl border-2 border-navy p-7 shadow-[0_4px_0_#121c5a]'
 const principles = [
   { icon: Users, t: 'Open to everyone', p: 'Lumie does not assume who is writing, who is reading or how they know each other.' },
   { icon: Palette, t: 'Creative freedom', p: 'A short note, a long letter, a collage or a page of photos all work the same way.' },
-  { icon: Lock, t: 'Private by default', p: 'Writing stays private until you choose to share it, with clear information about who can see it.' },
-  { icon: Mail, t: 'Correspondence, not chat', p: 'Messages are meant to be written and read at a slower pace, without pressure to reply at once.' },
+  { icon: Lock, t: 'Private by default', p: 'Writing stays private until you choose to share it.' },
+  { icon: Mail, t: 'Correspondence, not chat', p: 'Letters are written and read at a slower pace, without pressure to reply at once.' },
 ]
 
 export default function AboutPage() {
@@ -15,7 +15,7 @@ export default function AboutPage() {
     <PublicPageLayout title="About Lumie" intro="Lumie is a studio for making letters, postcards and photo keepsakes, and a place to keep them.">
       <section className="grid gap-5 md:grid-cols-2">
         <div className={`${cards} bg-tomato`}><h2 className="display text-[28px]">Why it exists</h2><p className="mt-3 text-[17px] leading-relaxed">Most conversations happen fast and disappear. Lumie is for the pieces you want to take more time over, like a letter, a postcard from an ordinary Tuesday or a page of memories made with someone.</p></div>
-        <div className={`${cards} bg-lilac`}><h2 className="display text-[28px]">What it borrows from the post</h2><p className="mt-3 text-[17px] leading-relaxed">Stamps, postmarks, envelopes and paper stock, rebuilt on screen. You can print a piece at true size or export a picture of it.</p></div>
+        <div className={`${cards} bg-lilac`}><h2 className="display text-[28px]">What it borrows from the post</h2><p className="mt-3 text-[17px] leading-relaxed">Stamps, postmarks, envelopes and paper stock, rebuilt on screen. Print a piece at true size or export a picture of it.</p></div>
       </section>
       <section className="mt-20">
         <h2 className="display text-[clamp(30px,4vw,44px)]">What it is built on</h2>
@@ -25,8 +25,8 @@ export default function AboutPage() {
       </section>
       <section className="mt-20 rounded-2xl border-2 border-navy bg-saffron p-8 shadow-[0_4px_0_#121c5a] md:flex md:items-center md:justify-between md:gap-10">
         <div className="max-w-[560px]">
-          <h2 className="display text-[28px]">Where Lumie is today</h2>
-          <p className="mt-3 text-[16px] leading-relaxed">The Creation Studio works now. Drafts are saved in the browser on the device where you make them. Accounts, cloud sync, sending, receiving and shared collections are not active yet.</p>
+          <h2 className="display text-[28px]">Make your first piece</h2>
+          <p className="mt-3 text-[16px] leading-relaxed">Pick a format, write your words and add a stamp. Your draft stays in this browser.</p>
         </div>
         <Link className="btn btn-primary mt-6 md:mt-0" to="/app/create">Open the studio <ArrowUpRight size={16} /></Link>
       </section>

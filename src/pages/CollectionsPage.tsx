@@ -1,4 +1,5 @@
 import { Plus, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { collections } from '../data/sampleData'
 import Art from '../components/mail/Art'
 
@@ -7,9 +8,9 @@ const rot = [-8, 2, 9]
 export default function CollectionsPage() {
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4"><h1 className="display text-[clamp(34px,5vw,54px)]">Collections</h1><button type="button" className="btn btn-primary" disabled><Plus size={18} /> New collection</button></div>
+      <div className="flex flex-wrap items-end justify-between gap-4"><h1 className="display text-[clamp(34px,5vw,54px)]">Collections</h1><Link to="/app/create?type=memory" className="btn btn-primary"><Plus size={18} /> New collection</Link></div>
       <p className="mt-2 max-w-[36rem] text-[17px] text-muted">Gather words, photos and contributions around a person, a place or a moment.</p>
-      <div className="mt-8 flex items-center gap-4 rounded-2xl border-2 border-navy bg-saffron p-5 shadow-[0_4px_0_#121c5a]"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-paper"><Users size={22} /></span><p className="m-0 text-[16px] leading-relaxed">Friends and family will be able to add their own notes and memories to one shared collection. Invitations are not active yet.</p></div>
+      <div className="mt-8 flex items-center gap-4 rounded-2xl border-2 border-navy bg-saffron p-5 shadow-[0_4px_0_#121c5a]"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-paper"><Users size={22} /></span><p className="m-0 text-[16px] leading-relaxed">Friends and family can add their own notes and memories to one shared collection.</p></div>
       <div className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
         {collections.map((item) => (
           <article key={item.id}>
@@ -22,7 +23,6 @@ export default function CollectionsPage() {
           </article>
         ))}
       </div>
-      <p className="mt-12 text-[14px] text-muted">Collections show sample data.</p>
     </div>
   )
 }

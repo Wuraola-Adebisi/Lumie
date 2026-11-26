@@ -7,7 +7,6 @@ import Art from '../components/mail/Art'
 import Envelope from '../components/mail/Envelope'
 import HoloSeal from '../components/mail/HoloSeal'
 import LetterSheet from '../components/mail/LetterSheet'
-import Marquee from '../components/mail/Marquee'
 import Postcard3D from '../components/mail/Postcard3D'
 import Postmark from '../components/mail/Postmark'
 import Stamp from '../components/mail/Stamp'
@@ -55,13 +54,11 @@ export default function HomePage() {
                 <Link to="/app/create" className="btn btn-primary">Open the studio <ArrowUpRight size={18} /></Link>
                 <a href="#how" className="btn btn-paper">See how it works <ArrowDown size={16} /></a>
               </div>
-              <p className="mt-8 max-w-[30rem] text-[15px] leading-relaxed text-muted">No account needed. Drafts stay in your browser. Sending between people is still being built.</p>
+              <p className="mt-8 max-w-[30rem] text-[15px] leading-relaxed text-muted">No account needed. Your draft stays in this browser.</p>
             </div>
             <HeroScene />
           </div>
         </section>
-
-        <Marquee items={['Letters', 'Postcards', 'Photo cards', 'Collages', 'Memory pages', 'Open when letters']} />
 
         <section id="formats" className="on-dark bg-cobalt text-paper">
           <div className="mx-auto max-w-[1240px] px-5 py-20 md:px-10 md:py-28">

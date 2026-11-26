@@ -7,7 +7,7 @@ export default {
         ink: '#14193f',
         navy: '#121c5a',
         cobalt: '#1f4fd6',
-        cream: '#fbf2dd',
+        cream: '#ffffff',
         paper: '#fff8e8',
         tomato: '#ee4a2f',
         bubblegum: '#f7b4c6',

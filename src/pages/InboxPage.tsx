@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 import LetterSheet from '../components/mail/LetterSheet'
 import { useTilt } from '../components/mail/useTilt'
@@ -35,12 +36,10 @@ export default function InboxPage() {
             </div>
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <button type="button" className="btn btn-primary" disabled>Write a reply</button>
-            <span className="text-[14px] text-muted">Replies are not connected yet.</span>
+            <Link to="/app/create?type=letter" className="btn btn-primary">Write a reply</Link>
           </div>
         </section>
       </div>
-      <p className="mt-8 text-[14px] text-muted">These are sample letters. Nothing is delivered or stored.</p>
     </div>
   )
 }
