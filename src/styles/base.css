@@ -73,6 +73,21 @@ body {
 .display { font-family: 'MuseoModerno', 'Figtree', sans-serif; font-weight: 800; letter-spacing: -0.035em; line-height: 1.02; }
 .hand { font-family: 'Caveat', cursive; font-weight: 700; }
 
+/* Keep desktop navigation and mobile menu controls mutually exclusive even if
+   responsive utility generation or ordering changes. */
+@media (min-width: 768px) {
+  .marketing-mobile-toggle,
+  .app-mobile-toggle { display: none !important; }
+  .marketing-desktop-nav,
+  .marketing-desktop-actions { display: flex !important; }
+}
+@media (max-width: 767.98px) {
+  .marketing-desktop-nav,
+  .marketing-desktop-actions { display: none !important; }
+  .marketing-mobile-toggle { display: inline-flex !important; }
+  .app-mobile-toggle { display: inline-flex !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
