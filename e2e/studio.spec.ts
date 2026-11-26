@@ -5,10 +5,13 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('opens the Creation Studio with an accessible canvas and format controls', async ({ page }) => {
-  await expect(page.getByRole('heading', { name: 'Start with a format.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Choose your paper.' })).toBeVisible()
   await expect(page.getByRole('group', { name: 'Letter composition canvas' })).toBeVisible()
   await expect(page.getByRole('button', { name: /Postcard/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Save draft' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Make it yours.' })).toBeVisible()
+  await expect(page.getByText(/Sending correspondence is a separate step/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Make share image' })).toBeVisible()
 })
 
 test('moves a selected layer with arrow keys and larger Shift + arrow steps', async ({ page }) => {
@@ -105,4 +108,23 @@ test('uses the correct print dimensions for every composition format', async ({ 
     await expect(page.locator('.studio-paper')).toHaveClass(new RegExp(format.className))
     await printRules.evaluate((element) => element.remove())
   }
+})
+
+
+test('keeps composition and correspondence actions clearly separate', async ({ page }) => {
+  await page.getByRole('button', { name: 'Make share image' }).click()
+  await expect(page.getByRole('dialog', { name: 'Make a share image' })).toBeVisible()
+  await expect(page.getByText(/This does not send the letter or deliver it to a recipient/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Download image' })).toBeVisible()
+})
+
+test('keeps the format chooser and editing controls usable on a narrow screen', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 })
+  await expect(page.getByRole('heading', { name: 'Make it yours.' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Postcard/ })).toBeVisible()
+  await expect(page.locator('.studio-paper')).toBeVisible()
+  await expect(page.locator('.studio-inspector')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Make share image' })).toBeVisible()
+  const overflow = await page.locator('body').evaluate((element) => element.scrollWidth > window.innerWidth)
+  expect(overflow).toBe(false)
 })
