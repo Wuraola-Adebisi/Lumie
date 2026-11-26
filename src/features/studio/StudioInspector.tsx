@@ -57,9 +57,9 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
 
   return (
     <aside className="studio-inspector" aria-label="Composition controls">
-      <div className="studio-panel-heading">Layers and paper</div>
+      <div className="studio-panel-heading">Your materials</div>
       <section className="studio-inspector-section" aria-labelledby="studio-add-heading">
-        <h3 id="studio-add-heading">Add to the page</h3>
+        <h3 id="studio-add-heading">Add something</h3>
         <div className="studio-add-grid">
           <button type="button" onClick={onAddText}><Type aria-hidden="true"/><span>Text</span></button>
           <button type="button" onClick={onAddStamp}><Stamp aria-hidden="true"/><span>Stamp</span></button>

@@ -50,10 +50,10 @@ export default function ShareDialog({ document: doc, onClose, onToast }: Props) 
         <div className="share-preview graph"><ShareScene document={doc} backdrop={backdrop} size={size} scale={scale} nodeRef={nodeRef} /></div>
         <div className="share-controls">
           <div className="flex items-start justify-between gap-3">
-            <h2 id="share-title">Share image</h2>
+            <h2 id="share-title">Make a share image</h2>
             <button ref={closeRef} type="button" className="btn btn-ghost btn-sm" onClick={onClose} aria-label="Close"><X size={18} /></button>
           </div>
-          <p className="m-0 text-[14px] leading-relaxed text-muted">Your piece on a desk with an envelope, a stamp and a seal. The picture is made in this browser.</p>
+          <p className="m-0 text-[14px] leading-relaxed text-muted">Create a downloadable picture of your design, styled with an envelope, stamp and seal. This does not send the letter or deliver it to a recipient.</p>
           <fieldset>
             <legend>Backdrop</legend>
             <div className="share-choices">
