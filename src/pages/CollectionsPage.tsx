@@ -1,3 +1,28 @@
-import { ArrowUpRight,Plus,Users } from 'lucide-react'
+import { Plus, Users } from 'lucide-react'
 import { collections } from '../data/sampleData'
-export default function CollectionsPage(){return <div className="content-page"><div className="page-heading-row"><div><div className="section-kicker">LITTLE WORLDS OF THEIR OWN</div><h1>Collections</h1><p>Gather words, pictures and contributions around a person, place or moment.</p></div><button className="button button-dark" onClick={()=>alert('Collection creation will be connected in a later build phase.')}><Plus size={17}/> New collection</button></div><div className="collection-callout"><div className="collection-callout-icon"><Users size={21}/></div><div><strong>Some things are better made together.</strong><p>Invite friends and family to contribute their own notes and memories to one shared collection.</p></div><span className="callout-decoration">✳</span></div><div className="collection-grid">{collections.map(item=><article className="collection-card" key={item.id}><div className={`collection-art tone-${item.tone}`}><span className="collection-art-spark">✳</span><span className="collection-art-word">{item.title.split(' ').slice(0,2).join(' ')}</span><span className="collection-art-count">{item.count}</span></div><div className="collection-card-copy"><div className="collection-label">{item.label}</div><h3>{item.title}</h3><p>{item.description}</p><button className="inline-link" onClick={()=>alert('Collection details will be available when collections are connected.')}>Open collection <ArrowUpRight size={15}/></button></div></article>)}</div><p className="prototype-note">Shared collections are represented with sample data. Contributor invitations and access permissions are not active yet.</p></div>}
+import Art from '../components/mail/Art'
+
+const rot = [-8, 2, 9]
+
+export default function CollectionsPage() {
+  return (
+    <div>
+      <div className="flex flex-wrap items-end justify-between gap-4"><h1 className="display text-[clamp(34px,5vw,54px)]">Collections</h1><button type="button" className="btn btn-primary" disabled><Plus size={18} /> New collection</button></div>
+      <p className="mt-2 max-w-[36rem] text-[17px] text-muted">Gather words, photos and contributions around a person, a place or a moment.</p>
+      <div className="mt-8 flex items-center gap-4 rounded-2xl border-2 border-navy bg-saffron p-5 shadow-[0_4px_0_#121c5a]"><span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-paper"><Users size={22} /></span><p className="m-0 text-[16px] leading-relaxed">Friends and family will be able to add their own notes and memories to one shared collection. Invitations are not active yet.</p></div>
+      <div className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
+        {collections.map((item) => (
+          <article key={item.id}>
+            <div className="relative mx-auto h-[220px] w-[160px]">
+              {item.arts.map((kind, i) => <div key={i} className="absolute inset-0 overflow-hidden border-[6px] border-paper shadow-lift" style={{ transform: `rotate(${rot[i]}deg) translateX(${(i - 1) * 16}px)`, zIndex: i }}><Art kind={kind} className="block h-full w-full" /></div>)}
+            </div>
+            <p className="mt-6 text-[13px] font-bold text-muted">{item.label} · {item.count}</p>
+            <h2 className="display mt-1 text-[22px]">{item.title}</h2>
+            <p className="mt-1 text-[15px] leading-relaxed text-muted">{item.description}</p>
+          </article>
+        ))}
+      </div>
+      <p className="mt-12 text-[14px] text-muted">Collections show sample data.</p>
+    </div>
+  )
+}

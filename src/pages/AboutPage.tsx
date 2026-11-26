@@ -1,20 +1,35 @@
-import { ArrowUpRight, Mail, Palette, ShieldCheck } from 'lucide-react'
+import { ArrowUpRight, Lock, Mail, Palette, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PublicPageLayout from '../components/marketing/PublicPageLayout'
 
+const cards = 'rounded-2xl border-2 border-navy p-7 shadow-[0_4px_0_#121c5a]'
+const principles = [
+  { icon: Users, t: 'Open to everyone', p: 'Lumie does not assume who is writing, who is reading or how they know each other.' },
+  { icon: Palette, t: 'Creative freedom', p: 'A short note, a long letter, a collage or a page of photos all work the same way.' },
+  { icon: Lock, t: 'Private by default', p: 'Writing stays private until you choose to share it, with clear information about who can see it.' },
+  { icon: Mail, t: 'Correspondence, not chat', p: 'Messages are meant to be written and read at a slower pace, without pressure to reply at once.' },
+]
+
 export default function AboutPage() {
   return (
-    <PublicPageLayout eyebrow="A LITTLE ABOUT US" title="Good things deserve somewhere to live." intro="Lumie is a creative correspondence space for the notes, letters, photographs and memories that mean something to us.">
-      <section className="public-story-grid">
-        <div className="public-story-card public-story-coral"><span>01 / THE IDEA</span><h2>Make room for the things you want to say.</h2><p>Most of our conversations happen quickly. Lumie is being made for the things that deserve a little more attention: a thoughtful letter, a postcard from an ordinary Tuesday, a note you want to keep, or a collection of memories made together.</p></div>
-        <div className="public-story-card public-story-lilac"><span>02 / THE FEELING</span><h2>A mail club for the internet age.</h2><p>We borrow the joy of physical mail: the anticipation, the little details, the feeling of holding something made with care. Then we give that feeling room to be colourful, personal and entirely your own.</p></div>
+    <PublicPageLayout title="About Lumie" intro="Lumie is a studio for making letters, postcards and photo keepsakes, and a place to keep them.">
+      <section className="grid gap-5 md:grid-cols-2">
+        <div className={`${cards} bg-tomato`}><h2 className="display text-[28px]">Why it exists</h2><p className="mt-3 text-[17px] leading-relaxed">Most conversations happen fast and disappear. Lumie is for the pieces you want to take more time over, like a letter, a postcard from an ordinary Tuesday or a page of memories made with someone.</p></div>
+        <div className={`${cards} bg-lilac`}><h2 className="display text-[28px]">What it borrows from the post</h2><p className="mt-3 text-[17px] leading-relaxed">Stamps, postmarks, envelopes and paper stock, rebuilt on screen. You can print a piece at true size or export a picture of it.</p></div>
       </section>
-      <section className="public-content-section"><div className="section-kicker">WHAT WE BELIEVE</div><h2>Thoughtful by design.</h2><div className="public-principles">
-        <article><Palette/><h3>Creative freedom</h3><p>Your words can be simple or elaborate. Make a letter, a collage, a photo story or something that does not fit a template.</p></article>
-        <article><ShieldCheck/><h3>Privacy with intention</h3><p>Private writing should start private. Sharing should be a deliberate choice, with clear information about who can see what.</p></article>
-        <article><Mail/><h3>Correspondence, not pressure</h3><p>We want to make thoughtful exchanges feel good, without turning every message into another demand for instant attention.</p></article>
-      </div></section>
-      <section className="public-status-panel"><div><span className="section-kicker">WHERE LUMIE IS TODAY</span><h2>We're building the mail room, one thoughtful piece at a time.</h2><p>The Creation Studio is the first working part of Lumie. At this stage, compositions and drafts are saved in the browser on the device where they are created. Accounts, cloud sync, sending, receiving and shared collections are not active yet.</p></div><Link className="button button-dark" to="/app/create">Explore the Creation Studio <ArrowUpRight size={15}/></Link></section>
+      <section className="mt-20">
+        <h2 className="display text-[clamp(30px,4vw,44px)]">What it is built on</h2>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2">
+          {principles.map(({ icon: Icon, t, p }) => <article key={t} className="rounded-2xl border-2 border-navy bg-paper p-6 shadow-[0_4px_0_#121c5a]"><Icon className="text-cobalt" size={26} /><h3 className="display mt-4 text-[21px]">{t}</h3><p className="mt-2 text-[16px] leading-relaxed text-muted">{p}</p></article>)}
+        </div>
+      </section>
+      <section className="mt-20 rounded-2xl border-2 border-navy bg-saffron p-8 shadow-[0_4px_0_#121c5a] md:flex md:items-center md:justify-between md:gap-10">
+        <div className="max-w-[560px]">
+          <h2 className="display text-[28px]">Where Lumie is today</h2>
+          <p className="mt-3 text-[16px] leading-relaxed">The Creation Studio works now. Drafts are saved in the browser on the device where you make them. Accounts, cloud sync, sending, receiving and shared collections are not active yet.</p>
+        </div>
+        <Link className="btn btn-primary mt-6 md:mt-0" to="/app/create">Open the studio <ArrowUpRight size={16} /></Link>
+      </section>
     </PublicPageLayout>
   )
 }

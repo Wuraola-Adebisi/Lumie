@@ -1,34 +1,37 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, Menu, X } from 'lucide-react'
-import BrandMark from '../ui/BrandMark'
+import BrandMark from '../mail/BrandMark'
+
+const links = [
+  { to: '/how-it-works', label: 'How it works' },
+  { to: '/#formats', label: 'Formats' },
+  { to: '/about', label: 'About' },
+]
 
 export default function MarketingHeader() {
   const [open, setOpen] = useState(false)
   return (
-    <header className="marketing-header">
-      <div className="marketing-header-inner">
+    <header className="relative z-30 border-b-2 border-navy bg-cream">
+      <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between px-5 md:px-10">
         <BrandMark />
-        <nav className="marketing-nav" aria-label="Main navigation">
-          <Link to="/how-it-works">How it works</Link>
-          <a href="/#what-you-can-make">What you can make</a>
-          <Link to="/about">About Lumie</Link>
+        <nav className="hidden items-center gap-9 text-[16px] font-bold text-ink md:flex" aria-label="Main navigation">
+          {links.map((link) => <Link key={link.to} to={link.to} className="hover:text-cobalt">{link.label}</Link>)}
         </nav>
-        <div className="header-actions">
-          <Link to="/app" className="text-link">Open the app</Link>
-          <Link to="/app/create" className="button button-dark button-small">Make something <ArrowUpRight size={15}/></Link>
+        <div className="hidden items-center gap-2 md:flex">
+          <Link to="/app" className="btn btn-ghost btn-sm">Your desk</Link>
+          <Link to="/app/create" className="btn btn-primary btn-sm">Open the studio <ArrowUpRight size={16} /></Link>
         </div>
-        <button className="icon-button mobile-menu" onClick={() => setOpen(!open)} aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open}>
-          {open ? <X size={21}/> : <Menu size={21}/>}
+        <button type="button" className="btn btn-ghost md:hidden" onClick={() => setOpen(!open)} aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open}>
+          {open ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
-      {open && <nav className="mobile-nav-panel" aria-label="Mobile navigation">
-        <Link to="/how-it-works" onClick={() => setOpen(false)}>How it works</Link>
-        <a href="/#what-you-can-make" onClick={() => setOpen(false)}>What you can make</a>
-        <Link to="/about" onClick={() => setOpen(false)}>About Lumie</Link>
-        <Link to="/contact" onClick={() => setOpen(false)}>Contact</Link>
-        <Link to="/app" onClick={() => setOpen(false)}>Open Lumie <ArrowUpRight size={15}/></Link>
-      </nav>}
+      {open && (
+        <nav className="flex flex-col border-t-2 border-navy bg-cream px-5 pb-4 md:hidden" aria-label="Mobile navigation">
+          {[...links, { to: '/contact', label: 'Contact' }].map((link) => <Link key={link.to} to={link.to} onClick={() => setOpen(false)} className="border-b border-navy/15 py-3 text-[17px] font-bold">{link.label}</Link>)}
+          <Link to="/app/create" onClick={() => setOpen(false)} className="btn btn-primary mt-4">Open the studio <ArrowUpRight size={16} /></Link>
+        </nav>
+      )}
     </header>
   )
 }

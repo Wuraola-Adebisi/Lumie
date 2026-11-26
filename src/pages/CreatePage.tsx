@@ -1,12 +1,12 @@
-import { ArrowLeft, Copy, Download, FileText, Redo2, Save, Undo2 } from 'lucide-react'
+import { ArrowLeft, Copy, Download, FileText, Redo2, Rotate3d, Save, Share2, Undo2 } from 'lucide-react'
 import { toPng } from 'html-to-image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import StudioCanvas from '../features/studio/StudioCanvas'
 import StudioInspector from '../features/studio/StudioInspector'
-import { createDocument, createId, migrateStudioDocument, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
+import ShareDialog from '../features/studio/ShareDialog'
+import { createDocument, createId, migrateStudioDocument, paperBase, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
 import type { StudioDocument, StudioElement, StudioFormat } from '../features/studio/studioTypes'
-import '../studio.css'
 
 const STORAGE_KEY = 'lumie-studio-draft-v1'
 
@@ -34,6 +34,9 @@ export default function CreatePage() {
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [toast, setToast] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [preview3d, setPreview3d] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const closeShare = useCallback(() => setShareOpen(false), [])
 
   useEffect(() => {
     try {
@@ -84,11 +87,11 @@ export default function CreatePage() {
   }
 
   const addText = () => {
-    const text = 'Write something lovely…'
-    addElement({ id: createId(), kind: 'text', x: 12, y: 43, width: 66, text, richText: plainTextToRichText(text), fontFamily: "'DM Serif Display', serif", fontSize: 19, color: '#1d2a45' })
+    const text = 'New text'
+    addElement({ id: createId(), kind: 'text', x: 12, y: 43, width: 66, text, richText: plainTextToRichText(text), fontFamily: "'Courier Prime', monospace", fontSize: 17, color: '#14193f' })
   }
-  const addStamp = () => addElement({ id: createId(), kind: 'stamp', x: 75, y: 65, width: 15, value: 'POST' })
-  const addDecoration = () => addElement({ id: createId(), kind: 'decoration', x: 75, y: 75, width: 12, value: '✳', color: '#f05f4c', fontSize: 34 })
+  const addStamp = () => addElement({ id: createId(), kind: 'stamp', x: 75, y: 62, width: 15, value: 'POST', tone: 'tomato', art: 'flower' })
+  const addDecoration = () => addElement({ id: createId(), kind: 'decoration', x: 75, y: 75, width: 12, value: 'heart', color: '#ee4a2f', fontSize: 34 })
   const addPhoto = (image: string) => addElement({ id: createId(), kind: 'photo', x: 48, y: 48, width: 34, image, rotation: 3 })
 
   const changeFormat = (format: StudioFormat) => {
@@ -172,14 +175,14 @@ export default function CreatePage() {
       const dataUrl = await toPng(paper, {
         pixelRatio: 3,
         cacheBust: true,
-        backgroundColor: document.background,
+        backgroundColor: paperBase(document.background),
         filter: (node) => !(node instanceof HTMLElement && (node.classList.contains('is-selected') || node.classList.contains('is-dragging'))),
       })
       const link = window.document.createElement('a')
       link.download = `lumie-${document.format}-${new Date().toISOString().slice(0, 10)}.png`
       link.href = dataUrl
       link.click()
-      setToast('Your high-resolution PNG is ready.')
+      setToast('PNG saved.')
     } catch {
       setToast('PNG export failed. Try removing a large photo or exporting again.')
     } finally {
@@ -223,35 +226,40 @@ export default function CreatePage() {
   return (
     <div className="create-page studio-page">
       <header className="studio-heading">
-        <Link to="/app" className="back-link"><ArrowLeft size={15}/> Back to your space</Link>
+        <Link to="/app" className="studio-back"><ArrowLeft size={16}/> Back to your desk</Link>
         <div className="studio-heading-actions">
-          <span className="studio-save-state" role="status">{savedAt ? `Saved on this device · ${savedAt}` : 'Saving locally…'}</span>
-          <button type="button" className="button button-quiet button-small" onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl or Command + Z)"><Undo2 size={14}/> Undo</button>
-          <button type="button" className="button button-quiet button-small" onClick={redo} disabled={!future.length} aria-label="Redo (Ctrl or Command + Shift + Z)"><Redo2 size={14}/> Redo</button>
-          <button type="button" className="button button-quiet button-small" onClick={duplicateSelected} disabled={!selected}><Copy size={14}/> Duplicate</button>
-          <button type="button" className="button button-quiet button-small" onClick={exportPng} disabled={exporting}><Download size={14}/> {exporting ? 'Exporting…' : 'PNG'}</button>
-          <button type="button" className="button button-quiet button-small" onClick={exportPdf}><FileText size={14}/> PDF / Print</button>
-          <button type="button" className="button button-dark button-small" onClick={saveDraft}><Save size={14}/> Save draft</button>
+          <span className="studio-save-state" role="status">{savedAt ? `Saved on this device at ${savedAt}` : 'Saving on this device'}</span>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={undo} disabled={!history.length} aria-label="Undo (Ctrl or Command + Z)"><Undo2 size={15}/> Undo</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={redo} disabled={!future.length} aria-label="Redo (Ctrl or Command + Shift + Z)"><Redo2 size={15}/> Redo</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={duplicateSelected} disabled={!selected}><Copy size={15}/> Duplicate</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPreview3d((value) => !value); setSelectedId(null) }} aria-pressed={preview3d}><Rotate3d size={15}/> 3D view</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={exportPng} disabled={exporting}><Download size={15}/> {exporting ? 'Exporting' : 'PNG'}</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={exportPdf}><FileText size={15}/> PDF / Print</button>
+          <button type="button" className="btn btn-tomato btn-sm" onClick={() => setShareOpen(true)}><Share2 size={15}/> Share image</button>
+          <button type="button" className="btn btn-primary btn-sm" onClick={saveDraft}><Save size={15}/> Save draft</button>
         </div>
       </header>
 
       <div className="studio-workspace">
         <section className="studio-left-panel" aria-label="Choose a composition format">
-          <span className="section-kicker">MAKE SOMETHING TO KEEP</span>
           <h2>Start with a format.</h2>
-          <p>Pick a shape to begin. The details, words and arrangement are yours to change.</p>
+          <p>Pick a shape. Words, photos and layout stay editable.</p>
           <div className="studio-format-list">
-            {studioFormats.map((format) => (
-              <button type="button" key={format.id} className={document.format === format.id ? 'studio-format-option active' : 'studio-format-option'} aria-pressed={document.format === format.id} onClick={() => changeFormat(format.id)}>
-                <span className="studio-format-icon" aria-hidden="true">{format.id === 'postcard' ? '▰' : format.id === 'photo-card' ? '▣' : format.id === 'collage' ? '▧' : format.id === 'memory' ? '▤' : '▯'}</span>
-                <span><strong>{format.label}</strong><small>{format.id === 'letter' ? 'A page for your words' : format.id === 'postcard' ? 'A note with a view' : format.id === 'photo-card' ? 'A picture and a thought' : format.id === 'collage' ? 'Layers of little things' : 'A page for remembering'}</small></span>
-              </button>
-            ))}
+            {studioFormats.map((format) => {
+              const icon = { letter: [22, 28], postcard: [30, 21], 'photo-card': [26, 26], collage: [24, 26], memory: [22, 27] }[format.id]
+              const note = { letter: 'A full page for your words', postcard: 'A 6 by 4 card with a stamp', 'photo-card': 'A square print with a picture', collage: 'Layers of photos and stickers', memory: 'A page for a trip or a day' }[format.id]
+              return (
+                <button type="button" key={format.id} className={document.format === format.id ? 'studio-format-option active' : 'studio-format-option'} aria-pressed={document.format === format.id} onClick={() => changeFormat(format.id)}>
+                  <span className="studio-format-icon" aria-hidden="true"><i style={{ width: icon[0], height: icon[1] }} /></span>
+                  <span><strong>{format.label}</strong><small>{note}</small></span>
+                </button>
+              )
+            })}
           </div>
-          <div className="studio-left-note"><strong>A little room to play.</strong><br/>Drag any layer on the paper. Add more words, photos or postal details as you go.</div>
+          <div className="studio-left-note">Print uses the true size of each format. Choose Save as PDF in the print dialog to keep a file.</div>
         </section>
 
-        <StudioCanvas document={document} selectedId={selectedId} onSelect={setSelectedId} onDeselect={() => setSelectedId(null)} onMove={moveElement} onNudge={nudgeElement}/>
+        <StudioCanvas document={document} selectedId={selectedId} onSelect={setSelectedId} onDeselect={() => setSelectedId(null)} onMove={moveElement} onNudge={nudgeElement} preview={preview3d}/>
 
         <StudioInspector
           document={document}
@@ -266,6 +274,7 @@ export default function CreatePage() {
           onDelete={deleteSelected}
         />
       </div>
+      {shareOpen && <ShareDialog document={document} onClose={closeShare} onToast={setToast}/>}
       {toast && <div className="studio-toast" role="status">{toast}</div>}
     </div>
   )

@@ -59,7 +59,8 @@ Drafts and uploaded image data are stored in this browser's local storage. They 
 | UI | React 18 + TypeScript |
 | Build | Vite |
 | Routing | React Router |
-| Styling | Tailwind CSS 3 + CSS variables |
+| Styling | Tailwind CSS 3 for layout and type, plain CSS in src/styles for the 3D mail objects |
+| Fonts | MuseoModerno (display), Figtree (body), Courier Prime (typewriter), Caveat (handwriting), DM Serif Display; self-hosted through Fontsource |
 | Icons | Lucide React |
 | Rich text | Tiptap 2 |
 | Composition export | html-to-image; browser-native print |
@@ -67,6 +68,14 @@ Drafts and uploaded image data are stored in this browser's local storage. They 
 | Future backend | Supabase Auth, PostgreSQL, Storage and server functions |
 | Future email | Resend for transactional notifications |
 | Deployment target | Vercel |
+
+## Design
+
+Lumie is styled as a mail club: perforated stamps, postmarks, envelopes, typewritten letters and postcards that turn over. The palette comes from the reference set (cobalt, tomato, saffron, moss, bubblegum, lilac, lime on cream graph paper).
+
+- `src/components/mail` holds the physical pieces: Stamp, Postmark, HoloSeal, Sticker, Envelope, Postcard3D, LetterSheet and the illustrations in Art.
+- The Creation Studio has a 3D view of the sheet and a Share image dialog. Share images place the piece on a gingham, cobalt, graph paper or tomato desk and export at 1080 x 1350, 1080 x 1920 or 1080 x 1080.
+- Pointer tilt is disabled for touch input and for reduced-motion preferences.
 
 ## Getting started
 
