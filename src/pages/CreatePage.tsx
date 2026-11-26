@@ -235,13 +235,22 @@ export default function CreatePage() {
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPreview3d((value) => !value); setSelectedId(null) }} aria-pressed={preview3d}><Rotate3d size={15}/> 3D view</button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={exportPng} disabled={exporting}><Download size={15}/> {exporting ? 'Exporting' : 'PNG'}</button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={exportPdf}><FileText size={15}/> PDF / Print</button>
-          <button type="button" className="btn btn-tomato btn-sm" onClick={() => setShareOpen(true)}><Share2 size={15}/> Share image</button>
+          <button type="button" className="btn btn-tomato btn-sm" onClick={() => setShareOpen(true)}><Share2 size={15}/> Make share image</button>
           <button type="button" className="btn btn-primary btn-sm" onClick={saveDraft}><Save size={15}/> Save draft</button>
         </div>
       </header>
 
+      <section className="studio-intro" aria-labelledby="studio-title">
+        <div>
+          <p className="studio-eyebrow">THE CREATION STUDIO</p>
+          <h1 id="studio-title">Make it yours.</h1>
+          <p className="studio-intro-copy">A note, a postcard, a little collection of things worth keeping.</p>
+        </div>
+        <p className="studio-purpose-note"><strong>First, make the piece.</strong> This is where you write and design it. Sending correspondence is a separate step from your desk.</p>
+      </section>
+
       <section className="studio-formats" aria-label="Choose a composition format">
-        <h2>Start with a format.</h2>
+        <h2>Choose your paper.</h2>
         <div className="studio-format-tabs">
           {studioFormats.map((format) => (
             <button type="button" key={format.id} className={document.format === format.id ? 'studio-format-option active' : 'studio-format-option'} aria-pressed={document.format === format.id} onClick={() => changeFormat(format.id)}>
