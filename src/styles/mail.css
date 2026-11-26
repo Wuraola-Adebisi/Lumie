@@ -1,0 +1,97 @@
+/* ---------- Tilt ---------- */
+.tilt { transform-style: preserve-3d; transform: perspective(1300px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s ease-out; will-change: transform; }
+
+/* ---------- Stamps, stickers, postmarks ---------- */
+.stamp { display: block; width: 100%; height: auto; filter: drop-shadow(0 1px 1px rgba(18, 28, 90, 0.25)) drop-shadow(0 8px 9px rgba(18, 28, 90, 0.2)); }
+.sticker { display: block; filter: drop-shadow(0 2px 2px rgba(18, 28, 90, 0.28)) drop-shadow(0 6px 8px rgba(18, 28, 90, 0.18)); overflow: visible; }
+.postmark { display: block; }
+
+.holo { aspect-ratio: 1; border-radius: 50%; position: relative; background: conic-gradient(#ff9acb, #ffe27a, #8be9fd, #b794ff, #7dffb6, #ff9acb); box-shadow: 0 0 0 3px #fff, 0 10px 16px -4px rgba(18, 28, 90, 0.45); }
+.holo svg { display: block; width: 100%; height: 100%; }
+.holo::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: overlay; background: linear-gradient(115deg, transparent 28%, rgba(255, 255, 255, 0.85) 46%, transparent 62%); background-size: 260% 100%; background-position: var(--gx, 10%) 0; }
+
+.tape { position: absolute; width: 22%; height: 7%; background: rgba(242, 182, 50, 0.78); box-shadow: 0 1px 3px rgba(18, 28, 90, 0.2); clip-path: polygon(0 8%, 4% 0, 8% 10%, 12% 0, 16% 8%, 84% 8%, 88% 0, 92% 10%, 96% 0, 100% 8%, 100% 92%, 96% 100%, 92% 90%, 88% 100%, 84% 92%, 16% 92%, 12% 100%, 8% 90%, 4% 100%, 0 92%); }
+
+/* ---------- Postcard that turns over ---------- */
+.pc-stage { container-type: inline-size; width: 100%; aspect-ratio: 5 / 7; position: relative; perspective: 1500px; }
+.pc-tilt { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.2s ease-out; }
+.pc { display: block; width: 100%; height: 100%; padding: 0; border: 0; background: none; cursor: pointer; position: relative; transform-style: preserve-3d; transition: transform 0.9s cubic-bezier(0.3, 0.8, 0.2, 1); color: var(--ink); text-align: left; }
+.pc.is-flipped { transform: rotateY(180deg); }
+.pc-face { position: absolute; inset: 0; display: block; backface-visibility: hidden; -webkit-backface-visibility: hidden; filter: drop-shadow(0 1px 1px rgba(18, 28, 90, 0.25)) drop-shadow(0 14px 16px rgba(18, 28, 90, 0.28)); }
+.pc-face > svg { display: block; width: 100%; height: 100%; }
+.pc-back { transform: rotateY(180deg); }
+.pc-back-body { position: absolute; inset: 8% 8% 7%; display: flex; flex-direction: column; }
+.pc-back-top { position: relative; display: flex; justify-content: space-between; align-items: flex-start; }
+.pc-wordmark { font: 800 7.4cqw/1 'MuseoModerno', sans-serif; letter-spacing: -0.04em; }
+.pc-wordmark small { display: block; font: 700 2.7cqw 'Figtree', sans-serif; letter-spacing: 0.04em; color: var(--muted); margin-top: 1.2cqw; }
+.pc-stamp { width: 19cqw; flex-shrink: 0; transform: rotate(3deg); }
+.pc-postmark { position: absolute; right: 12cqw; top: 6cqw; width: 38cqw; color: #1f4fd6; opacity: 0.8; transform: rotate(-8deg); mix-blend-mode: multiply; }
+.pc-message { display: block; margin-top: 9cqw; font: 700 6.4cqw/1.26 'Caveat', cursive; color: #1d3a9c; white-space: pre-line; flex: 1; }
+.pc-signoff { display: block; font: 700 6.4cqw/1.2 'Caveat', cursive; color: #1d3a9c; margin-bottom: 6cqw; }
+.pc-address { display: grid; gap: 4.4cqw; margin-top: auto; }
+.pc-address span { display: block; min-height: 7cqw; border-bottom: 1.5px solid rgba(18, 28, 90, 0.35); font: 700 5.6cqw/1.1 'Caveat', cursive; color: #1d3a9c; }
+.pc:focus-visible { outline: 3px solid var(--cobalt); outline-offset: 6px; }
+
+/* ---------- Envelope that opens ---------- */
+.env { --e-back: #c93a22; --e-front: #ee4a2f; --e-flap: #f4604a; --e-in: #a32c18; position: relative; width: 100%; aspect-ratio: 3 / 2; container-type: inline-size; perspective: 1400px; }
+.env-gold { --e-back: #c98f14; --e-front: #f2b632; --e-flap: #f7c452; --e-in: #a87510; }
+.env-moss { --e-back: #1f6a3a; --e-front: #2f8a50; --e-flap: #3d9c5f; --e-in: #17512c; }
+.env-cobalt { --e-back: #173ba8; --e-front: #1f4fd6; --e-flap: #3566ea; --e-in: #112f86; }
+.env-bubblegum { --e-back: #e48fa8; --e-front: #f7b4c6; --e-flap: #fac6d4; --e-in: #d8738f; }
+.env-back { position: absolute; inset: 0; background: var(--e-back); border-radius: 4px; box-shadow: var(--lift); }
+.env-slot { position: absolute; left: 6%; right: 6%; top: 9%; height: 90%; z-index: 2; transition: transform 1s cubic-bezier(0.3, 0.8, 0.2, 1) 0.4s; }
+.env.is-open .env-slot { transform: translateY(-44%); }
+.env-front { position: absolute; inset: 0; z-index: 3; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.14)), var(--e-front); clip-path: polygon(0 0, 50% 57%, 100% 0, 100% 100%, 0 100%); border-radius: 4px; }
+.env-flap { position: absolute; left: 0; right: 0; top: 0; height: 57%; z-index: 4; transform-origin: 50% 0; transform-style: preserve-3d; transition: transform 0.85s cubic-bezier(0.4, 0.1, 0.2, 1), z-index 0s 0.42s; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.18)); }
+.env-flap span { position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 50% 100%); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.f-out { background: var(--e-flap); }
+.f-in { background: var(--e-in); transform: rotateX(180deg); }
+.env.is-open .env-flap { transform: rotateX(180deg); z-index: 1; }
+
+/* ---------- Typewritten letter ---------- */
+.letter { container-type: inline-size; --lp: #dcf28b; background: var(--lp); color: #1c2a14; font-family: 'Courier Prime', 'Courier New', monospace; border-radius: 2px; box-shadow: 0 -3px 10px rgba(0, 0, 0, 0.12); position: relative; }
+.letter-cream { --lp: #fff8e8; } .letter-blush { --lp: #f9cbd8; } .letter-sky { --lp: #bfe0f2; }
+.letter-in { padding: 6.5cqw 7cqw 7cqw; }
+.letter-head { display: flex; align-items: center; gap: 3cqw; font: 700 3.4cqw/1 'Courier Prime', monospace; }
+.letter-rule { flex: 1; border-top: 2px solid currentColor; opacity: 0.55; }
+.letter-title { font: 800 8cqw/1.02 'MuseoModerno', sans-serif; letter-spacing: -0.035em; margin: 4cqw 0 3.5cqw; }
+.letter-body { font-size: 4.1cqw; line-height: 1.5; }
+.letter-body p { margin: 0 0 2.6cqw; }
+.letter-sign { font: 700 7cqw/1 'Caveat', cursive; margin: 3cqw 0 0; color: #1d3a9c; }
+
+/* ---------- Hero scene ---------- */
+.scene { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1; container-type: inline-size; perspective: 1700px; margin-inline: auto; }
+.scene-desk { position: absolute; inset: 3% 1%; background: var(--cobalt); border-radius: 30px; transform: rotate(-2deg); box-shadow: 0 3px 0 var(--navy), var(--lift); overflow: hidden; }
+.scene-tilt { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s ease-out; }
+.scene-tilt > * { position: absolute; }
+.scene-env { left: 5%; top: 34%; width: 68%; transform: rotate(-5deg) translateZ(10px); }
+.scene-pc { right: 5%; top: 7%; width: 31%; transform: translateZ(70px) rotate(7deg); }
+.scene-stamp { left: 9%; top: 13%; width: 14%; transform: translateZ(95px) rotate(-9deg); }
+.scene-seal { right: 9%; bottom: 10%; width: 21%; transform: translateZ(110px) rotate(12deg); }
+.scene-mark { left: 33%; top: 10%; width: 30%; color: #fff3e0; opacity: 0.85; transform: translateZ(30px) rotate(-6deg); }
+.scene-tape { left: 53%; top: 4%; transform: translateZ(80px) rotate(-18deg); }
+.scene-sticker { left: 4%; bottom: 8%; transform: translateZ(90px) rotate(-10deg); }
+
+/* ---------- Share scene (exported image) ---------- */
+.share { position: relative; overflow: hidden; font-family: 'Figtree', sans-serif; isolation: isolate; }
+.share-cobalt { background: var(--cobalt); }
+.share-tomato { background: var(--tomato); }
+.share-graph { background-color: var(--cream); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 27px 27px; }
+.share-gingham { background-color: #ffffff; background-image: repeating-linear-gradient(0deg, rgba(238, 96, 150, 0.42) 0 36px, transparent 36px 72px), repeating-linear-gradient(90deg, rgba(238, 96, 150, 0.42) 0 36px, transparent 36px 72px); }
+.share > * { position: absolute; }
+.share-env { width: 62%; transform: rotate(-9deg); }
+.share-stage { left: 50%; top: 50%; transform-style: preserve-3d; transform: translate(-50%, -50%) perspective(1800px) rotateX(9deg) rotateY(-13deg) rotateZ(-3deg); }
+.share-paper-box { position: relative; overflow: hidden; box-shadow: 1px 1px 0 #e9dcc0, 2px 2px 0 #e2d4b4, 3px 3px 0 #dacba8, 4px 4px 0 #d2c19c, 5px 5px 0 #c9b790, 28px 36px 42px rgba(10, 16, 60, 0.4), 8px 12px 14px rgba(10, 16, 60, 0.26); }
+.share-paper { position: absolute; left: 0; top: 0; overflow: hidden; transform-origin: 0 0; }
+.share-sheen { inset: 0; pointer-events: none; background: linear-gradient(115deg, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 62%); z-index: 3; }
+.share-stamp { width: 17%; transform: rotate(8deg); }
+.share-seal { width: 19%; transform: rotate(-10deg); }
+.share-mark { width: 33%; transform: rotate(-7deg); opacity: 0.8; mix-blend-mode: multiply; }
+.share-tape { transform: rotate(-24deg); }
+.share-brand { left: 0; right: 0; text-align: center; font: 800 20px/1 'MuseoModerno', sans-serif; letter-spacing: -0.03em; }
+
+/* ---------- Pieces on the desk (cards used in the app) ---------- */
+.piece { display: block; position: relative; text-decoration: none; color: var(--ink); }
+.piece-face { position: relative; aspect-ratio: 5 / 7; transition: transform 0.25s cubic-bezier(0.3, 0.7, 0.2, 1); filter: drop-shadow(0 1px 1px rgba(18, 28, 90, 0.25)) drop-shadow(0 10px 12px rgba(18, 28, 90, 0.22)); }
+.piece:hover .piece-face, .piece:focus-visible .piece-face { transform: translateY(-5px) rotate(-1.5deg); }
+.piece-face svg { display: block; width: 100%; height: 100%; }

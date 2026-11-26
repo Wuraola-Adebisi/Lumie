@@ -3,7 +3,9 @@ import type { KeyboardEvent, PointerEvent } from 'react'
 import type { StudioDocument, StudioElement } from './studioTypes'
 import { studioFormats } from './studioTypes'
 import { clampStudioPosition, getStudioKeyboardMovement } from './studioKeyboard'
-import RichTextContent from './RichTextContent'
+import { ElementBody } from './PaperElements'
+import { paperStyle } from './studioTypes'
+import { useTilt } from '../../components/mail/useTilt'
 
 interface Props {
   document: StudioDocument
@@ -12,9 +14,11 @@ interface Props {
   onDeselect: () => void
   onMove: (id: string, x: number, y: number) => void
   onNudge: (id: string, dx: number, dy: number) => void
+  preview?: boolean
 }
 
-export default function StudioCanvas({ document, selectedId, onSelect, onDeselect, onMove, onNudge }: Props) {
+export default function StudioCanvas({ document, selectedId, onSelect, onDeselect, onMove, onNudge, preview = false }: Props) {
+  const tilt = useTilt<HTMLDivElement>(14)
   const canvasRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{ id: string; pointerX: number; pointerY: number; startX: number; startY: number } | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
@@ -68,46 +72,37 @@ export default function StudioCanvas({ document, selectedId, onSelect, onDeselec
 
   return (
     <div className="studio-canvas-wrap">
-      <div className="studio-canvas-meta"><span>YOUR COMPOSITION</span><span>{format.label.toUpperCase()} · DRAG OR USE ARROW KEYS</span></div>
-      <div
-        className={`studio-paper studio-paper-${document.format}`}
-        ref={canvasRef}
-        style={{ backgroundColor: document.background, aspectRatio: format.ratio }}
-        onClick={(event) => { if (event.target === event.currentTarget) onDeselect() }}
-        role="group"
-        aria-label={`${format.label} composition canvas`}
-      >
-        <div className="studio-paper-grain" />
-        {document.elements.map((element) => (
-          <div
-            key={element.id}
-            className={`studio-element studio-element-${element.kind} ${selectedId === element.id ? 'is-selected' : ''} ${draggingId === element.id ? 'is-dragging' : ''}`}
-            style={{ left: `${element.x}%`, top: `${element.y}%`, width: `${element.width}%`, transform: `rotate(${element.rotation ?? 0}deg)`, color: element.color ?? undefined }}
-            onPointerDown={(event) => startDrag(event, element)}
-            onClick={(event) => { event.stopPropagation(); onSelect(element.id) }}
-            role="group"
-            tabIndex={0}
-            aria-label={`Select ${element.kind} layer. Use arrow keys to move; hold Shift to move faster.`}
-            onKeyDown={(event) => handleKeyDown(event, element)}
-          >
-            {element.kind === 'text' && (
-              <div style={{
-                fontFamily: element.fontFamily,
-                fontSize: `clamp(10px, ${element.fontSize ?? 16}px, 42px)`,
-                color: element.color ?? '#1d2a45',
-                overflowWrap: 'anywhere',
-              }}>
-                <RichTextContent content={element.richText} fallbackText={element.text}/>
-              </div>
-            )}
-            {element.kind === 'stamp' && <div className="studio-stamp-art"><span>✳</span><strong>{element.value ?? 'POST'}</strong><small>LUMIE · MAIL</small></div>}
-            {element.kind === 'decoration' && <div className="studio-decoration-art" style={{ fontSize: element.fontSize ?? 34 }}>{element.value ?? '✳'}</div>}
-            {element.kind === 'photo' && element.image && <img src={element.image} alt="Uploaded composition layer" draggable={false} />}
-          </div>
-        ))}
-        <div className="studio-paper-footer"><span>MADE WITH A LITTLE CARE</span><span>LUMIE MAIL CLUB</span></div>
+      <div className={`studio-desk graph ${preview ? 'studio-stage-3d' : ''}`} ref={tilt.ref} onPointerMove={preview ? tilt.onPointerMove : undefined} onPointerLeave={preview ? tilt.onPointerLeave : undefined}>
+        <div className="studio-canvas-meta"><span>{format.label}</span><span>{preview ? '3D view. Move the pointer over the sheet.' : 'Drag a layer or use the arrow keys'}</span></div>
+        <div
+          className={`studio-paper studio-paper-${document.format}`}
+          ref={canvasRef}
+          style={{ ...paperStyle(document.background), aspectRatio: format.ratio }}
+          onClick={(event) => { if (event.target === event.currentTarget) onDeselect() }}
+          role="group"
+          aria-label={`${format.label} composition canvas`}
+        >
+          <div className="studio-paper-grain" />
+          {document.elements.map((element) => (
+            <div
+              key={element.id}
+              className={`paper-el studio-element paper-el-${element.kind} studio-element-${element.kind} ${selectedId === element.id ? 'is-selected' : ''} ${draggingId === element.id ? 'is-dragging' : ''}`}
+              style={{ left: `${element.x}%`, top: `${element.y}%`, width: `${element.width}%`, transform: `rotate(${element.rotation ?? 0}deg)`, color: element.color ?? undefined }}
+              onPointerDown={(event) => startDrag(event, element)}
+              onClick={(event) => { event.stopPropagation(); onSelect(element.id) }}
+              role="group"
+              tabIndex={0}
+              aria-label={`Select ${element.kind} layer. Use arrow keys to move; hold Shift to move faster.`}
+              onKeyDown={(event) => handleKeyDown(event, element)}
+            >
+              <ElementBody element={element} />
+            </div>
+          ))}
+          <div className="studio-paper-footer"><span>lumie</span><span>mail club</span></div>
+          {preview && <div className="studio-sheen" />}
+        </div>
       </div>
-      <p className="studio-canvas-hint">Select a layer, then use arrow keys to move it. Hold Shift for larger steps. Drag with a pointer to arrange it freely.</p>
+      <p className="studio-canvas-hint">{preview ? 'This is how the printed sheet sits on a desk. Switch back to edit to change it.' : 'Select a layer, then use the arrow keys to move it. Hold Shift for larger steps.'}</p>
     </div>
   )
 }

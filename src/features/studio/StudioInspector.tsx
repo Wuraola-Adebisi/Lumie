@@ -1,7 +1,10 @@
 import { ImagePlus, Plus, Stamp, Type, Trash2 } from 'lucide-react'
 import type { ChangeEvent } from 'react'
 import type { StudioDocument, StudioElement, StudioRichTextNode } from './studioTypes'
-import { fontOptions, paperOptions } from './studioTypes'
+import { fontOptions, inkOptions, paperOptions, paperStyle } from './studioTypes'
+import Sticker, { stickerKinds, stickerLabels } from '../../components/mail/Sticker'
+import { normalizeSticker } from '../../components/mail/Sticker'
+import { stampArts, stampTones } from '../../components/mail/Stamp'
 import RichTextEditor from './RichTextEditor'
 
 interface Props {
@@ -54,23 +57,23 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
 
   return (
     <aside className="studio-inspector" aria-label="Composition controls">
-      <div className="studio-panel-heading"><span>THE LITTLE DETAILS</span><span aria-hidden="true">✳</span></div>
+      <div className="studio-panel-heading">Layers and paper</div>
       <section className="studio-inspector-section" aria-labelledby="studio-add-heading">
-        <h3 id="studio-add-heading">Start with a layer</h3>
+        <h3 id="studio-add-heading">Add to the page</h3>
         <div className="studio-add-grid">
           <button type="button" onClick={onAddText}><Type aria-hidden="true"/><span>Text</span></button>
           <button type="button" onClick={onAddStamp}><Stamp aria-hidden="true"/><span>Stamp</span></button>
-          <button type="button" onClick={onAddDecoration}><Plus aria-hidden="true"/><span>Decor</span></button>
+          <button type="button" onClick={onAddDecoration}><Plus aria-hidden="true"/><span>Sticker</span></button>
           <input id="studio-photo-upload" className="studio-visually-hidden" type="file" accept="image/*" aria-label="Choose a photo" onChange={uploadPhoto} />
           <label className="studio-add-upload" htmlFor="studio-photo-upload" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.document.getElementById('studio-photo-upload')?.click() } }}><ImagePlus aria-hidden="true"/><span>Photo</span></label>
         </div>
-        <p className="studio-upload-hint" id="studio-photo-hint">Images only · up to 3 MB · stored in this browser</p>
+        <p className="studio-upload-hint" id="studio-photo-hint">Images only, up to 3 MB. Kept in this browser.</p>
       </section>
       <section className="studio-inspector-section" aria-labelledby="studio-paper-heading">
-        <h3 id="studio-paper-heading">Paper colour</h3>
+        <h3 id="studio-paper-heading">Paper</h3>
         <div className="studio-paper-swatches">
           {paperOptions.map((paper) => (
-            <button type="button" key={paper.name} title={paper.name} aria-label={paper.name} aria-pressed={document.background === paper.value} className={document.background === paper.value ? 'active' : ''} style={{ background: paper.value }} onClick={() => onBackground(paper.value)} />
+            <button type="button" key={paper.name} title={paper.name} aria-label={paper.name} aria-pressed={document.background === paper.value} className={document.background === paper.value ? 'active' : ''} style={paperStyle(paper.value)} onClick={() => onBackground(paper.value)} />
           ))}
         </div>
       </section>
@@ -78,33 +81,39 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
         <section className="studio-inspector-section studio-selected-panel" aria-labelledby="studio-selected-heading">
           <div className="studio-selected-heading"><h3 id="studio-selected-heading">Selected layer</h3><button type="button" className="studio-delete-button" onClick={onDelete} aria-label="Delete selected layer"><Trash2 size={15}/></button></div>
           {selected.kind === 'text' && <>
-            <label className="studio-field-label">Your words</label>
+            <span className="studio-field-label" style={{ display: 'block' }}>Your words</span>
             <RichTextEditor key={selected.id} elementId={selected.id} value={selected.richText} legacyText={selected.text} onChange={updateRichText}/>
             <label className="studio-field-label" htmlFor="studio-layer-font">Typeface</label>
             <select id="studio-layer-font" className="studio-field" value={selected.fontFamily ?? fontOptions[0].value} onChange={(event) => onChange({ fontFamily: event.target.value })}>{fontOptions.map((font) => <option key={font.label} value={font.value}>{font.label}</option>)}</select>
-            <label className="studio-field-label" htmlFor="studio-layer-size">Base text size · {selected.fontSize ?? 16}px</label>
+            <label className="studio-field-label" htmlFor="studio-layer-size">Base text size: {selected.fontSize ?? 16}px</label>
             <input id="studio-layer-size" className="studio-range" type="range" min="11" max="42" value={selected.fontSize ?? 16} onChange={(event) => onChange({ fontSize: Number(event.target.value) })}/>
-            <label className="studio-field-label">Ink colour</label>
-            <div className="studio-ink-options">{['#1d2a45','#f05f4c','#4968f5','#658b75','#7b5bb5','#ffffff'].map((color) => <button type="button" key={color} className={selected.color === color ? 'active' : ''} style={{ background: color }} onClick={() => onChange({ color })} aria-label={`Set text colour ${color}`} aria-pressed={selected.color === color}/>)}</div>
+            <span className="studio-field-label" style={{ display: 'block' }}>Ink colour</span>
+            <div className="studio-ink-options">{inkOptions.map((color) => <button type="button" key={color} className={selected.color === color ? 'active' : ''} style={{ background: color }} onClick={() => onChange({ color })} aria-label={`Set text colour ${color}`} aria-pressed={selected.color === color}/>)}</div>
           </>}
           {selected.kind === 'stamp' && <>
             <label className="studio-field-label" htmlFor="studio-stamp-text">Stamp lettering</label>
             <input id="studio-stamp-text" className="studio-field" value={selected.value ?? ''} onChange={(event) => onChange({ value: event.target.value })} maxLength={18}/>
+            <span className="studio-field-label" style={{ display: 'block' }}>Stamp colour</span>
+            <div className="studio-ink-options">{stampTones.map((tone) => <button type="button" key={tone.id} className={(selected.tone ?? 'saffron') === tone.id ? 'active' : ''} style={{ background: tone.bg }} onClick={() => onChange({ tone: tone.id })} aria-label={`Stamp colour ${tone.label}`} aria-pressed={(selected.tone ?? 'saffron') === tone.id}/>)}</div>
+            <span className="studio-field-label" style={{ display: 'block' }}>Stamp picture</span>
+            <div className="studio-art-options">{stampArts.map((art) => <button type="button" key={art.id} className={(selected.art ?? 'sun') === art.id ? 'active' : ''} onClick={() => onChange({ art: art.id })} aria-pressed={(selected.art ?? 'sun') === art.id}>{art.label}</button>)}</div>
           </>}
           {selected.kind === 'decoration' && <>
-            <label className="studio-field-label">Decoration</label>
-            <div className="studio-decor-options">{['✳','♥','✿','✦','☀','✉'].map((value) => <button type="button" key={value} className={selected.value === value ? 'active' : ''} aria-pressed={selected.value === value} onClick={() => onChange({ value })}>{value}</button>)}</div>
-            <label className="studio-field-label" htmlFor="studio-decoration-size">Size · {selected.fontSize ?? 34}px</label>
+            <span className="studio-field-label" style={{ display: 'block' }}>Sticker</span>
+            <div className="studio-decor-options">{stickerKinds.map((kind) => <button type="button" key={kind} className={normalizeSticker(selected.value) === kind ? 'active' : ''} aria-label={stickerLabels[kind]} aria-pressed={normalizeSticker(selected.value) === kind} onClick={() => onChange({ value: kind })}><Sticker kind={kind} color={selected.color ?? '#ee4a2f'} size={30}/></button>)}</div>
+            <span className="studio-field-label" style={{ display: 'block' }}>Sticker colour</span>
+            <div className="studio-ink-options">{inkOptions.filter((color) => color !== '#ffffff').map((color) => <button type="button" key={color} className={selected.color === color ? 'active' : ''} style={{ background: color }} onClick={() => onChange({ color })} aria-label={`Sticker colour ${color}`} aria-pressed={selected.color === color}/>)}</div>
+            <label className="studio-field-label" htmlFor="studio-decoration-size">Size: {selected.fontSize ?? 34}px</label>
             <input id="studio-decoration-size" className="studio-range" type="range" min="16" max="64" value={selected.fontSize ?? 34} onChange={(event) => onChange({ fontSize: Number(event.target.value) })}/>
           </>}
-          {selected.kind === 'photo' && <p className="studio-helper-copy">Your photo is part of this composition. Drag it on the paper to reposition it.</p>}
-          <label className="studio-field-label" htmlFor="studio-layer-rotation">Rotation · {selected.rotation ?? 0}°</label>
+          {selected.kind === 'photo' && <p className="studio-helper-copy">Drag the photo on the paper to move it.</p>}
+          <label className="studio-field-label" htmlFor="studio-layer-rotation">Rotation: {selected.rotation ?? 0}°</label>
           <input id="studio-layer-rotation" className="studio-range" type="range" min="-20" max="20" value={selected.rotation ?? 0} onChange={(event) => onChange({ rotation: Number(event.target.value) })}/>
-          <label className="studio-field-label" htmlFor="studio-layer-width">Layer width · {selected.width}%</label>
+          <label className="studio-field-label" htmlFor="studio-layer-width">Layer width: {selected.width}%</label>
           <input id="studio-layer-width" className="studio-range" type="range" min="8" max="92" value={selected.width} onChange={(event) => onChange({ width: Number(event.target.value) })}/>
         </section>
-      ) : <div className="studio-inspector-empty"><span aria-hidden="true">↖</span><strong>Pick something on the paper</strong><p>Choose a layer to edit its words, colour, size and position.</p></div>}
-      <div className="studio-inspector-footnote">Your work is saved in this browser on this device. It is not sent anywhere.</div>
+      ) : <div className="studio-inspector-empty"><strong>Select a layer on the paper</strong><p>Its words, colour, size and position appear here.</p></div>}
+      <div className="studio-inspector-footnote">Drafts are saved in this browser only. Nothing is uploaded.</div>
     </aside>
   )
 }

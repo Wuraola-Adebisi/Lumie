@@ -1,3 +1,25 @@
-import { ArrowUpRight,Clock3,LockKeyhole,Plus } from 'lucide-react'
+import { Clock3, LockKeyhole, Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import Envelope from '../components/mail/Envelope'
+import HoloSeal from '../components/mail/HoloSeal'
 import { openWhenItems } from '../data/sampleData'
-export default function OpenWhenPage(){return <div className="content-page"><div className="page-heading-row"><div><div className="section-kicker">FOR A MOMENT STILL TO COME</div><h1>Open when...</h1><p>Write something for a future version of someone. Or for yourself.</p></div><button className="button button-dark" onClick={()=>alert('Open-when creation will be connected in a later build phase.')}><Plus size={17}/> Make one</button></div><div className="open-when-intro"><div className="open-when-stamp">FOR<br/>LATER</div><div><h2>Not everything has to be opened <em>right now.</em></h2><p>Leave a note for a particular day, a hard moment, a celebration or a feeling. Choose when it becomes available.</p></div></div><div className="open-when-grid">{openWhenItems.map(item=><article className={`open-when-card tone-${item.tone}`} key={item.id}><div className="open-card-top"><span>OPEN WHEN</span>{item.locked?<LockKeyhole size={17}/>:<ArrowUpRight size={17}/>}</div><div className="open-card-symbol">✳</div><h3>{item.title}</h3><div className="open-card-bottom"><Clock3 size={15}/><span>{item.unlock}</span></div></article>)}</div><p className="prototype-note">Unlock dates shown here are illustrative. Time locks must be enforced by the backend before this feature can be used for private correspondence.</p></div>}
+
+const toneMap = { saffron: 'gold', lilac: 'cobalt', moss: 'moss' } as const
+
+export default function OpenWhenPage() {
+  return (
+    <div>
+      <div className="flex flex-wrap items-end justify-between gap-4"><h1 className="display text-[clamp(34px,5vw,54px)]">Open when</h1><Link to="/app/create?type=letter" className="btn btn-primary"><Plus size={18} /> New letter</Link></div>
+      <p className="mt-2 max-w-[36rem] text-[17px] text-muted">Write something for a future day, a feeling or a person, and choose when it can be opened.</p>
+      <div className="mt-12 grid gap-12 sm:grid-cols-2 lg:grid-cols-3">
+        {openWhenItems.map((item) => (
+          <article key={item.id}>
+            <div className="relative"><Envelope tone={toneMap[item.tone]} /><HoloSeal className="absolute left-1/2 top-[50%] w-[24%] -translate-x-1/2 -translate-y-1/2 rotate-6" style={{ zIndex: 5 }} /></div>
+            <h2 className="display mt-6 text-[22px] leading-tight">{item.title}</h2>
+            <p className="mt-2 flex items-center gap-2 text-[15px] font-medium text-muted">{item.locked ? <LockKeyhole size={16} /> : <Clock3 size={16} />}{item.unlock}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  )
+}
