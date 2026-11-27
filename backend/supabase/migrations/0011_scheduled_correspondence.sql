@@ -139,7 +139,7 @@ begin
   if not found then return jsonb_build_object('error','INVITATION_NOT_FOUND'); end if;
   if v_invite.status='accepted' then
     if v_invite.accepted_by=p_recipient_id and v_invite.thread_id is not null then
-      return jsonb_build_object('threadId',v_invite.thread_id,'alreadyAccepted',true);
+      return jsonb_build_object('threadId',v_invite.thread_id,'alreadyAccepted',true,'availableAt',v_invite.available_at);
     end if;
     return jsonb_build_object('error','INVITATION_ALREADY_USED');
   end if;
