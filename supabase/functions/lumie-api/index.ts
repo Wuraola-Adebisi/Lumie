@@ -44,7 +44,7 @@ function allowedOrigin(origin: string | null) {
   if (ALLOWED_ORIGINS.has(origin)) return origin;
   try {
     const host = new URL(origin).hostname;
-    return host.endsWith(".vercel.app") ? origin : "";
+    return host.startsWith("lumie-") && host.endsWith(".vercel.app") ? origin : "";
   } catch { return ""; }
 }
 function parseJson(raw: string): Json | null {
@@ -326,7 +326,7 @@ Deno.serve(async (req: Request) => {
       ]);
       if (participantError) throw participantError;
       if (messageError) throw messageError;
-      const otherIds = [...new Set((participants || []).filter((p: Json) => !ids.includes("") && p.profile_id !== user.id).map((p: Json) => String(p.profile_id)))];
+      const otherIds = [...new Set((participants || []).filter((p: Json) => p.profile_id !== user.id).map((p: Json) => String(p.profile_id)))];
       const { data: profiles, error: profileError } = await admin.from("profiles").select("id,display_name").in("id", otherIds);
       if (profileError) throw profileError;
       const names = new Map((profiles || []).map((p: Json) => [String(p.id), p.display_name || "Lumie member"]));
