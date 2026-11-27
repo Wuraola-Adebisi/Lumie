@@ -70,4 +70,17 @@ describe('cloud creation contract', () => {
     expect(parseCloudCreationPage({ items: [valid], nextCursor: null })).toMatchObject({ ok: true })
     expect(parseCloudCreationPage({ items: [{ ...valid, revision: -1 }] })).toMatchObject({ ok: false })
   })
+  it('rejects inline image data until an asset has been uploaded', () => {
+    const document = createDocument('postcard')
+    document.elements.push({
+      id: 'photo-inline',
+      kind: 'photo',
+      x: 10,
+      y: 10,
+      width: 30,
+      image: 'data:image/png;base64,AAAA',
+    })
+    expect(parseCloudCreation(makeCreation({ format: 'postcard', document })).ok).toBe(false)
+  })
+
 })
