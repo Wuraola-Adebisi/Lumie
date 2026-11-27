@@ -190,6 +190,34 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           description: Base revision is stale
+  /v1/assets/{assetId}/complete:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    post:
+      tags: [Assets]
+      operationId: completeAssetUpload
+      summary: Verify uploaded object and mark the asset ready
+      responses:
+        '200':
+          description: Asset verified
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Upload incomplete
+        '422':
+          description: Object metadata mismatch
+  /v1/assets/{assetId}/download-url:
+    parameters:
+      - $ref: '#/components/parameters/AssetId'
+    get:
+      tags: [Assets]
+      operationId: getAssetDownloadUrl
+      summary: Get a temporary private download URL for a ready asset
+      responses:
+        '200':
+          description: Signed URL
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/assets/upload-intents:
     post:
       tags: [Assets]
@@ -227,6 +255,13 @@ components:
   parameters:
     CreationId:
       name: creationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AssetId:
+      name: assetId
       in: path
       required: true
       schema:
