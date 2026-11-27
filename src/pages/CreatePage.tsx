@@ -134,7 +134,9 @@ export default function CreatePage() {
   }, [commit, document])
 
   const addElement = (element: StudioElement) => {
-    commit({ ...document, elements: [...document.elements, element] })
+    setHistory((items) => [...items.slice(-29), document])
+    setFuture([])
+    setDocument((current) => ({ ...current, elements: [...current.elements, element], updatedAt: new Date().toISOString() }))
     setSelectedId(element.id)
   }
 
