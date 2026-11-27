@@ -50,19 +50,13 @@ services:
       - "9002:9001"
     volumes:
       - lumie-minio:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   minio-init:
     image: quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z
     depends_on:
       minio:
-        condition: service_healthy
+        condition: service_started
     entrypoint: ["/bin/sh", "-c"]
-    command: ["mc alias set local http://minio:9000 lumie_local lumie_local_storage_password && mc mb --ignore-existing local/lumie-private"]
+    command: ["until mc alias set local http://minio:9000 lumie_local lumie_local_storage_password; do sleep 2; done; mc mb --ignore-existing local/lumie-private"]
 
   mailpit:
     image: axllent/mailpit:v1.22
