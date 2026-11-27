@@ -11,6 +11,7 @@ import AccessibilityPage from './pages/AccessibilityPage'
 import DashboardPage from './pages/DashboardPage'
 import InboxPage from './pages/InboxPage'
 import ArchivePage from './pages/ArchivePage'
+import LibraryPage from './pages/LibraryPage'
 import CollectionsPage from './pages/CollectionsPage'
 import OpenWhenPage from './pages/OpenWhenPage'
 import CreatePage from './pages/CreatePage'
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="create" element={<CreatePage />} />
         <Route path="inbox" element={<InboxPage />} />
         <Route path="archive" element={<ArchivePage />} />
+        <Route path="library" element={<LibraryPage />} />
         <Route path="collections" element={<CollectionsPage />} />
         <Route path="open-when" element={<OpenWhenPage />} />
       </Route>
