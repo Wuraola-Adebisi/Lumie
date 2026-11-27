@@ -1,0 +1,432 @@
+openapi: 3.1.0
+info:
+  title: Lumie API
+  version: 1.0.0
+  description: Authenticated API contract for account-owned creations and media upload intents.
+servers:
+  - url: https://api.lumiepost.com
+    description: Planned production API origin
+security:
+  - cognitoJwt: []
+tags:
+  - name: Account
+  - name: Creations
+  - name: Assets
+paths:
+  /v1/me:
+    get:
+      tags: [Account]
+      operationId: getCurrentProfile
+      summary: Get the authenticated user's Lumie profile
+      responses:
+        '200':
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/creations:
+    get:
+      tags: [Creations]
+      operationId: listCreations
+      summary: List the authenticated user's creations
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, archived]
+      responses:
+        '200':
+          description: Paginated creations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreationPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Creations]
+      operationId: createCreation
+      summary: Create a cloud-backed creation
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreationInput'
+      responses:
+        '201':
+          description: Creation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Creation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Idempotency key conflict
+        '413':
+          description: Document exceeds the accepted size limit
+  /v1/creations/{creationId}:
+    parameters:
+      - $ref: '#/components/parameters/CreationId'
+    get:
+      tags: [Creations]
+      operationId: getCreation
+      summary: Get one creation owned by the authenticated user
+      responses:
+        '200':
+          description: Creation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Creation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Creations]
+      operationId: updateCreation
+      summary: Update a creation and append a revision
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCreationInput'
+      responses:
+        '200':
+          description: Updated creation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Creation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Revision conflict; client must fetch the latest version
+        '413':
+          description: Document exceeds the accepted size limit
+    delete:
+      tags: [Creations]
+      operationId: archiveCreation
+      summary: Archive a creation (soft delete)
+      responses:
+        '204':
+          description: Creation archived
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/creations/{creationId}/revisions:
+    parameters:
+      - $ref: '#/components/parameters/CreationId'
+    get:
+      tags: [Creations]
+      operationId: listCreationRevisions
+      summary: List revision metadata for an owned creation
+      responses:
+        '200':
+          description: Revision history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CreationRevision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Creations]
+      operationId: appendCreationRevision
+      summary: Append an immutable document revision
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppendRevisionInput'
+      responses:
+        '201':
+          description: Revision appended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreationRevision'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Base revision is stale
+  /v1/assets/upload-intents:
+    post:
+      tags: [Assets]
+      operationId: createAssetUploadIntent
+      summary: Request a short-lived upload URL for a private media asset
+      description: The server creates the object key and authorises the asset owner. Clients never choose an arbitrary bucket or object key.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUploadIntentInput'
+      responses:
+        '201':
+          description: Upload intent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadIntent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: File exceeds the upload size limit
+        '415':
+          description: Unsupported media type
+components:
+  securitySchemes:
+    cognitoJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cognito access token validated by API Gateway and revalidated by trusted backend handlers where required.
+  parameters:
+    CreationId:
+      name: creationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 16
+        maxLength: 128
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication
+    NotFound:
+      description: Resource not found or not accessible to this account
+    BadRequest:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    Profile:
+      type: object
+      required: [id, displayName, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          maxLength: 80
+        avatarAssetId:
+          type: [string, 'null']
+          format: uuid
+        locale:
+          type: string
+          maxLength: 35
+        timeZone:
+          type: string
+          maxLength: 64
+        createdAt:
+          type: string
+          format: date-time
+    CreationPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Creation'
+        nextCursor:
+          type: [string, 'null']
+    Creation:
+      type: object
+      required: [id, title, format, document, revision, status, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        format:
+          $ref: '#/components/schemas/CreationFormat'
+        document:
+          $ref: '#/components/schemas/StudioDocument'
+        revision:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [draft, archived]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreationFormat:
+      type: string
+      enum: [letter, postcard, photo-card, collage, memory]
+    StudioDocument:
+      type: object
+      description: Versioned JSON document. Binary image data must be stored as private assets and referenced by asset ID, never embedded as a data URL.
+      required: [schemaVersion, id, name, format, background, elements, updatedAt]
+      properties:
+        schemaVersion:
+          const: 2
+        id:
+          type: string
+          minLength: 1
+          maxLength: 128
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+        format:
+          $ref: '#/components/schemas/CreationFormat'
+        background:
+          type: string
+          maxLength: 64
+        elements:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            additionalProperties: true
+        updatedAt:
+          type: string
+          format: date-time
+    CreateCreationInput:
+      type: object
+      required: [title, document]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        document:
+          $ref: '#/components/schemas/StudioDocument'
+    UpdateCreationInput:
+      type: object
+      required: [title, document, expectedRevision]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        document:
+          $ref: '#/components/schemas/StudioDocument'
+        expectedRevision:
+          type: integer
+          minimum: 1
+    AppendRevisionInput:
+      type: object
+      required: [document, expectedRevision]
+      properties:
+        document:
+          $ref: '#/components/schemas/StudioDocument'
+        expectedRevision:
+          type: integer
+          minimum: 1
+    CreationRevision:
+      type: object
+      required: [id, revision, document, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+        document:
+          $ref: '#/components/schemas/StudioDocument'
+        createdAt:
+          type: string
+          format: date-time
+    CreateUploadIntentInput:
+      type: object
+      required: [fileName, contentType, sizeBytes]
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+          maxLength: 180
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp, image/avif]
+        sizeBytes:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+    UploadIntent:
+      type: object
+      required: [assetId, uploadUrl, expiresAt, requiredHeaders]
+      properties:
+        assetId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        requiredHeaders:
+          type: object
+          additionalProperties:
+            type: string
+    ApiError:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
