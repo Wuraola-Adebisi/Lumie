@@ -11,7 +11,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     if (started.current) return
     started.current = true
-    completeCallback(window.location.search)
+    completeCallback(window.location.search + window.location.hash)
       .then(() => {
         const destination = sessionStorage.getItem('lumie-after-sign-in') || '/app'
         sessionStorage.removeItem('lumie-after-sign-in')
