@@ -114,7 +114,7 @@ ALTER TABLE asset_thread_grants FORCE ROW LEVEL SECURITY;
 CREATE POLICY asset_thread_grants_member_read ON asset_thread_grants
   FOR SELECT USING (EXISTS (
     SELECT 1 FROM correspondence_participants cp
-    WHERE cp.thread_id = thread_id
+    WHERE cp.thread_id = asset_thread_grants.thread_id
       AND cp.profile_id = NULLIF(current_setting('app.user_id', true), '')::uuid
   ));
 CREATE POLICY asset_thread_grants_owner_insert ON asset_thread_grants
@@ -123,7 +123,7 @@ CREATE POLICY asset_thread_grants_owner_insert ON asset_thread_grants
     AND EXISTS (SELECT 1 FROM assets a WHERE a.id = asset_id AND a.owner_id = granted_by AND a.status = 'ready')
     AND EXISTS (
       SELECT 1 FROM correspondence_participants cp
-      WHERE cp.thread_id = thread_id
+      WHERE cp.thread_id = asset_thread_grants.thread_id
         AND cp.profile_id = granted_by
     )
   );
