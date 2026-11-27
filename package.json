@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "backend:dev": "node backend/src/local-server.mjs",
+    "backend:dev": "node --env-file-if-exists=.env backend/src/local-server.mjs",
     "backend:check": "node --check backend/src/local-server.mjs && node --check backend/src/local-auth.mjs && node --check backend/src/api.mjs",
     "backend:test": "node --test backend/src/local-auth.test.mjs"
   },
