@@ -172,7 +172,6 @@ function readImportMap(profileId: string): Record<string, string> {
 export function getLocalImportSummary(profileId: string) {
   const imported = readImportMap(profileId)
   const local = localCreationModule.listLocalCreations()
-  const pending = local.filter((item) => !imported[item.id] && !hasInlineMedia(item))
   return { pending: local.filter((item) => !imported[item.id]).length, mediaBlocked: 0, total: local.length }
 }
 
@@ -181,18 +180,13 @@ export async function importLocalCreations(token: TokenProvider, profileId: stri
   const imported = readImportMap(profileId)
   const local = localCreationModule.listLocalCreations()
   let importedCount = 0
-  let mediaBlocked = 0
   for (const document of local) {
     if (imported[document.id]) continue
-    if (hasInlineMedia(document)) {
-      mediaBlocked += 1
-      continue
-    }
     const withAssets = await uploadInlineCreationMedia(token, document)
     const created = await createCloudCreation(token, toCloudDocument(withAssets))
     imported[document.id] = created.id
     localStorage.setItem(importMapKey(profileId), JSON.stringify(imported))
     importedCount += 1
   }
-  return { importedCount, mediaBlocked }
+  return { importedCount, mediaBlocked: 0 }
 }
