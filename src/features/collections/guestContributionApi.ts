@@ -9,44 +9,30 @@ export interface GuestCollectionInfo {
   remaining: number
 }
 
-async function hashToken(token: string) {
-  if (!/^[0-9a-f]{64}$/i.test(token)) throw new Error('This invitation link is not valid.')
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
-  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('')
-}
-
-async function callRpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
+async function callGuestFunction<T>(body: Record<string, unknown>): Promise<T> {
   if (!PROJECT_URL || !PUBLISHABLE_KEY) throw new Error('This contribution form is temporarily unavailable.')
-  const response = await fetch(`${PROJECT_URL}/rest/v1/rpc/${name}`, {
+  const response = await fetch(`${PROJECT_URL}/functions/v1/lumie-guest`, {
     method: 'POST',
-    headers: {
-      apikey: PUBLISHABLE_KEY,
-      authorization: `Bearer ${PUBLISHABLE_KEY}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(args),
+    headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
     cache: 'no-store',
   })
-  const payload = await response.json().catch(() => null) as (T & { error?: string }) | null
-  if (!response.ok || !payload || payload.error) {
-    if (payload?.error === 'INVALID_CONTRIBUTION') throw new Error('Add your name and a note before sending.')
-    if (payload?.error === 'INVALID_EMAIL') throw new Error('Check the email address and try again.')
-    throw new Error('This invitation link is no longer available.')
+  const payload = await response.json().catch(() => null) as (T & { code?: string; message?: string }) | null
+  if (!response.ok || !payload) {
+    if (payload?.code === 'INVALID_CONTRIBUTION') throw new Error('Add your name and a note before sending.')
+    if (payload?.code === 'INVALID_EMAIL') throw new Error('Check the email address and try again.')
+    if (payload?.code === 'LINK_NOT_AVAILABLE') throw new Error('This invitation link is no longer available.')
+    throw new Error(payload?.message || 'Your contribution could not be sent.')
   }
   return payload
 }
 
 export async function getGuestCollectionInfo(token: string) {
-  const tokenHash = await hashToken(token)
-  return callRpc<GuestCollectionInfo>('lumie_get_collection_guest_link', { p_token_hash: tokenHash })
+  return callGuestFunction<GuestCollectionInfo>({ action: 'info', token })
 }
 
 export async function submitGuestContribution(token: string, guestName: string, guestEmail: string, message: string) {
-  const tokenHash = await hashToken(token)
-  return callRpc<{ contributionId: string; collectionTitle: string }>('lumie_submit_collection_contribution', {
-    p_token_hash: tokenHash,
-    p_guest_name: guestName,
-    p_guest_email: guestEmail || null,
-    p_message: message,
+  return callGuestFunction<{ contributionId: string; collectionTitle: string }>({
+    action: 'submit', token, guestName, guestEmail: guestEmail || null, message,
   })
 }

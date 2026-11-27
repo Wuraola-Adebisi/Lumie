@@ -473,17 +473,19 @@ test('creates a private collection and adds a saved creation', async ({ page }) 
 })
 
 test('lets a guest contribute a note through a collection link', async ({ page }) => {
-  await page.route('**/rest/v1/rpc/lumie_get_collection_guest_link', async route => {
-    await route.fulfill({ json: {
-      collectionTitle: 'Little keepsakes',
-      description: 'Pieces I want to keep close.',
-      ownerName: 'Collection owner',
-      expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-      remaining: 99,
-    } })
-  })
-  await page.route('**/rest/v1/rpc/lumie_submit_collection_contribution', async route => {
-    await route.fulfill({ json: { contributionId: 'f8e5d9b2-4c3d-5e6f-a071-2b3c4d5e6f70', collectionTitle: 'Little keepsakes' } })
+  await page.route('**/functions/v1/lumie-guest', async route => {
+    const body = route.request().postDataJSON() as { action: string }
+    if (body.action === 'info') {
+      await route.fulfill({ json: {
+        collectionTitle: 'Little keepsakes',
+        description: 'Pieces I want to keep close.',
+        ownerName: 'Collection owner',
+        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+        remaining: 99,
+      } })
+    } else {
+      await route.fulfill({ status: 201, json: { contributionId: 'f8e5d9b2-4c3d-5e6f-a071-2b3c4d5e6f70', collectionTitle: 'Little keepsakes' } })
+    }
   })
   await page.goto('/contribute/' + 'a'.repeat(64))
   await expect(page.getByRole('heading', { name: 'Little keepsakes' })).toBeVisible()
