@@ -1,8 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { getCurrentProfile } from '../creations/cloudApi'
-import { beginSignIn, completeSignIn, endSession, getAccessToken, hasSession, isOidcConfigured } from './oidcClient'
-import { parseLumieProfile } from './authContract'
+import { getAccessToken, getUser, hasSession, isSupabaseConfigured, onAuthStateChange, signIn as authenticate, signOut as endSession, signUp as register, completeSignIn } from './supabaseAuth'
+import type { SupabaseUser } from './supabaseAuth'
 import type { LumieProfile } from './authContract'
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated'
@@ -11,80 +10,88 @@ interface AuthContextValue {
   profile: LumieProfile | null
   error: string
   configured: boolean
-  signIn: () => Promise<void>
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string, displayName: string) => Promise<{ needsEmailConfirmation: boolean }>
   signOut: () => Promise<void>
   completeCallback: (search: string) => Promise<void>
   getToken: () => Promise<string>
   reloadProfile: () => Promise<void>
 }
-
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function toProfile(user: SupabaseUser): LumieProfile {
+  const metadata = user.user_metadata || {}
+  const displayName = typeof metadata.display_name === 'string' ? metadata.display_name.slice(0, 80) : ''
+  return {
+    id: user.id,
+    displayName,
+    avatarAssetId: null,
+    locale: 'en',
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    createdAt: new Date().toISOString(),
+  }
+}
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
   const [profile, setProfile] = useState<LumieProfile | null>(null)
   const [error, setError] = useState('')
-  const configured = isOidcConfigured()
-  const mounted = useRef(true)
+  const configured = isSupabaseConfigured()
 
   const reloadProfile = useCallback(async () => {
-    const raw = await getCurrentProfile(getAccessToken)
-    const parsed = parseLumieProfile(raw)
-    if (!parsed.ok) throw new Error(parsed.reason)
-    if (mounted.current) {
-      setProfile(parsed.value)
-      setStatus('authenticated')
-      setError('')
-    }
+    const user = await getUser()
+    setProfile(toProfile(user))
+    setStatus('authenticated')
+    setError('')
   }, [])
 
   useEffect(() => {
-    mounted.current = true
-    if (!configured || !hasSession()) {
-      setStatus('unauthenticated')
-      return () => { mounted.current = false }
-    }
-    reloadProfile().catch((reason: unknown) => {
-      if (!mounted.current) return
+    let active = true
+    const unsubscribe = onAuthStateChange((session) => {
+      if (!active) return
+      if (!session) {
+        setProfile(null)
+        setStatus('unauthenticated')
+      } else {
+        setProfile(toProfile(session.user))
+        setStatus('authenticated')
+      }
+    })
+    if (!configured || !hasSession()) setStatus('unauthenticated')
+    else reloadProfile().catch((reason: unknown) => {
+      if (!active) return
       setProfile(null)
       setStatus('unauthenticated')
       setError(reason instanceof Error ? reason.message : 'Could not restore your session.')
     })
-    return () => { mounted.current = false }
+    return () => { active = false; unsubscribe() }
   }, [configured, reloadProfile])
 
-  const signIn = useCallback(async () => {
+  const signIn = useCallback(async (email: string, password: string) => {
     setError('')
-    await beginSignIn()
+    const session = await authenticate(email, password)
+    setProfile(toProfile(session.user))
+    setStatus('authenticated')
   }, [])
-
+  const signUp = useCallback(async (email: string, password: string, displayName: string) => {
+    setError('')
+    return register(email, password, displayName)
+  }, [])
   const signOut = useCallback(async () => {
+    await endSession()
     setProfile(null)
     setStatus('unauthenticated')
-    await endSession()
   }, [])
-
   const completeCallback = useCallback(async (search: string) => {
     setStatus('loading')
     await completeSignIn(search)
     await reloadProfile()
   }, [reloadProfile])
-
   const value = useMemo<AuthContextValue>(() => ({
-    status,
-    profile,
-    error,
-    configured,
-    signIn,
-    signOut,
-    completeCallback,
-    getToken: getAccessToken,
-    reloadProfile,
-  }), [status, profile, error, configured, signIn, signOut, completeCallback, reloadProfile])
-
+    status, profile, error, configured, signIn, signUp, signOut,
+    completeCallback, getToken: getAccessToken, reloadProfile,
+  }), [status, profile, error, configured, signIn, signUp, signOut, completeCallback, reloadProfile])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-
 export function useAuth() {
   const value = useContext(AuthContext)
   if (!value) throw new Error('useAuth must be used inside AuthProvider.')
