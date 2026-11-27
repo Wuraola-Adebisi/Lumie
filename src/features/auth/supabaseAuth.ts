@@ -73,11 +73,6 @@ function toSession(value: Record<string, unknown>): SupabaseSession {
     user,
   };
 }
-function base64Url(bytes: Uint8Array) {
-  let binary = '';
-  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
 export async function signUp(email: string, password: string, displayName: string) {
   const { url, key } = config();
   const redirect = new URL('/auth/callback', window.location.origin).toString();
