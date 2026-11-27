@@ -17,29 +17,6 @@ export default function GuestContributionPage() {
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
-    const robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]') || document.createElement('meta')
-    const existingRobots = robots.isConnected
-    const previousRobots = robots.getAttribute('content')
-    robots.name = 'robots'
-    robots.content = 'noindex,nofollow'
-    if (!existingRobots) document.head.appendChild(robots)
-
-    const referrer = document.querySelector<HTMLMetaElement>('meta[name="referrer"]') || document.createElement('meta')
-    const existingReferrer = referrer.isConnected
-    const previousReferrer = referrer.getAttribute('content')
-    referrer.name = 'referrer'
-    referrer.content = 'no-referrer'
-    if (!existingReferrer) document.head.appendChild(referrer)
-
-    return () => {
-      if (existingRobots && previousRobots !== null) robots.content = previousRobots
-      else if (!existingRobots) robots.remove()
-      if (existingReferrer && previousReferrer !== null) referrer.content = previousReferrer
-      else if (!existingReferrer) referrer.remove()
-    }
-  }, [])
-
-  useEffect(() => {
     let active = true
     getGuestCollectionInfo(token).then(result => {
       if (active) setInfo(result)
