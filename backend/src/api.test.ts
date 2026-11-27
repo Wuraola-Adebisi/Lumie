@@ -71,6 +71,17 @@ describe('Lumie API handler', () => {
     expect(pool.connect).not.toHaveBeenCalled()
   })
 
+
+  it('rejects ID tokens because API requests require Cognito access tokens', async () => {
+    const { pool } = makePool()
+    const handler = createApiHandler({ pool })
+    const request = event('GET', '/v1/me')
+    request.requestContext.authorizer.jwt.claims.token_use = 'id'
+    const result = await handler(request)
+    expect(result.statusCode).toBe(401)
+    expect(pool.connect).not.toHaveBeenCalled()
+  })
+
   it('provisions and returns the authenticated profile without exposing Cognito identity', async () => {
     const { pool, queries, client } = makePool()
     const handler = createApiHandler({ pool })
@@ -116,6 +127,21 @@ describe('Lumie API handler', () => {
     const invalid = { ...document(), elements: [{ id: 'x', kind: 'text', x: Number.NaN, y: 0, width: 1 }] }
     const result = await handler(event('POST', '/v1/creations', {
       body: JSON.stringify({ title: 'Bad document', document: invalid }),
+    }))
+    expect(result.statusCode).toBe(400)
+    expect(queries.some(query => query.sql.includes('INSERT INTO creations'))).toBe(false)
+  })
+
+
+  it('rejects embedded data URLs so binary media cannot be stored in document JSON', async () => {
+    const { pool, queries } = makePool()
+    const handler = createApiHandler({ pool })
+    const withEmbeddedImage = {
+      ...document(),
+      elements: [{ id: 'photo-1', kind: 'photo', x: 0, y: 0, width: 50, image: 'data:image/png;base64,AAAA' }],
+    }
+    const result = await handler(event('POST', '/v1/creations', {
+      body: JSON.stringify({ title: 'Photo card', document: withEmbeddedImage }),
     }))
     expect(result.statusCode).toBe(400)
     expect(queries.some(query => query.sql.includes('INSERT INTO creations'))).toBe(false)
