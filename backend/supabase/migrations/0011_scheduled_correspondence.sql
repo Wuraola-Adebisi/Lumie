@@ -181,7 +181,7 @@ begin
   set status='accepted',accepted_by=p_recipient_id,accepted_at=now(),thread_id=v_thread.id
   where id=v_invite.id;
   return jsonb_build_object(
-    'threadId',v_thread.id,'subject',case when v_invite.available_at>now() then coalesce(nullif(v_invite.snapshot->>'title',''),'A letter for you') else v_thread.subject end,
+    'threadId',v_thread.id,'subject',case when v_invite.available_at>now() then 'A letter is waiting' else v_thread.subject end,
     'senderName',coalesce(v_sender.display_name,'Lumie member'),'availableAt',v_invite.available_at
   );
 end;
