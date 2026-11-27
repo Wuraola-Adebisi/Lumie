@@ -119,9 +119,17 @@ CREATE POLICY profiles_self_update ON profiles
 
 ALTER TABLE creations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE creations FORCE ROW LEVEL SECURITY;
-CREATE POLICY creations_owner_access ON creations
+CREATE POLICY creations_owner_read ON creations
+  FOR SELECT
+  USING (owner_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
+CREATE POLICY creations_owner_insert ON creations
+  FOR INSERT
+  WITH CHECK (owner_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
+CREATE POLICY creations_owner_update ON creations
+  FOR UPDATE
   USING (owner_id = NULLIF(current_setting('app.user_id', true), '')::uuid)
   WITH CHECK (owner_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
+-- Hard deletion is intentionally unavailable; archive through status/archived_at.
 
 ALTER TABLE creation_revisions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE creation_revisions FORCE ROW LEVEL SECURITY;
@@ -135,8 +143,16 @@ CREATE POLICY creation_revisions_owner_insert ON creation_revisions
 
 ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE assets FORCE ROW LEVEL SECURITY;
-CREATE POLICY assets_owner_access ON assets
+CREATE POLICY assets_owner_read ON assets
+  FOR SELECT
+  USING (owner_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
+CREATE POLICY assets_owner_insert ON assets
+  FOR INSERT
+  WITH CHECK (owner_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
+CREATE POLICY assets_owner_update ON assets
+  FOR UPDATE
   USING (owner_id = NULLIF(current_setting('app.user_id', true), '')::uuid)
   WITH CHECK (owner_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
+-- Asset erasure is performed by a controlled lifecycle job, not a client DELETE.
 
 COMMIT;

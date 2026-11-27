@@ -18,3 +18,31 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: lumie_test
+          POSTGRES_DB: lumie_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lumie_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: lumie_test
+      PGDATABASE: lumie_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply initial migration
+        run: psql -v ON_ERROR_STOP=1 -f backend/migrations/0001_initial.sql
+      - name: Verify row-level security and immutable revisions
+        run: psql -v ON_ERROR_STOP=1 -f backend/tests/0001_rls.sql
