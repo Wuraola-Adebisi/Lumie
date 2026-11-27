@@ -5,7 +5,7 @@ import * as localCreationModule from './localCreations'
 
 type TokenProvider = () => Promise<string>
 
-const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '')
+const apiBase = ((import.meta.env.VITE_API_BASE_URL as string | undefined) || (import.meta.env.DEV ? 'http://localhost:3001' : undefined))?.replace(/\/$/, '')
 
 export class CloudApiError extends Error {
   status: number
@@ -116,9 +116,8 @@ function readImportMap(profileId: string): Record<string, string> {
 }
 
 export function getLocalImportSummary(profileId: string) {
-  const { listLocalCreations } = requireLocalCreations()
   const imported = readImportMap(profileId)
-  const local = listLocalCreations()
+  const local = localCreationModule.listLocalCreations()
   const pending = local.filter((item) => !imported[item.id] && !hasInlineMedia(item))
   const mediaBlocked = local.filter((item) => !imported[item.id] && hasInlineMedia(item))
   return { pending: pending.length, mediaBlocked: mediaBlocked.length, total: local.length }
