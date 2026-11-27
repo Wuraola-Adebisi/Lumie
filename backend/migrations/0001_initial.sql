@@ -63,7 +63,8 @@ CREATE TABLE assets (
   status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'ready', 'rejected', 'deleted')),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  deleted_at timestamptz
+  deleted_at timestamptz,
+  UNIQUE (owner_id, id)
 );
 
 CREATE INDEX assets_owner_created_idx ON assets (owner_id, created_at DESC);
@@ -96,11 +97,23 @@ CREATE TRIGGER assets_set_updated_at
   BEFORE UPDATE ON assets
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
--- The trusted API sets this transaction-local value only after resolving the
--- verified Cognito subject to profiles.id. Missing identity returns no rows.
+-- During first-login provisioning, the trusted API sets app.cognito_sub from
+-- the verified JWT, reads/inserts only that profile, then sets app.user_id to
+-- the returned internal UUID for the rest of the transaction. Both settings
+-- are transaction-local and must never come from request-body fields.
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles FORCE ROW LEVEL SECURITY;
-CREATE POLICY profiles_self_access ON profiles
+CREATE POLICY profiles_self_select ON profiles
+  FOR SELECT
+  USING (
+    id = NULLIF(current_setting('app.user_id', true), '')::uuid
+    OR cognito_sub = NULLIF(current_setting('app.cognito_sub', true), '')
+  );
+CREATE POLICY profiles_self_insert ON profiles
+  FOR INSERT
+  WITH CHECK (cognito_sub = NULLIF(current_setting('app.cognito_sub', true), ''));
+CREATE POLICY profiles_self_update ON profiles
+  FOR UPDATE
   USING (id = NULLIF(current_setting('app.user_id', true), '')::uuid)
   WITH CHECK (id = NULLIF(current_setting('app.user_id', true), '')::uuid);
 
