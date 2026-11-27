@@ -5,8 +5,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import StudioCanvas from '../features/studio/StudioCanvas'
 import StudioInspector from '../features/studio/StudioInspector'
 import ShareDialog from '../features/studio/ShareDialog'
-import { createDocument, createId, migrateStudioDocument, paperBase, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
-import { getLocalCreation, listLocalCreations, saveLocalCreation } from '../features/creations/localCreations'
+import { createDocument, createId, paperBase, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
+import { listLocalCreations, saveLocalCreation } from '../features/creations/localCreations'
 import type { StudioDocument, StudioElement, StudioFormat } from '../features/studio/studioTypes'
 
 function readDraft(format: StudioFormat, draftId: string | null): StudioDocument {
