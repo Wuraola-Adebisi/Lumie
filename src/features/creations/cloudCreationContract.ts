@@ -52,6 +52,7 @@ function validDocument(value: unknown, expectedFormat: StudioFormat): value is S
     if (ids.has(element.id)) return false
     ids.add(element.id)
     if (!['text', 'stamp', 'decoration', 'photo'].includes(String(element.kind))) return false
+    if (typeof element.image === 'string' && element.image.startsWith('data:')) return false
     for (const key of ['x', 'y', 'width'] as const) {
       if (typeof element[key] !== 'number' || !Number.isFinite(element[key])) return false
     }

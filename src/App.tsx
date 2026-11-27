@@ -11,15 +11,21 @@ import AccessibilityPage from './pages/AccessibilityPage'
 import DashboardPage from './pages/DashboardPage'
 import InboxPage from './pages/InboxPage'
 import ArchivePage from './pages/ArchivePage'
+import LibraryPage from './pages/LibraryPage'
 import CollectionsPage from './pages/CollectionsPage'
 import OpenWhenPage from './pages/OpenWhenPage'
 import CreatePage from './pages/CreatePage'
 import AppShell from './components/app/AppShell'
+import RequireAuth from './features/auth/RequireAuth'
+import SignInPage from './pages/SignInPage'
+import AuthCallbackPage from './pages/AuthCallbackPage'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/sign-in" element={<SignInPage />} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/contact" element={<ContactPage />} />
@@ -28,13 +34,16 @@ export default function App() {
       <Route path="/acceptable-use" element={<AcceptableUsePage />} />
       <Route path="/cookies" element={<CookiesPage />} />
       <Route path="/accessibility" element={<AccessibilityPage />} />
+      <Route element={<RequireAuth />}>
       <Route path="/app" element={<AppShell />}>
         <Route index element={<DashboardPage />} />
         <Route path="create" element={<CreatePage />} />
         <Route path="inbox" element={<InboxPage />} />
         <Route path="archive" element={<ArchivePage />} />
+        <Route path="library" element={<LibraryPage />} />
         <Route path="collections" element={<CollectionsPage />} />
         <Route path="open-when" element={<OpenWhenPage />} />
+      </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

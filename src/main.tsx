@@ -14,9 +14,10 @@ import '@fontsource/courier-prime/700.css'
 import '@fontsource/caveat/500.css'
 import '@fontsource/caveat/700.css'
 import App from './App'
+import { AuthProvider } from './features/auth/AuthProvider'
 import './index.css'
 import './styles/base.css'
 import './styles/mail.css'
 import './styles/studio.css'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter><App /></BrowserRouter></React.StrictMode>)
+ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><BrowserRouter><AuthProvider><App /></AuthProvider></BrowserRouter></React.StrictMode>)

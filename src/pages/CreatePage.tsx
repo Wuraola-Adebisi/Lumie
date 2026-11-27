@@ -1,25 +1,32 @@
-import { ArrowLeft, Copy, Download, FileText, Redo2, Rotate3d, Save, Share2, Undo2 } from 'lucide-react'
+import { Archive, ArrowLeft, Copy, Download, FileText, Redo2, Rotate3d, Save, Share2, Undo2 } from 'lucide-react'
 import { toPng } from 'html-to-image'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import StudioCanvas from '../features/studio/StudioCanvas'
 import StudioInspector from '../features/studio/StudioInspector'
 import ShareDialog from '../features/studio/ShareDialog'
 import { createDocument, createId, paperBase, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
-import { listLocalCreations, saveLocalCreation } from '../features/creations/localCreations'
+import { saveLocalCreation } from '../features/creations/localCreations'
+import { CloudApiError, archiveCloudCreation, createCloudCreation, getCloudCreation, hasInlineMedia, updateCloudCreation } from '../features/creations/cloudApi'
+import { useAuth } from '../features/auth/AuthProvider'
 import type { StudioDocument, StudioElement, StudioFormat } from '../features/studio/studioTypes'
 
-function readDraft(format: StudioFormat, draftId: string | null): StudioDocument {
-  const saved = listLocalCreations()
-  if (draftId) return saved.find((item) => item.id === draftId) ?? createDocument(format)
-  return createDocument(format)
-}
 
 export default function CreatePage() {
   const [params] = useSearchParams()
   const requestedFormat = (params.get('type') ?? 'letter') as StudioFormat
   const initialFormat = studioFormats.some((item) => item.id === requestedFormat) ? requestedFormat : 'letter'
-  const [document, setDocument] = useState<StudioDocument>(() => readDraft(initialFormat, params.get('draft')))
+  const { getToken } = useAuth()
+  const draftId = params.get('draft')
+  const [document, setDocument] = useState<StudioDocument>(() => createDocument(initialFormat))
+  const [loadingDraft, setLoadingDraft] = useState(Boolean(draftId))
+  const [draftLoadFailed, setDraftLoadFailed] = useState(false)
+  const navigate = useNavigate()
+  const [saveStatus, setSaveStatus] = useState<'saving' | 'saved' | 'error'>('saving')
+  const cloudIdRef = useRef<string | null>(null)
+  const revisionRef = useRef(0)
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const skipSaveRef = useRef(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [history, setHistory] = useState<StudioDocument[]>([])
   const [future, setFuture] = useState<StudioDocument[]>([])
@@ -31,12 +38,66 @@ export default function CreatePage() {
   const closeShare = useCallback(() => setShareOpen(false), [])
 
   useEffect(() => {
-    if (saveLocalCreation(document)) {
-      setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
-    } else {
-      setToast('This composition could not be saved. Try removing a large photo.')
+    if (!draftId) {
+      setLoadingDraft(false)
+      return
     }
-  }, [document])
+    let active = true
+    getCloudCreation(getToken, draftId).then((creation) => {
+      if (!active) return
+      cloudIdRef.current = creation.id
+      revisionRef.current = creation.revision
+      skipSaveRef.current = true
+      setDocument(creation.document)
+      setSavedAt(new Date(creation.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+      setSaveStatus('saved')
+    }).catch((reason: unknown) => {
+      if (!active) return
+      setToast(reason instanceof Error ? reason.message : 'This piece could not be opened.')
+      setDraftLoadFailed(true)
+      setSaveStatus('error')
+    }).finally(() => {
+      if (active) setLoadingDraft(false)
+    })
+    return () => { active = false }
+  }, [draftId, getToken])
+
+  const persistDocument = useCallback((snapshot: StudioDocument) => {
+    if (hasInlineMedia(snapshot)) {
+      saveLocalCreation(snapshot)
+      setSaveStatus('error')
+      setToast('This piece includes a photo that still needs to upload. Your local copy has been kept.')
+      return
+    }
+    setSaveStatus('saving')
+    saveQueueRef.current = saveQueueRef.current.then(async () => {
+      const saved = cloudIdRef.current
+        ? await updateCloudCreation(getToken, cloudIdRef.current, snapshot, revisionRef.current)
+        : await createCloudCreation(getToken, snapshot)
+      cloudIdRef.current = saved.id
+      revisionRef.current = saved.revision
+      setSavedAt(new Date(saved.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+      setSaveStatus('saved')
+    }).catch((reason: unknown) => {
+      setSaveStatus('error')
+      if (reason instanceof CloudApiError && reason.status === 409) {
+        setToast('This piece changed in another session. Reload it before making more changes.')
+      } else {
+        setToast(reason instanceof Error ? reason.message : 'Your piece could not be saved.')
+      }
+    })
+  }, [getToken])
+
+  useEffect(() => {
+    if (loadingDraft || draftLoadFailed) return
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false
+      return
+    }
+    setSaveStatus('saving')
+    const timeout = window.setTimeout(() => persistDocument(document), 750)
+    return () => window.clearTimeout(timeout)
+  }, [document, loadingDraft, draftLoadFailed, persistDocument])
 
   useEffect(() => {
     if (!toast) return
@@ -208,11 +269,19 @@ export default function CreatePage() {
   }
 
   const saveDraft = () => {
+    if (loadingDraft || draftLoadFailed) return
+    persistDocument(document)
+    setToast('Saving your piece…')
+  }
+
+  const archiveDraft = async () => {
+    if (!cloudIdRef.current || saveStatus !== 'saved') return
+    if (!window.confirm('Move this piece to your archive?')) return
     try {
-      if (!saveLocalCreation(document)) throw new Error('Storage unavailable')
-      setToast('Saved to your creations on this device.')
-    } catch {
-      setToast('Could not save. This composition may be too large.')
+      await archiveCloudCreation(getToken, cloudIdRef.current)
+      navigate('/app/archive')
+    } catch (reason) {
+      setToast(reason instanceof Error ? reason.message : 'This piece could not be archived.')
     }
   }
 
@@ -221,15 +290,15 @@ export default function CreatePage() {
     <div className="create-page studio-page">
       <header className="studio-top">
         <div className="studio-top-left">
-          <Link to="/app/archive" className="studio-back"><ArrowLeft size={16}/> Back to your creations</Link>
-          <span className="studio-save-state" role="status">{savedAt ? `Saved on this device at ${savedAt}` : 'Saving on this device'}</span>
+          <Link to="/app" className="studio-back"><ArrowLeft size={16}/> Back to your desk</Link>
+          <span className="studio-save-state" role="status">{loadingDraft ? 'Opening your piece…' : saveStatus === 'saving' ? 'Saving to your desk…' : saveStatus === 'saved' ? `Saved at ${savedAt ?? 'just now'}` : 'Changes need attention'}</span>
         </div>
         <div className="studio-heading-actions">
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPreview3d((value) => !value); setSelectedId(null) }} aria-pressed={preview3d}><Rotate3d size={15}/> 3D view</button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={exportPng} disabled={exporting}><Download size={15}/> {exporting ? 'Exporting' : 'PNG'}</button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={exportPdf}><FileText size={15}/> PDF / Print</button>
           <button type="button" className="btn btn-tomato btn-sm" onClick={() => setShareOpen(true)}><Share2 size={15}/> Make share image</button>
-          <button type="button" className="btn btn-primary btn-sm" onClick={saveDraft}><Save size={15}/> Save draft</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={archiveDraft} disabled={!cloudIdRef.current || saveStatus !== 'saved'}><Archive size={15}/> Archive</button><button type="button" className="btn btn-primary btn-sm" onClick={saveDraft} disabled={loadingDraft || draftLoadFailed}><Save size={15}/> Save draft</button>
         </div>
       </header>
 
