@@ -21,6 +21,7 @@ export default function SignInPage() {
     setBusy(true); setError(''); setNotice('')
     try {
       if (mode === 'sign-up') {
+        sessionStorage.setItem('lumie-after-sign-in', destination)
         const result = await signUp(email, password, displayName)
         if (result.needsEmailConfirmation) setNotice('Check your email for a confirmation link. Once confirmed, you can sign in to your desk.')
         else window.location.assign(destination)
