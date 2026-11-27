@@ -13,6 +13,9 @@ This plan distinguishes the working frontend MVP, the pre-programme AI preview a
 - [x] Five formats, structured rich text, image composition and draggable layers.
 - [x] Undo/redo, duplicate, delete and keyboard movement.
 - [x] Browser-local draft persistence and restore.
+- [x] Multiple named creations with independent editing sessions.
+- [x] Search, reopen and delete saved creations from the archive.
+- [x] Show the three most recently edited creations on the dashboard.
 - [x] High-resolution PNG, print/PDF and share-image export.
 - [x] Unit and Chromium Playwright coverage for core editor journeys.
 
