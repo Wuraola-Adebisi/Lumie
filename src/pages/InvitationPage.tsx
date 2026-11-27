@@ -15,11 +15,16 @@ export default function InvitationPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const meta = document.createElement('meta')
+    const existing = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
+    const meta = existing || document.createElement('meta')
+    const previous = meta.getAttribute('content')
     meta.name = 'robots'
     meta.content = 'noindex,nofollow'
-    document.head.appendChild(meta)
-    return () => meta.remove()
+    if (!existing) document.head.appendChild(meta)
+    return () => {
+      if (existing && previous !== null) existing.content = previous
+      else if (!existing) meta.remove()
+    }
   }, [])
 
   useEffect(() => {
