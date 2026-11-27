@@ -136,9 +136,42 @@ test('offers a creative assistant suggestion', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Lumie assistant' })).toBeVisible()
   await page.getByLabel('What would you like help with?').selectOption('design.direction')
   await page.getByLabel('A little context (optional)').fill('A bright postcard for a friend')
-  await page.getByRole('button', { name: 'Show me an example' }).click()
+  await page.getByRole('button', { name: 'Show me an idea' }).click()
   await expect(page.getByRole('heading', { name: 'A visual direction' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Copy suggestion' })).toBeVisible()
+  await expect(page.getByText('Was this useful?')).toBeVisible()
+  await page.getByRole('button', { name: 'Helpful', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Thanks for letting us know.' })).toBeVisible()
 })
 
 // Keep assistant interaction coverage alongside the editor's browser-level acceptance tests.
+
+
+test('saves, searches, reopens and deletes multiple named creations', async ({ page }) => {
+  await page.getByLabel('Give it a name').fill('First postcard')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await page.getByRole('link', { name: 'Back to your creations' }).click()
+  await expect(page.getByRole('heading', { name: 'Your creations' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Make something' }).click()
+  await page.getByLabel('Give it a name').fill('Second letter')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await page.getByRole('link', { name: 'Back to your creations' }).click()
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Second letter' })).toBeVisible()
+
+  await page.getByRole('textbox', { name: 'Search your creations' }).fill('First')
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Second letter' })).toHaveCount(0)
+  await page.getByRole('textbox', { name: 'Search your creations' }).fill('')
+
+  const firstCreation = page.locator('article').filter({ has: page.getByRole('heading', { name: 'First postcard' }) })
+  await firstCreation.getByRole('link', { name: 'Open creation' }).click()
+  await expect(page.getByLabel('Give it a name')).toHaveValue('First postcard')
+  await page.getByRole('link', { name: 'Back to your creations' }).click()
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Delete First postcard' }).click()
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Second letter' })).toBeVisible()
+})

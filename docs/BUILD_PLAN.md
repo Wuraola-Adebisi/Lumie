@@ -1,10 +1,8 @@
 # Build plan
 
-This plan distinguishes the working frontend MVP, the pre-programme AI preview and the connected correspondence product.
-
 ## Milestone 1 — Frontend foundation
 - [x] Responsive public site and app shell.
-- [x] Dashboard and sample inbox, archive, collections and open-when views.
+- [x] Dashboard, inbox, archive, collections and Open When views.
 - [x] About, How it Works, Contact and policy pages.
 - [ ] Confirm legal operator details, support contact and jurisdiction; obtain legal review before public launch.
 - [ ] Complete screen-reader testing and manual accessibility review.
@@ -13,21 +11,25 @@ This plan distinguishes the working frontend MVP, the pre-programme AI preview a
 - [x] Five formats, structured rich text, image composition and draggable layers.
 - [x] Undo/redo, duplicate, delete and keyboard movement.
 - [x] Browser-local draft persistence and restore.
+- [x] Multiple named creations with independent editing sessions.
+- [x] Search, reopen and delete saved creations from the archive.
+- [x] Show the three most recently edited creations on the dashboard.
 - [x] High-resolution PNG, print/PDF and share-image export.
 - [x] Unit and Chromium Playwright coverage for core editor journeys.
+- [ ] Complete and merge the multi-creation library work; verify migration and archive journeys against the current main branch.
 
-## Milestone 3 — AI-ready MVP experience
+## Milestone 3 — AI assistant foundation
 - [x] Define user-led assistant principles and provider-neutral task contracts.
-- [x] Add a clearly labelled local assistant preview with fixed sample responses.
 - [x] Make assistant use optional; keep authoring and design controls fully manual.
-- [ ] Add assistant feedback controls.
-- [ ] Add mock-adapter tests and schema validation for task responses.
-- [ ] Prepare programme-facing product and technical brief.
-- [ ] Do not connect external model APIs before programme and infrastructure decisions.
+- [x] Add task-specific response validation and request bounds.
+- [x] Add deterministic mock-provider tests.
+- [x] Add assistant feedback controls and accessible error handling.
+- [x] Prepare programme-facing product and technical brief.
+- [ ] Do not connect external model APIs before provider access, privacy controls and budget decisions.
 
 ## Milestone 4 — AWS backend foundation
 - [ ] Select AWS region and validate service availability and credit eligibility.
-- [ ] Add infrastructure as code (AWS CDK or Terraform; choose one).
+- [ ] Choose and add infrastructure as code (AWS CDK or Terraform).
 - [ ] Configure Cognito, API Gateway, Lambda and PostgreSQL.
 - [ ] Add private S3 buckets, KMS encryption and least-privilege IAM.
 - [ ] Add migrations for profiles, documents, revisions and assets.
@@ -61,7 +63,7 @@ This plan distinguishes the working frontend MVP, the pre-programme AI preview a
 - [ ] Add collection organisation assistance using selected contributions.
 - [ ] Add Open When scheduling with server-side enforcement.
 
-## Milestone 8 — Production readiness
+## Milestone 8 — Launch readiness
 - [ ] Finalise privacy policy and terms against actual processors and behaviour.
 - [ ] Add account export, deletion, retention and backup procedures.
 - [ ] Complete security, privacy, accessibility and performance audits.
@@ -70,4 +72,4 @@ This plan distinguishes the working frontend MVP, the pre-programme AI preview a
 
 ## Definition of done
 
-A feature is not complete because its screen exists. It is complete when its data model, permissions, loading/error/empty states, accessibility, tests and user-facing copy are implemented and reviewed. Mock functionality must be clearly identified and must not imply that a live external service is connected.
+A feature is complete when its data model, permissions, loading/error/empty states, accessibility, tests and user-facing copy are implemented and reviewed. Product copy describes the experience; implementation status belongs in technical documentation. Never imply that an external model or service is connected when it is not.
