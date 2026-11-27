@@ -1,43 +1,130 @@
-import { Search } from 'lucide-react'
+import { ArrowUpRight, Mail, Send } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useState } from 'react'
-import LetterSheet from '../components/mail/LetterSheet'
-import { useTilt } from '../components/mail/useTilt'
-import { inboxItems } from '../data/sampleData'
+import { useAuth } from '../features/auth/AuthProvider'
+import { listCloudCreations, listCorrespondence, getCorrespondence, sendCorrespondence, replyToCorrespondence } from '../features/creations/cloudApi'
+import type { CorrespondenceSummary, CorrespondenceThread } from '../features/creations/cloudApi'
+import type { CloudCreation } from '../features/creations/cloudCreationContract'
 
 const heading = 'display text-[clamp(34px,5vw,54px)]'
 
 export default function InboxPage() {
-  const [selected, setSelected] = useState(inboxItems[0].id)
-  const active = inboxItems.find((item) => item.id === selected) ?? inboxItems[0]
-  const tilt = useTilt<HTMLDivElement>(8)
+  const { getToken } = useAuth()
+  const [items, setItems] = useState<CorrespondenceSummary[]>([])
+  const [creations, setCreations] = useState<CloudCreation[]>([])
+  const [activeId, setActiveId] = useState('')
+  const [thread, setThread] = useState<CorrespondenceThread | null>(null)
+  const [recipientEmail, setRecipientEmail] = useState('')
+  const [creationId, setCreationId] = useState('')
+  const [reply, setReply] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+
+  const refresh = useCallback(async () => {
+    const [inbox, saved] = await Promise.all([listCorrespondence(getToken), listCloudCreations(getToken)])
+    setItems(inbox)
+    setCreations(saved)
+    setCreationId(current => current || saved[0]?.id || '')
+    setActiveId(current => current || inbox[0]?.id || '')
+  }, [getToken])
+
+  useEffect(() => {
+    refresh().catch(reason => setError(reason instanceof Error ? reason.message : 'Your inbox could not be loaded.')).finally(() => setLoading(false))
+  }, [refresh])
+
+  useEffect(() => {
+    if (!activeId) { setThread(null); return }
+    getCorrespondence(getToken, activeId)
+      .then(setThread)
+      .catch(reason => setError(reason instanceof Error ? reason.message : 'This correspondence could not be opened.'))
+  }, [activeId, getToken])
+
+  const send = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!recipientEmail.trim() || !creationId || sending) return
+    setSending(true); setError(''); setNotice('')
+    try {
+      const result = await sendCorrespondence(getToken, recipientEmail, creationId)
+      setNotice(`Sent to ${result.recipientName}.`)
+      setRecipientEmail('')
+      await refresh()
+      setActiveId(result.threadId)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Your letter could not be sent.')
+    } finally { setSending(false) }
+  }
+
+  const sendReply = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!activeId || !reply.trim() || sending) return
+    setSending(true); setError('')
+    try {
+      await replyToCorrespondence(getToken, activeId, reply.trim())
+      setReply('')
+      setThread(await getCorrespondence(getToken, activeId))
+      await refresh()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Your reply could not be sent.')
+    } finally { setSending(false) }
+  }
+
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-3"><h1 className={heading}>Inbox</h1><span className="rounded-full border-2 border-navy bg-saffron px-3 py-1 text-[14px] font-bold">2 unread</span></div>
-      <div className="mt-8 grid overflow-hidden rounded-2xl border-2 border-navy bg-paper shadow-[0_4px_0_#121c5a] md:grid-cols-[minmax(260px,.8fr)_minmax(0,1.2fr)]">
-        <section aria-label="Letters" className="border-b-2 border-navy md:border-b-0 md:border-r-2">
-          <div className="m-4 flex items-center gap-2 rounded-lg border-2 border-navy/25 bg-white px-3 py-2.5 text-[15px] text-muted"><Search size={16} /> Search letters</div>
-          {inboxItems.map((item) => (
-            <button key={item.id} type="button" onClick={() => setSelected(item.id)} className={`relative flex w-full items-start gap-3 border-0 border-t border-navy/15 px-4 py-4 text-left ${selected === item.id ? 'bg-lime' : 'bg-transparent hover:bg-cream'}`} aria-pressed={selected === item.id}>
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-navy bg-bubblegum text-[13px] font-bold">{item.initials}</span>
-              <span className="min-w-0 flex-1"><span className="flex justify-between gap-2"><strong className="text-[15px]">{item.name}</strong><small className="text-[13px] text-muted">{item.time}</small></span><b className="mt-0.5 block text-[15px]">{item.title}</b><span className="block truncate text-[14px] text-muted">{item.preview}</span></span>
-              {item.unread && <i className="absolute right-3 top-4 h-2.5 w-2.5 rounded-full bg-tomato" aria-label="Unread" />}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div><p className="text-sm font-bold text-muted">Letters sent and received</p><h1 className={heading}>Inbox</h1></div>
+        <span className="rounded-full border-2 border-navy bg-saffron px-3 py-1 text-sm font-bold">{items.length} {items.length === 1 ? 'conversation' : 'conversations'}</span>
+      </div>
+
+      {error && <p role="alert" className="mt-5 rounded-lg bg-tomato/10 p-3 text-sm text-ink">{error}</p>}
+      {notice && <p role="status" className="mt-5 rounded-lg bg-lime p-3 text-sm font-semibold text-ink">{notice}</p>}
+
+      <section className="mt-7 rounded-2xl border-2 border-navy bg-white p-5 shadow-[0_4px_0_#121c5a] md:p-6">
+        <div className="flex items-center gap-2"><Mail size={19}/><h2 className="display text-xl">Send a letter</h2></div>
+        <p className="mt-1 text-sm text-muted">Choose a saved creation and send it to someone with a Lumie account.</p>
+        <form onSubmit={send} className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+          <label className="grid gap-1 text-sm font-semibold">Recipient email
+            <input type="email" required value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} placeholder="name@example.com" className="min-w-0 rounded-lg border-2 border-navy/20 bg-paper px-3 py-2.5 font-normal"/>
+          </label>
+          <label className="grid gap-1 text-sm font-semibold">Your creation
+            <select required value={creationId} onChange={event => setCreationId(event.target.value)} className="min-w-0 rounded-lg border-2 border-navy/20 bg-paper px-3 py-2.5 font-normal" disabled={!creations.length}>
+              {creations.length ? creations.map(item => <option key={item.id} value={item.id}>{item.title}</option>) : <option value="">No saved creations</option>}
+            </select>
+          </label>
+          <button type="submit" disabled={sending || !creations.length} className="btn btn-primary self-end"><Send size={16}/>{sending ? 'Sending…' : 'Send letter'}</button>
+        </form>
+        {!creations.length && <p className="mt-3 text-sm text-muted">Create and save a letter before sending it. <Link className="font-bold text-cobalt underline" to="/app/create">Open the studio</Link>.</p>}
+      </section>
+
+      <div className="mt-8 grid min-h-[420px] overflow-hidden rounded-2xl border-2 border-navy bg-paper shadow-[0_4px_0_#121c5a] md:grid-cols-[minmax(250px,.75fr)_minmax(0,1.25fr)]">
+        <section aria-label="Conversations" className="border-b-2 border-navy md:border-b-0 md:border-r-2">
+          <div className="border-b border-navy/15 px-4 py-4"><h2 className="display text-xl">Correspondence</h2></div>
+          {loading ? <p className="p-5 text-sm text-muted">Loading your inbox…</p> : items.length ? items.map(item => (
+            <button key={item.id} type="button" onClick={() => setActiveId(item.id)} aria-pressed={activeId === item.id} className={`flex w-full items-start gap-3 border-0 border-b border-navy/10 px-4 py-4 text-left ${activeId === item.id ? 'bg-lime' : 'bg-transparent hover:bg-cream'}`}>
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-navy bg-bubblegum text-sm font-bold">{item.correspondentName.slice(0,1).toUpperCase()}</span>
+              <span className="min-w-0 flex-1"><strong className="block text-sm">{item.correspondentName}</strong><span className="mt-1 block truncate text-sm font-semibold">{item.subject}</span><small className="text-muted">{new Date(item.lastMessageAt).toLocaleDateString()}</small></span>
             </button>
-          ))}
+          )) : <div className="p-5"><p className="text-sm text-muted">Your sent and received letters will appear here.</p></div>}
         </section>
-        <section className="graph p-6 md:p-10" aria-label="Letter">
-          <div ref={tilt.ref} onPointerMove={tilt.onPointerMove} onPointerLeave={tilt.onPointerLeave} className="mx-auto max-w-[440px] [perspective:1400px]">
-            <div style={{ transform: 'rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) rotate(-1deg)', transition: 'transform .2s ease-out' }} className="shadow-lift">
-              <LetterSheet paper="cream" issue={`From ${active.name} · ${active.time}`} title={active.title} sign={active.name.split(' ')[0]}>
-                <p>Hey you,</p>
-                <p>{active.preview} I wanted to put it into words properly instead of letting the moment pass.</p>
-                <p>No big reason for this note. I thought you should know.</p>
-              </LetterSheet>
+        <section aria-label="Selected correspondence" className="min-w-0 p-5 md:p-8">
+          {thread ? <>
+            <div className="border-b border-navy/15 pb-4"><p className="text-xs font-bold uppercase tracking-wide text-muted">Correspondence</p><h2 className="display mt-1 text-2xl">{thread.subject}</h2></div>
+            <div className="grid gap-4 py-5">
+              {thread.messages.map(message => (
+                <article key={message.id} className="rounded-xl border border-navy/15 bg-white p-5 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2"><strong className="text-sm">{message.senderName}</strong><time className="text-xs text-muted">{new Date(message.sentAt).toLocaleString()}</time></div>
+                  {message.snapshot.document ? <div className="mt-3"><p className="display text-xl">{message.snapshot.title || thread.subject}</p><p className="mt-2 text-sm text-muted">A {message.snapshot.format || 'letter'} from your Lumie desk.</p></div> : <p className="mt-3 whitespace-pre-wrap text-[15px] leading-relaxed">{message.snapshot.body || message.snapshot.title}</p>}
+                </article>
+              ))}
             </div>
-          </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Link to="/app/create?type=letter" className="btn btn-primary">Write a reply</Link>
-          </div>
+            <form onSubmit={sendReply} className="border-t border-navy/15 pt-5">
+              <label className="grid gap-2 text-sm font-semibold">Write a reply
+                <textarea value={reply} onChange={event => setReply(event.target.value)} rows={4} maxLength={5000} placeholder="Put your reply into words…" className="w-full rounded-xl border-2 border-navy/20 bg-white p-3 font-normal"/>
+              </label>
+              <button type="submit" disabled={sending || !reply.trim()} className="btn btn-primary mt-3"><Send size={16}/>{sending ? 'Sending…' : 'Send reply'}</button>
+            </form>
+          </> : <div className="grid h-full place-content-center text-center"><Mail className="mx-auto text-cobalt" size={30}/><h2 className="display mt-3 text-2xl">A little room for letters.</h2><p className="mt-2 max-w-sm text-sm text-muted">Choose a conversation to read it, or send a saved creation to someone.</p><Link to="/app/create" className="mt-4 inline-flex items-center justify-center gap-2 font-bold text-cobalt">Make a letter <ArrowUpRight size={16}/></Link></div>}
         </section>
       </div>
     </div>
