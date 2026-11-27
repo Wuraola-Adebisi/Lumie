@@ -441,8 +441,8 @@ Deno.serve(async (req: Request) => {
           .order("available_at", { ascending: true }),
         admin.from("correspondence_threads").select("id,subject").in("id", threadIds),
         admin.from("correspondence_participants").select("thread_id,profile_id").in("thread_id", threadIds),
-        admin.from("correspondence_invitations").select("id,recipient_email,snapshot,available_at")
-          .eq("sender_id", user.id).eq("status", "pending").gt("available_at", new Date().toISOString()),
+        admin.from("correspondence_invitations").select("id,recipient_email,snapshot,available_at,created_at")
+          .eq("sender_id", user.id).eq("status", "pending"),
       ]);
       if (messageError) throw messageError;
       if (threadError) throw threadError;
@@ -472,7 +472,7 @@ Deno.serve(async (req: Request) => {
           availableAt: new Date(String(message.available_at)).toISOString(),
         };
       });
-      const pendingInvitations = (invitations || []).map((invite: Json) => {
+      const pendingInvitations = (invitations || []).filter((invite: Json) => Date.parse(String(invite.available_at)) - Date.parse(String(invite.created_at)) > 60 * 1000).map((invite: Json) => {
         const snapshot = invite.snapshot && typeof invite.snapshot === "object" ? invite.snapshot as Json : {};
         const title = typeof snapshot.title === "string" ? snapshot.title : "A letter for later";
         return {
