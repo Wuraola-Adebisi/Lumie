@@ -140,7 +140,7 @@ test('offers a creative assistant suggestion', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'A visual direction' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Copy suggestion' })).toBeVisible()
   await expect(page.getByText('Was this useful?')).toBeVisible()
-  await page.getByRole('button', { name: 'Helpful' }).click()
+  await page.getByRole('button', { name: 'Helpful', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Thanks for letting us know.' })).toBeVisible()
 })
 
