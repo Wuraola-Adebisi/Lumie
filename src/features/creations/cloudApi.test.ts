@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDocument } from '../studio/studioTypes'
 import { createCloudCreation, listCloudCreations, updateCloudCreation } from './cloudApi'
-import type { CloudApiError } from './cloudApi'
 
 afterEach(() => vi.unstubAllGlobals())
 
