@@ -417,6 +417,8 @@ Deno.serve(async (req: Request) => {
       if (!body) return fail(400, "INVALID_BODY", "A valid JSON object is required.", origin);
       const recipientEmail = typeof body.recipientEmail === "string" ? body.recipientEmail.trim().toLowerCase() : "";
       const creationId = typeof body.creationId === "string" ? body.creationId : "";
+      const availableAt = parseFutureDelivery(body.availableAt);
+      if (availableAt === false) return fail(400, "INVALID_DELIVERY_TIME", "Choose a future opening date within the next five years.", origin);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
         return fail(400, "INVALID_CORRESPONDENCE", "Choose a recipient email and a saved creation.", origin);
       }
