@@ -74,7 +74,7 @@ describe('cloud API client', () => {
     const document = createDocument()
     document.elements.push({ id: 'photo', kind: 'photo', x: 10, y: 10, width: 30, imageAssetId: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', image: 'https://storage.test/short-lived' })
     const cloud = toCloudDocument(document)
-    expect(cloud.elements.at(-1)).toMatchObject({ kind: 'photo', imageAssetId: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21' })
+    expect(cloud.elements[cloud.elements.length - 1]).toMatchObject({ kind: 'photo', imageAssetId: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21' })
     expect(cloud.elements.at(-1)).not.toHaveProperty('image')
   })
 
@@ -83,7 +83,7 @@ describe('cloud API client', () => {
     document.elements.push({ id: 'photo', kind: 'photo', x: 10, y: 10, width: 30, imageAssetId: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21' })
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ url: 'https://storage.test/refreshed-url' }), { status: 200 })))
     const resolved = await resolveCreationAssets(async () => 'token', document)
-    expect(resolved.elements.at(-1)?.image).toBe('https://storage.test/refreshed-url')
+    expect(resolved.elements[resolved.elements.length - 1]?.image).toBe('https://storage.test/refreshed-url')
   })
 
   it('surfaces revision conflicts without retrying with stale state', async () => {
