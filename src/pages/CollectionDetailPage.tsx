@@ -194,7 +194,7 @@ export default function CollectionDetailPage() {
           <button type="submit" className="btn btn-primary" disabled={savingDetails || !editTitle.trim()}>{savingDetails ? 'Saving…' : 'Save changes'}</button>
           <button type="button" className="btn btn-paper" onClick={() => setEditing(false)}>Cancel</button>
         </div>
-      </form>
+      </form>}
 
       {error && <p role="alert" className="mt-6 rounded-xl bg-tomato/10 p-4 text-sm text-ink">{error}</p>}
 
