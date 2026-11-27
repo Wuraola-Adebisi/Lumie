@@ -58,3 +58,61 @@ The API handler tests use a fake PostgreSQL client and exercise authorisation, p
 ## Not yet deployed
 
 This pass supplies executable request handlers and tests, not a live AWS environment. No Cognito pool, API Gateway, Lambda, database, RDS Proxy, Secrets Manager secret or S3 bucket has been provisioned. The frontend is not yet switched to these endpoints. Provisioning and wiring those services is a separate deployment step requiring an approved AWS account, region, credentials and cost controls.
+
+
+## Local development runtime
+
+The repository includes a Docker Compose environment for exercising the API without AWS credentials or provisioned cloud resources.
+
+### Services
+
+- PostgreSQL 16: runs the same initial schema migration used by CI. A separate `lumie_app` role is created for API requests; it is not a superuser, table owner or RLS-bypass role.
+- Keycloak: local OIDC identity provider with an imported `lumie` realm and a public PKCE client. The local API verifies RS256 signatures against the realm JWKS, checks issuer, authorised client and the access-token claim, then adapts only verified identity claims to the existing API Gateway handler.
+- MinIO: S3-compatible private object-storage service with a local `lumie-private` bucket.
+- Mailpit: local SMTP capture and inbox UI for later notification work.
+- API: Node.js HTTP adapter on port 3001. It exposes `GET /health` and forwards authenticated API requests to the same `createApiHandler` used by the cloud deployment.
+
+### Start
+
+Requirements: Docker Desktop (or Docker Engine with the Compose plugin), Node.js 22 and npm.
+
+```bash
+docker compose up --build -d
+```
+
+Useful local endpoints:
+
+| Service | Address |
+| --- | --- |
+| Web app (run separately) | http://localhost:5173 |
+| API health | http://localhost:3001/health |
+| Keycloak | http://localhost:8080 |
+| MinIO console | http://localhost:9002 |
+| Mailpit inbox | http://localhost:8025 |
+
+The imported Keycloak development account is `wuraola.local` with password `lumie-local-only`. It is a disposable local-only account. The Keycloak admin console uses `admin` / `admin`. These credentials must never be reused outside this isolated development stack.
+
+To run the API directly on the host instead of in Compose, install dependencies, copy `backend/local/.env.example` to `.env`, adjust the database host and JWKS URL to `localhost`, then run `npm run backend:dev`. The Compose API already has the correct service-to-service JWKS URL.
+
+### Stop and reset
+
+```bash
+docker compose down
+```
+
+To erase all local database and object-storage data and start from a clean state:
+
+```bash
+docker compose down -v
+docker compose up --build -d
+```
+
+The volume-removal command is destructive to local development data.
+
+### Local API authentication
+
+The local adapter does not accept decoded claims from the browser. It verifies the bearer token signature using Keycloak's published JWKS, pins the expected issuer and RS256 algorithm, and checks the authorised client and `token_use=access` claim. Only then does it construct the trusted authorizer context consumed by `createApiHandler`. The API still uses the separate PostgreSQL application role and forced row-level security.
+
+### Boundaries
+
+This is a development environment, not a production deployment. The bundled credentials, Keycloak dev mode, local HTTP endpoints and local storage must not be exposed to the public internet. The MinIO bucket is local infrastructure; asset upload/download API routes and frontend media integration are subsequent work. Mailpit captures mail locally; it does not deliver real email. No AWS account, AWS resource, NVIDIA service or live AI model is required or configured by this pass.
