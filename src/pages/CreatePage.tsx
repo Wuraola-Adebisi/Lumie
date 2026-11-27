@@ -43,7 +43,7 @@ export default function CreatePage() {
       return
     }
     let active = true
-    getCloudCreation(getToken, draftId).then((creation) => {
+    getCloudCreation(getToken, draftId).then(async (creation) => {
       if (!active) return
       cloudIdRef.current = creation.id
       revisionRef.current = creation.revision
