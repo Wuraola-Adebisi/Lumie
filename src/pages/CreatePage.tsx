@@ -7,7 +7,7 @@ import StudioInspector from '../features/studio/StudioInspector'
 import ShareDialog from '../features/studio/ShareDialog'
 import { createDocument, createId, paperBase, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
 import { saveLocalCreation } from '../features/creations/localCreations'
-import { CloudApiError, archiveCloudCreation, createCloudCreation, getCloudCreation, hasInlineMedia, updateCloudCreation } from '../features/creations/cloudApi'
+import { CloudApiError, archiveCloudCreation, createCloudCreation, getCloudCreation, hasInlineMedia, resolveCreationAssets, toCloudDocument, updateCloudCreation, uploadCreationAsset } from '../features/creations/cloudApi'
 import { useAuth } from '../features/auth/AuthProvider'
 import type { StudioDocument, StudioElement, StudioFormat } from '../features/studio/studioTypes'
 
@@ -48,7 +48,7 @@ export default function CreatePage() {
       cloudIdRef.current = creation.id
       revisionRef.current = creation.revision
       skipSaveRef.current = true
-      setDocument(creation.document)
+      setDocument(await resolveCreationAssets(getToken, creation.document))
       setSavedAt(new Date(creation.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
       setSaveStatus('saved')
     }).catch((reason: unknown) => {
@@ -72,8 +72,8 @@ export default function CreatePage() {
     setSaveStatus('saving')
     saveQueueRef.current = saveQueueRef.current.then(async () => {
       const saved = cloudIdRef.current
-        ? await updateCloudCreation(getToken, cloudIdRef.current, snapshot, revisionRef.current)
-        : await createCloudCreation(getToken, snapshot)
+        ? await updateCloudCreation(getToken, cloudIdRef.current, toCloudDocument(snapshot), revisionRef.current)
+        : await createCloudCreation(getToken, toCloudDocument(snapshot))
       cloudIdRef.current = saved.id
       revisionRef.current = saved.revision
       setSavedAt(new Date(saved.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
@@ -144,7 +144,32 @@ export default function CreatePage() {
   }
   const addStamp = () => addElement({ id: createId(), kind: 'stamp', x: 75, y: 62, width: 15, value: 'POST', tone: 'tomato', art: 'flower' })
   const addDecoration = () => addElement({ id: createId(), kind: 'decoration', x: 75, y: 75, width: 12, value: 'heart', color: '#ee4a2f', fontSize: 34 })
-  const addPhoto = (image: string) => addElement({ id: createId(), kind: 'photo', x: 48, y: 48, width: 34, image, rotation: 3 })
+
+  const addPhoto = async (file: File) => {
+    const reader = new FileReader()
+    const localImage = await new Promise<string>((resolve, reject) => {
+      reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('This image could not be read.'))
+      reader.onerror = () => reject(new Error('This image could not be read.'))
+      reader.readAsDataURL(file)
+    }).catch((reason: unknown) => {
+      setToast(reason instanceof Error ? reason.message : 'This image could not be read.')
+      return ''
+    })
+    if (!localImage) return
+    const photoId = createId()
+    const localElement: StudioElement = { id: photoId, kind: 'photo', x: 48, y: 48, width: 34, image: localImage, rotation: 3 }
+    const localDocument = { ...document, elements: [...document.elements, localElement], updatedAt: new Date().toISOString() }
+    saveLocalCreation(localDocument)
+    try {
+      const uploaded = await uploadCreationAsset(getToken, file)
+      addElement({ ...localElement, image: uploaded.imageUrl, imageAssetId: uploaded.assetId })
+      setToast('Photo added.')
+    } catch (reason) {
+      addElement(localElement)
+      setToast(reason instanceof Error ? reason.message : 'The photo could not be uploaded. A local copy has been kept.')
+    }
+  }
+
 
   const changeFormat = (format: StudioFormat) => {
     const previousDefault = studioFormats.find((item) => item.id === document.format)?.label
