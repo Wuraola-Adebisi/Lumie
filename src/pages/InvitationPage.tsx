@@ -12,6 +12,7 @@ export default function InvitationPage() {
   const started = useRef(false)
   const [phase, setPhase] = useState<'waiting' | 'accepting' | 'accepted' | 'error'>('waiting')
   const [senderName, setSenderName] = useState('')
+  const [availableAt, setAvailableAt] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export default function InvitationPage() {
     acceptCorrespondenceInvitation(getToken, token)
       .then(result => {
         setSenderName(result.senderName || 'A Lumie member')
+        setAvailableAt(result.availableAt || '')
         setPhase('accepted')
       })
       .catch(reason => {
@@ -56,7 +58,7 @@ export default function InvitationPage() {
           <p className="mt-6 text-sm font-bold uppercase tracking-[.14em] text-cobalt">A LETTER FOR YOU</p>
           {phase === 'accepted' ? <>
             <h1 className="display mt-2 text-4xl">It found its way to you.</h1>
-            <p className="mt-4 text-[16px] leading-relaxed text-muted">{senderName} has sent you a letter. It is now waiting in your inbox.</p>
+            <p className="mt-4 text-[16px] leading-relaxed text-muted">{senderName} has sent you a letter. {availableAt && new Date(availableAt).getTime() > Date.now() ? `It opens on ${new Date(availableAt).toLocaleString()}.` : 'It is now waiting in your inbox.'}</p>
             <button type="button" className="btn btn-primary mt-7 w-full" onClick={() => navigate('/app/inbox')}>Open your inbox <ArrowRight size={17}/></button>
           </> : phase === 'accepting' ? <>
             <h1 className="display mt-2 text-4xl">Opening your letter.</h1>
