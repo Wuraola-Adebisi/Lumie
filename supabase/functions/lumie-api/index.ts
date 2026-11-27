@@ -433,6 +433,50 @@ Deno.serve(async (req: Request) => {
       return response(201, result, origin);
     }
 
+    if (method === "GET" && path === "/v1/open-when") {
+      const { data: memberships, error: membershipError } = await userClient.from("correspondence_participants")
+        .select("thread_id").eq("profile_id", user.id);
+      if (membershipError) throw membershipError;
+      const threadIds = (memberships || []).map((item: Json) => String(item.thread_id));
+      if (!threadIds.length) return response(200, { items: [] }, origin);
+      const [{ data: messages, error: messageError }, { data: threads, error: threadError }, { data: participants, error: participantError }] = await Promise.all([
+        admin.from("correspondence_messages")
+          .select("id,thread_id,sender_id,snapshot,created_at,available_at")
+          .in("thread_id", threadIds).gt("available_at", new Date().toISOString())
+          .order("available_at", { ascending: true }),
+        admin.from("correspondence_threads").select("id,subject").in("id", threadIds),
+        admin.from("correspondence_participants").select("thread_id,profile_id").in("thread_id", threadIds),
+      ]);
+      if (messageError) throw messageError;
+      if (threadError) throw threadError;
+      if (participantError) throw participantError;
+      const otherIds = [...new Set((participants || []).filter((p: Json) => p.profile_id !== user.id).map((p: Json) => String(p.profile_id)))];
+      const { data: profiles, error: profileError } = await admin.from("profiles").select("id,display_name").in("id", otherIds);
+      if (profileError) throw profileError;
+      const names = new Map((profiles || []).map((p: Json) => [String(p.id), p.display_name || "Lumie member"]));
+      const correspondentByThread = new Map<string,string>();
+      for (const participant of participants || []) if (participant.profile_id !== user.id) {
+        correspondentByThread.set(String(participant.thread_id), String(names.get(String(participant.profile_id)) || "Lumie member"));
+      }
+      const subjects = new Map((threads || []).map((thread: Json) => [String(thread.id), String(thread.subject)]));
+      const items = (messages || []).map((message: Json) => {
+        const isLocked = message.sender_id !== user.id;
+        const snapshot = message.snapshot && typeof message.snapshot === "object" ? message.snapshot as Json : {};
+        const title = !isLocked && typeof snapshot.title === "string" ? snapshot.title : null;
+        return {
+          id: message.id,
+          threadId: message.thread_id,
+          subject: isLocked ? "A letter is waiting" : title || subjects.get(String(message.thread_id)) || "A letter for later",
+          title,
+          correspondentName: correspondentByThread.get(String(message.thread_id)) || "Lumie member",
+          direction: isLocked ? "received" : "sent",
+          isLocked,
+          availableAt: new Date(String(message.available_at)).toISOString(),
+        };
+      });
+      return response(200, { items }, origin);
+    }
+
     if (method === "GET" && path === "/v1/inbox") {
       const { data: memberships, error } = await userClient.from("correspondence_participants")
         .select("thread_id,role").eq("profile_id", user.id);
