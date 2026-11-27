@@ -62,6 +62,18 @@ test.beforeEach(async ({ page }) => {
     const collectionMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})$/i)
     const collectionItemsMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items$/i)
     const collectionItemMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items\/([0-9a-f-]{36})$/i)
+    if (collectionMatch && request.method() === 'PATCH') {
+      const body = request.postDataJSON() as { title?: string; description?: string }
+      if (collectionRecord) collectionRecord = { ...collectionRecord, ...body, updatedAt: now }
+      await route.fulfill({ json: collectionRecord })
+      return
+    }
+    if (collectionMatch && request.method() === 'DELETE') {
+      collectionRecord = null
+      collectionItems.splice(0, collectionItems.length)
+      await route.fulfill({ status: 204, body: '' })
+      return
+    }
     if (collectionMatch && request.method() === 'GET') {
       if (!collectionRecord || collectionRecord.id !== collectionMatch[1]) {
         await route.fulfill({ status: 404, json: { code: 'NOT_FOUND', message: 'Collection not found.' } })
@@ -470,6 +482,42 @@ test('creates a private collection and adds a saved creation', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'A postcard to remember' })).toBeVisible()
   await page.getByRole('button', { name: 'Create contribution link' }).click()
   await expect(page.getByLabel('Your contribution link')).toHaveValue('https://www.lumiepost.com/contribute/' + 'a'.repeat(64))
+
+  await page.getByRole('button', { name: 'Edit details' }).click()
+  await page.getByLabel('Collection name').fill('A few good memories')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByRole('heading', { name: 'A few good memories' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Delete collection' }).click()
+  await expect(page.getByText('Are you sure?')).toBeVisible()
+  await page.getByRole('button', { name: 'Delete collection' }).click()
+  await expect(page).toHaveURL(new RegExp('/app/collections
+
+test('lets a guest contribute a note through a collection link', async ({ page }) => {
+  await page.route('**/functions/v1/lumie-guest', async route => {
+    const body = route.request().postDataJSON() as { action: string }
+    if (body.action === 'info') {
+      await route.fulfill({ json: {
+        collectionTitle: 'Little keepsakes',
+        description: 'Pieces I want to keep close.',
+        ownerName: 'Collection owner',
+        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+        remaining: 99,
+      } })
+    } else {
+      await route.fulfill({ status: 201, json: { contributionId: 'f8e5d9b2-4c3d-5e6f-a071-2b3c4d5e6f70', collectionTitle: 'Little keepsakes' } })
+    }
+  })
+  await page.goto('/contribute/' + 'a'.repeat(64))
+  await expect(page.getByRole('heading', { name: 'Little keepsakes' })).toBeVisible()
+  await page.getByLabel('Your name').fill('A guest')
+  await page.getByLabel('Email Optional').fill('guest@example.test')
+  await page.getByLabel('Your note').fill('A note worth keeping.')
+  await page.getByRole('button', { name: 'Add my note to the collection' }).click()
+  await expect(page.getByRole('heading', { name: 'Your note is with the collection.' })).toBeVisible()
+})
+))
+  await expect(page.getByRole('heading', { name: 'Collections' })).toBeVisible()
 })
 
 test('lets a guest contribute a note through a collection link', async ({ page }) => {
