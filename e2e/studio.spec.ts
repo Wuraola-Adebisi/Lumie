@@ -242,6 +242,12 @@ test('saves multiple account creations and reopens them from the dashboard', asy
   await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Second letter' })).toBeVisible()
 
-  await page.getByRole('link', { name: /First postcard/ }).click()
+  await page.getByRole('link', { name: 'View all creations' }).click()
+  await expect(page.getByRole('heading', { name: 'Your creations' })).toBeVisible()
+  await page.getByRole('textbox', { name: 'Search your creations' }).fill('First')
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Second letter' })).toHaveCount(0)
+  await page.getByRole('textbox', { name: 'Search your creations' }).fill('')
+  await page.getByRole('link', { name: 'Open piece' }).first().click()
   await expect(page.getByLabel('Give it a name')).toHaveValue('First postcard')
 })
