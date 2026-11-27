@@ -100,6 +100,7 @@ export async function requestPasswordReset(email: string) {
     });
   } catch (error) {
     sessionStorage.removeItem(PKCE_KEY);
+    sessionStorage.removeItem('lumie-auth-flow');
     throw error;
   }
 }
