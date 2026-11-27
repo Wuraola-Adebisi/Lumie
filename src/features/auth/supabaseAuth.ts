@@ -31,10 +31,10 @@ function publishSession(session: SupabaseSession | null) {
 if (typeof window !== 'undefined') window.addEventListener('storage', (event) => {
   if (event.key === SESSION_KEY) listeners.forEach((listener) => listener(readSession()));
 });
-async function authRequest<T>(path: string, body?: Record<string, unknown>, token?: string): Promise<T> {
+async function authRequest<T>(path: string, body?: Record<string, unknown>, token?: string, method?: 'POST' | 'PUT'): Promise<T> {
   const { url, key } = config();
   const response = await fetch(`${url}/auth/v1/${path}`, {
-    method: body ? 'POST' : 'GET',
+    method: method || (body ? 'POST' : 'GET'),
     headers: { apikey: key, 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
@@ -81,6 +81,21 @@ export async function signUp(email: string, password: string, displayName: strin
       publishSession(toSession(payload));
     }
     return { needsEmailConfirmation: !payload.access_token };
+  } catch (error) {
+    sessionStorage.removeItem(PKCE_KEY);
+    throw error;
+  }
+}
+export async function requestPasswordReset(email: string) {
+  const { verifier, challenge } = await createPkceChallenge();
+  sessionStorage.setItem(PKCE_KEY, verifier);
+  const redirect = new URL('/auth/callback?flow=recovery', window.location.origin).toString();
+  try {
+    await authRequest('recover?redirect_to=' + encodeURIComponent(redirect), {
+      email: email.trim().toLowerCase(),
+      code_challenge: challenge,
+      code_challenge_method: 's256',
+    });
   } catch (error) {
     sessionStorage.removeItem(PKCE_KEY);
     throw error;
@@ -144,6 +159,10 @@ export async function signOut() {
   if (current) await authRequest('logout', {}, current.access_token).catch(() => undefined);
   sessionStorage.removeItem(PKCE_KEY);
   publishSession(null);
+}
+export async function updatePassword(password: string) {
+  const token = await getAccessToken();
+  await authRequest('user', { password }, token, 'PUT');
 }
 export async function getLumieProfile(userId: string) {
   const { url, key } = config();
