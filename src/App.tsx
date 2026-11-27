@@ -13,6 +13,7 @@ import InboxPage from './pages/InboxPage'
 import ArchivePage from './pages/ArchivePage'
 import LibraryPage from './pages/LibraryPage'
 import CollectionsPage from './pages/CollectionsPage'
+import CollectionDetailPage from './pages/CollectionDetailPage'
 import OpenWhenPage from './pages/OpenWhenPage'
 import CreatePage from './pages/CreatePage'
 import AppShell from './components/app/AppShell'
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="archive" element={<ArchivePage />} />
         <Route path="library" element={<LibraryPage />} />
         <Route path="collections" element={<CollectionsPage />} />
+        <Route path="collections/:id" element={<CollectionDetailPage />} />
         <Route path="open-when" element={<OpenWhenPage />} />
       </Route>
       </Route>
