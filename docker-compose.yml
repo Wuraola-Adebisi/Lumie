@@ -56,7 +56,7 @@ services:
       minio:
         condition: service_started
     entrypoint: ["/bin/sh", "-c"]
-    command: ["/bin/sh", "-c", "until mc alias set local http://minio:9000 lumie_local lumie_local_storage_password; do sleep 2; done; mc mb --ignore-existing local/lumie-private; mc cors set local/lumie-private /etc/minio/cors.json"]
+    command: ["until mc alias set local http://minio:9000 lumie_local lumie_local_storage_password; do sleep 2; done; mc mb --ignore-existing local/lumie-private; mc cors set local/lumie-private /etc/minio/cors.json"]
     volumes:
       - ./backend/local/minio-cors.json:/etc/minio/cors.json:ro
 
