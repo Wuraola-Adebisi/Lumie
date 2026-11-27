@@ -1,6 +1,61 @@
 import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem('lumie-auth-session-v1', JSON.stringify({
+      accessToken: 'playwright-access-token',
+      expiresAt: Date.now() + 60 * 60 * 1000,
+    }))
+  })
+  await page.route('http://localhost:3001/**', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    const now = new Date().toISOString()
+    if (url.pathname === '/v1/me') {
+      await route.fulfill({ json: {
+        id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21',
+        displayName: 'Studio Tester',
+        avatarAssetId: null,
+        locale: 'en',
+        timeZone: 'UTC',
+        createdAt: now,
+      } })
+      return
+    }
+    if (url.pathname === '/v1/creations' && request.method() === 'GET') {
+      await route.fulfill({ json: { items: [], nextCursor: null } })
+      return
+    }
+    if (url.pathname === '/v1/creations' && request.method() === 'POST') {
+      const body = request.postDataJSON() as { title: string; document: { format: string } }
+      await route.fulfill({ status: 201, json: {
+        id: 'b8e4e7d0-0a9c-4f3e-8b5f-2d8c2c4f9a10',
+        title: body.title,
+        format: body.document.format,
+        document: body.document,
+        revision: 1,
+        status: 'draft',
+        createdAt: now,
+        updatedAt: now,
+      } })
+      return
+    }
+    if (url.pathname.startsWith('/v1/creations/') && request.method() === 'PATCH') {
+      const body = request.postDataJSON() as { title: string; document: { format: string } }
+      await route.fulfill({ json: {
+        id: 'b8e4e7d0-0a9c-4f3e-8b5f-2d8c2c4f9a10',
+        title: body.title,
+        format: body.document.format,
+        document: body.document,
+        revision: 2,
+        status: 'draft',
+        createdAt: now,
+        updatedAt: now,
+      } })
+      return
+    }
+    await route.fulfill({ status: 404, json: { code: 'NOT_FOUND', message: 'Not found.' } })
+  })
   await page.goto('/app/create')
 })
 
