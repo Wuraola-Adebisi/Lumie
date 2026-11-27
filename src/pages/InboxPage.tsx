@@ -45,7 +45,9 @@ export default function InboxPage() {
   }, [refresh])
 
   useEffect(() => {
-    if (searchParams.get('openWhen') === '1') setScheduleForLater(true)
+    const shouldSchedule = searchParams.get('openWhen') === '1'
+    setScheduleForLater(shouldSchedule)
+    if (!shouldSchedule) setAvailableAtLocal('')
   }, [searchParams])
 
   useEffect(() => {
