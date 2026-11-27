@@ -135,7 +135,7 @@ export function createApiHandler({ pool, logger = console }) {
     const issuer = claims?.iss
     const tokenUse = claims?.token_use
     if (typeof cognitoSub !== 'string' || !cognitoSub || typeof issuer !== 'string' ||
-      !['access', 'id'].includes(tokenUse)) {
+      tokenUse !== 'access') {
       return response(401, { code: 'UNAUTHORIZED', message: 'Sign in to continue.' })
     }
 
