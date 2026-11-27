@@ -54,8 +54,8 @@ export default function SignInPage() {
           ) : (
             <form className="mt-8 space-y-4" onSubmit={submit}>
               {mode === 'sign-up' && <label className="block text-sm font-semibold text-ink">Your name<input className="mt-2 w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-base text-ink outline-none focus:border-cobalt focus:ring-2 focus:ring-cobalt/15" autoComplete="name" required maxLength={80} value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>}
-              <label className="block text-sm font-semibold text-ink">Email address<input className="input mt-2 w-full" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-              <label className="block text-sm font-semibold text-ink">Password<input className="input mt-2 w-full" type="password" autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} /></label>
+              <label className="block text-sm font-semibold text-ink">Email address<input className="mt-2 w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-base text-ink outline-none focus:border-cobalt focus:ring-2 focus:ring-cobalt/15" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+              <label className="block text-sm font-semibold text-ink">Password<input className="mt-2 w-full rounded-xl border border-ink/15 bg-white px-4 py-3 text-base text-ink outline-none focus:border-cobalt focus:ring-2 focus:ring-cobalt/15" type="password" autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'} minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} /></label>
               <button type="submit" className="btn btn-primary w-full" disabled={busy}>
                 <Mail size={18}/>{busy ? 'Please wait…' : mode === 'sign-in' ? 'Sign in' : 'Create account'}<ArrowRight size={17}/>
               </button>
