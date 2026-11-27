@@ -1,0 +1,90 @@
+name: lumie-local
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lumie_local
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: lumie_local_admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - lumie-postgres:/var/lib/postgresql/data
+      - ./backend/migrations/0001_initial.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+      - ./backend/local/20-runtime-role.sql:/docker-entrypoint-initdb.d/20-runtime-role.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lumie_local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev", "--import-realm", "--health-enabled=true"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+    ports:
+      - "8080:8080"
+      - "9000:9000"
+    volumes:
+      - ./backend/local/keycloak/lumie-realm.json:/opt/keycloak/data/import/lumie-realm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/9000'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-02-07T23-21-09Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: lumie_local
+      MINIO_ROOT_PASSWORD: lumie_local_storage_password
+    ports:
+      - "9001:9000"
+      - "9002:9001"
+    volumes:
+      - lumie-minio:/data
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-02-08T19-14-21Z
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["until mc alias set local http://minio:9000 lumie_local lumie_local_storage_password; do sleep 2; done; mc mb --ignore-existing local/lumie-private"]
+
+  mailpit:
+    image: axllent/mailpit:v1.22
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/local/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgres://lumie_app:lumie_local_password@postgres:5432/lumie_local
+      LOCAL_OIDC_ISSUER: http://localhost:8080/realms/lumie
+      LOCAL_OIDC_JWKS_URL: http://keycloak:8080/realms/lumie/protocol/openid-connect/certs
+      LOCAL_OIDC_CLIENT_ID: lumie-local
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+volumes:
+  lumie-postgres:
+  lumie-minio:

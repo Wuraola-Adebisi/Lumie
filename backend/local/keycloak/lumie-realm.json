@@ -1,0 +1,59 @@
+{
+  "realm": "lumie",
+  "enabled": true,
+  "displayName": "Lumie Local",
+  "sslRequired": "none",
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "clients": [
+    {
+      "clientId": "lumie-local",
+      "name": "Lumie Local Development",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "redirectUris": ["http://localhost:5173/*"],
+      "webOrigins": ["http://localhost:5173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "access-token-use",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "token_use",
+            "claim.value": "access",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "wuraola.local",
+      "enabled": true,
+      "email": "local-user@lumie.test",
+      "emailVerified": true,
+      "firstName": "Lumie",
+      "lastName": "Local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "lumie-local-only",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
