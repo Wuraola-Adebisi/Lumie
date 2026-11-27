@@ -39,10 +39,10 @@ Open the editor at /app/create.
 - Text, stamp, decoration and photo composition layers.
 - Typeface, size, ink colour, paper colour, rotation and width controls.
 - Pointer dragging and keyboard layer movement; Shift + arrow moves in larger increments.
-- Undo/redo, duplicate, delete and browser-local autosave/restore.
-- Multiple named creations, saved independently on this device.
-- Search, reopen and delete from the archive, with recent creations on the dashboard.
-- Migration of the previous single-draft storage key into the library.
+- Undo/redo, duplicate, delete and debounced cloud autosave with revision-based conflict detection.
+- Multiple named creations stored under the signed-in account.
+- Open saved drafts from the dashboard and view archived creations in the account archive.
+- User-initiated import of earlier browser-local creations; originals remain in local storage.
 - Local image uploads, limited to 3 MB per image.
 - 3× PNG export after waiting for web fonts and image decoding.
 - Format-sized browser print workflow. Choose Save as PDF in the print dialog. Text and links remain selectable/clickable where supported.
@@ -51,12 +51,11 @@ Account-backed creation documents and immutable revisions are stored in PostgreS
 
 ### Not connected yet
 
-- Live AI inference, model orchestration and personal memory retrieval.
-- Authentication, account recovery and protected routes.
-- Database persistence and cross-device sync.
+- Production identity-provider configuration and account recovery.
+- Private remote media storage and upload lifecycle.
 - Actual sending, receiving and reply delivery.
 - Guest invitations and collection permissions.
-- Remote media storage.
+- Live AI inference, model orchestration and personal memory retrieval.
 - Server-enforced scheduled delivery and time locks.
 - Email notifications.
 - Billing or physical mail fulfilment.
@@ -73,7 +72,7 @@ Account-backed creation documents and immutable revisions are stored in PostgreS
 | Icons | Lucide React |
 | Rich text | Tiptap 2 |
 | Composition export | html-to-image; browser-native print |
-| Tests | Vitest |
+| Authentication | OIDC authorization code + PKCE; local Keycloak for development |\n| API | Node.js HTTP adapter for local development; API Gateway/Lambda planned for production |\n| Persistence | PostgreSQL with account-scoped row-level security and immutable revisions |\n| Local infrastructure | Docker Compose, PostgreSQL, Keycloak, MinIO and Mailpit |\n| Tests | Vitest + Playwright |
 | Planned backend | Amazon Cognito, API Gateway, Lambda, PostgreSQL and S3 |
 | Planned AI | Amazon Bedrock behind a provider-neutral Lumie AI gateway; NVIDIA NIM/NeMo optional later |
 | Planned email | Amazon SES for transactional notifications |\n| Deployment target | Vercel initially; AWS delivery services may be evaluated later |
@@ -90,15 +89,15 @@ Lumie is styled as a mail club: perforated stamps, postmarks, envelopes, typewri
 
 Requirements: Node.js 20.19+ or 22.12+ and npm 10+.
 
-Clone the repository and run npm install. Start the local services with `docker compose up --build -d`, copy `.env.local.example` to `.env.local`, then run `npm run dev`. Vite prints the local development URL, usually http://localhost:5173. The local Keycloak realm includes the disposable account `wuraola.local` / `lumie-local-only`. Do not expose the development stack or reuse these credentials outside localhost.
+Clone the repository and run `npm install`. Start the local services with `docker compose up --build -d`, copy `.env.local.example` to `.env.local` (PowerShell: `Copy-Item .env.local.example .env.local`), then run `npm run dev`. Vite prints the local development URL, usually http://localhost:5173. The local Keycloak realm includes the disposable account `wuraola.local` / `lumie-local-only`. Do not expose the development stack or reuse these credentials outside localhost.
 
-Available scripts: npm run dev (development server), npm run build (type-check and production build), npm run preview (production preview), npm run lint (ESLint), npm run test (Vitest), and npm run test:e2e (Playwright browser tests).
+Available scripts: `npm run dev`, `npm run backend:dev`, `npm run build`, `npm run preview`, `npm run lint`, `npm run test`, `npm run backend:check`, `npm run backend:test` and `npm run test:e2e`.
 
 ## Quality checks
 
 GitHub Actions runs lint, tests and a production build on pushes and pull requests targeting main. Studio unit tests cover document creation, plain-text conversion, v1 draft migration, rich-text link protocol filtering, keyboard movement and movement bounds.
 
-Playwright browser tests run in Chromium and cover Studio loading, keyboard movement, rich-text controls, PNG download, touch-pointer movement, local image upload and its 3 MB size limit, plus print dimensions for all five formats. Screen-reader testing with assistive technology and manual accessibility review remain outstanding.
+Playwright browser tests run in Chromium and cover the authenticated Studio, keyboard movement, rich-text controls, PNG download, touch-pointer movement, local image upload and its 3 MB size limit, plus print dimensions for all five formats. Cloud API client tests cover authenticated requests, pagination and revision conflicts. Screen-reader testing with assistive technology and manual accessibility review remain outstanding.
 
 ## Proposed backend architecture
 
