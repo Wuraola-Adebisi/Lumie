@@ -1,157 +1,135 @@
 # Technical architecture
 
-## Current state
+## Architecture principles
 
-The current repository is a React + TypeScript + Vite frontend. It contains a public homepage, an application shell and sample-data views. Page interactions are local UI state only. There is no authentication, database, media upload, email delivery or scheduled job implementation yet.
+1. AWS-first cloud foundation for identity, data, storage, backend execution, scheduling, email and monitoring.
+2. Provider-independent AI layer. The product calls Lumie-owned AI contracts; the backend routes tasks to Amazon Bedrock initially and can add NVIDIA NIM later.
+3. User-controlled AI. Suggestions are proposals. Users approve every edit and external action.
+4. Private by default. Access is enforced server-side.
+5. Structured source documents. Preserve versioned editor JSON and generate exports from source documents.
+6. Modular monolith first. Keep domain boundaries clear without premature microservices.
 
-## Frontend boundaries
+## Current implementation
 
-- `pages/`: route-level composition.
-- `components/marketing/`: public-site navigation and footer.
-- `components/app/`: authenticated-product shell and navigation.
-- `components/ui/`: shared visual primitives.
-- `data/`: sample fixtures for the current prototype.
+React + TypeScript + Vite frontend with public site, app shell, Creation Studio, browser-local draft storage and export. Sample views are not connected to accounts or correspondence backend. The assistant preview uses fixed local examples; it does not call an AI provider or transmit prompts.
 
-As backend work begins, introduce feature modules such as `features/auth`, `features/creations`, `features/correspondence`, `features/collections` and `features/open-when`. Keep API access and domain logic out of page components.
+## Recommended AWS platform
 
-## Proposed platform services
+| Concern | Service | Responsibility |
+|---|---|---|
+| Frontend delivery | Vercel initially; CloudFront/Amplify optional later | Web hosting |
+| Identity | Amazon Cognito | Registration, verification, sessions, recovery |
+| API entry | API Gateway | Authenticated application API |
+| Backend compute | AWS Lambda | Domain operations and AI orchestration |
+| Relational data | Aurora PostgreSQL Serverless v2 or RDS PostgreSQL | Profiles, documents, recipients, threads, collections |
+| Vector retrieval | pgvector on PostgreSQL initially | User-scoped semantic retrieval |
+| File storage | Private Amazon S3 buckets | Images, attachments, exports |
+| Foundation models | Amazon Bedrock | Managed model inference and embeddings |
+| Background jobs | Amazon SQS | Durable asynchronous processing |
+| Scheduling/events | EventBridge Scheduler and EventBridge | Scheduled delivery and unlock events |
+| Email | Amazon SES | Verification, invitations and transactional notices |
+| Monitoring | CloudWatch and X-Ray | Logs, metrics, traces and alarms |
+| Secrets | Secrets Manager / Parameter Store | Server-side credentials |
+| Security | IAM, KMS, WAF | Least privilege, encryption and perimeter controls |
 
-### Supabase Auth
-Use Supabase Auth for identity, sessions, email verification and account recovery. Protect application routes and derive the current user from the authenticated session.
+Choose Aurora Serverless v2 only after validating regional availability, minimum capacity and cost. A small RDS PostgreSQL deployment may be simpler for an early MVP. Keep the schema portable PostgreSQL. Do not provision production resources until funding, programme status and operating costs are understood.
 
-### PostgreSQL
-Use relational tables for profiles, creations, recipients, correspondence threads, messages, collections, collection memberships, contributions, unlock rules and media metadata.
+## NVIDIA integration strategy
 
-### Row Level Security
-RLS is mandatory. Define policies for each table based on owner identity, thread participation and collection membership. Start with deny-by-default policies. Do not rely on route guards or hidden buttons as security boundaries.
+NVIDIA is an optional specialised AI execution and development layer, not a second cloud control plane.
 
-### Storage
-Use private buckets for uploaded images and exports. Store metadata and object paths in PostgreSQL. Validate the requesting user's access before issuing signed URLs. Establish upload size, MIME type and image-processing limits.
+- NVIDIA NIM: inference microservices for selected models when self-hosted or partner-hosted inference offers a measurable advantage.
+- NVIDIA NeMo: model customisation and fine-tuning after task-specific data and evaluation justify it.
+- NeMo Retriever: embedding, retrieval and reranking experiments for authorised personal memory search.
+- NeMo Guardrails: optional additional interaction controls, evaluated against the AWS guardrail strategy.
+- NeMo Evaluator: evaluation of quality, consistency, safety and task performance.
 
-### Server functions and schedules
-Use trusted server-side functions for sending, invitation acceptance, scheduled delivery and unlock evaluation. Scheduled messages must not become accessible by changing client state or guessing an object URL.
+Do not assume Inception membership guarantees GPU capacity, credits or hosted inference. Start with managed inference and add NIM only when usage, latency, privacy, model choice or unit economics justify it.
 
-### Transactional email
-Use an email provider such as Resend for account-related and correspondence notifications. Email should notify recipients and provide a secure route into Lumie; it should not become the canonical message store.
+## Application layers
 
-## Suggested relational model
+Frontend features should be separated into auth, creations, correspondence, collections, open-when, assistant and notifications. No AWS secret, model key, SES credential or privileged database credential may be bundled into the frontend.
 
-### profiles
-- id (references auth.users)
-- display_name
-- avatar_path
-- locale
-- created_at
-- updated_at
+API Gateway routes to Lambda handlers. Each handler validates Cognito identity, input schema and resource permissions before calling domain logic.
 
-### creations
-- id
-- owner_id
-- title
-- content_type
-- document_json
-- visibility
-- lifecycle_status
-- created_at
-- updated_at
-- archived_at
+Suggested API surface:
+- GET/POST /v1/creations
+- GET/PATCH/DELETE /v1/creations/{creationId}
+- POST /v1/creations/{creationId}/revisions
+- POST /v1/assets/upload-intents
+- GET/POST /v1/threads
+- POST /v1/threads/{threadId}/messages
+- POST /v1/invitations
+- GET/POST /v1/collections
+- POST /v1/collections/{collectionId}/contributions
+- POST /v1/assistant/{task}
 
-### correspondence_threads
-- id
-- created_by
-- subject
-- created_at
-- updated_at
+## AI orchestration
 
-### thread_participants
-- thread_id
-- user_id or invited_recipient_id
-- participant_role
-- joined_at
-- left_at
+All model calls happen server-side through a Lumie AI gateway. The gateway authenticates the user, validates the task, checks content ownership and AI consent, applies quotas, selects a provider/model from server-side configuration, loads only authorised context, validates structured output, applies safety checks and records usage metadata without logging private content.
 
-### messages
-- id
-- thread_id
-- creation_id
-- sender_id
-- sent_at
-- delivery_status
+The frontend never calls Bedrock or NVIDIA directly.
 
-### recipients
-- id
-- creation_id
-- recipient_user_id or recipient_email
-- invitation_token_hash
-- invitation_expires_at
-- accepted_at
-- delivery_status
+## Relational data model
 
-### collections
-- id
-- owner_id
-- title
-- description
-- visibility
-- contribution_mode
-- created_at
-- updated_at
+Use PostgreSQL migrations and UUID primary keys.
 
-### collection_members
-- collection_id
-- user_id
-- role
-- invited_by
-- joined_at
+- profiles: Cognito subject, display name, avatar key, locale, time zone and preferences.
+- documents: owner, title, format, versioned document JSON, status and timestamps.
+- document_revisions: document, revision number, JSON snapshot, author and timestamp.
+- assets: owner, S3 object key, MIME type, size, dimensions, checksum and processing state.
+- threads: creator, subject, thread type and timestamps.
+- thread_participants: thread, user or invited-recipient identity, role and membership timestamps.
+- correspondence: thread, source document/revision, sender, sent timestamp and status.
+- correspondence_recipients: correspondence, recipient identity and individual delivery/access/open state.
+- invitations: token hash, recipient address, resource scope, role, expiry and accepted/revoked timestamps.
+- collections: owner, title, description, visibility, contribution mode and timestamps.
+- collection_members: collection, user, role and inviter.
+- contributions: collection, author, document and moderation state.
+- scheduled_actions: action type, resource, recipient, due time, time zone, status and idempotency key.
+- notifications and notification_preferences: in-app events and channel preferences.
+- ai_preferences: user-level AI settings and consent choices.
+- ai_memory_sources: user, selected source resource, consent and indexing state.
+- ai_memory_chunks: user, source reference, chunk metadata, embedding, source location and deletion state.
+- ai_usage_events: user, task, provider, model, token counts, latency, status and estimated cost. Never store raw prompts or completions by default.
 
-### collection_contributions
-- id
-- collection_id
-- author_id
-- creation_id
-- moderation_status
-- submitted_at
+Documents and correspondence are separate. Sending creates a correspondence record referencing a specific document revision. Later edits must not silently change an already-sent item.
 
-### unlock_rules
-- id
-- creation_id
-- recipient_id
-- rule_type
-- unlock_at
-- timezone
-- status
+## Security and privacy
 
-### media_assets
-- id
-- owner_id
-- creation_id
-- storage_path
-- media_type
-- file_size
-- created_at
+- Map Cognito identity to an internal profile and authorise every resource in trusted backend code.
+- Use least-privilege IAM roles for each Lambda.
+- Keep S3 buckets private; issue short-lived presigned URLs only after authorisation.
+- Encrypt data at rest with KMS and in transit with TLS.
+- Keep credentials in Secrets Manager or Parameter Store.
+- Validate MIME type, size and image contents; scan uploads where appropriate.
+- Use expiring, revocable, hashed invitation tokens.
+- Apply rate limits to invitations, sending and AI endpoints.
+- Enforce scheduled and open-when access in backend code.
+- Exclude private content from AI retrieval unless the user opts in and selects eligible sources.
+- Enforce user filters on every memory retrieval query; test cross-user isolation.
+- Do not train shared models on private correspondence by default.
+- Avoid raw content in logs and analytics.
+- Define export, deletion, retention, backup and recovery before public launch.
+- Decide whether end-to-end encryption is required before finalising search, AI retrieval and collaboration.
 
-The final schema should be migration-driven and reviewed against the exact sharing and guest-recipient journeys before production use.
+## AI privacy and consent
 
-## Editor document model
+Consent is specific to task and source. A user can request help with text they actively provide without granting access to their whole archive. Memory indexing requires separate opt-in and source selection. Users can inspect and delete indexed memory. Retrieved items carry source references. Do not use another participant's private message as AI context without appropriate access and consent.
 
-Persist editor content as structured JSON with a versioned schema. A document should represent content blocks and their attributes rather than storing only a screenshot or HTML string. This enables editing, export, future schema migrations and responsive rendering.
+## Environments and delivery
 
-Tiptap is the planned editor foundation. Keep custom nodes/extensions scoped to product requirements. Build plain text and basic formatting first; add media, stickers and freeform layout after the persistence and export model is stable.
+- Local: frontend mocks and synthetic data; no provider credentials.
+- Development: isolated AWS resources and synthetic test data.
+- Staging: production-like configuration and test identities.
+- Production: isolated environment, approved secrets, monitoring and budgets.
 
-## Security decisions to make before launch
+Use GitHub Actions for quality checks and deployment. Add infrastructure as code before provisioning shared or production resources; choose AWS CDK or Terraform, not both.
 
-- Decide whether Lumie needs end-to-end encryption. It materially affects search, collaboration, account recovery, export and scheduled delivery.
-- Define guest access and whether guests must create accounts to reply.
-- Define recipient consent, invitation expiry and token revocation.
-- Decide whether collection owners can edit, remove or moderate contributions.
-- Define retention, backup, deletion and legal hold requirements.
-- Define rate limits and abuse reporting for invitations and sending.
-- Ensure logs and analytics never capture letter bodies or sensitive media by default.
+## Cost controls
 
-## Deployment
+Set quotas per task, user and environment. Route simple transformations to smaller models. Cap prompt and output sizes. Use queues for long-running jobs. Track cost per successful task and active user. Do not provision GPU-hosted inference until measured demand justifies it.
 
-The current Vite application can be deployed to Vercel or another static hosting provider. Configure environment variables per environment. Do not commit secrets. Production should include a verified domain, canonical metadata, social preview images, error monitoring, security headers and automated checks.
+## Decisions before implementation
 
-## Environment variables
-
-The current prototype needs no runtime secrets. When Supabase is connected, the browser may receive only the Supabase project URL and public anon/publishable key. Service-role credentials, email-provider API keys and other privileged secrets must remain server-side.
+Confirm AWS region, database option, email provider, guest-recipient access, send revocation, post-send edits, read receipts, end-to-end encryption, AI consent granularity and legal/privacy requirements.
