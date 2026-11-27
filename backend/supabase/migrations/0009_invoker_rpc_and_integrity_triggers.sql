@@ -44,7 +44,10 @@ security definer
 set search_path = ''
 as $$
 begin
-  if tg_op = 'INSERT' or new.revision is distinct from old.revision then
+  if tg_op = 'INSERT' then
+    insert into public.creation_revisions(creation_id,owner_id,revision,document_json)
+    values(new.id,new.owner_id,new.revision,new.document_json);
+  elsif new.revision is distinct from old.revision then
     insert into public.creation_revisions(creation_id,owner_id,revision,document_json)
     values(new.id,new.owner_id,new.revision,new.document_json);
   end if;
