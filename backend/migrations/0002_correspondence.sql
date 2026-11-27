@@ -139,4 +139,15 @@ CREATE POLICY assets_owner_or_correspondence_read ON assets
     )
   );
 
+CREATE POLICY correspondence_threads_member_update ON correspondence_threads
+  FOR UPDATE USING (EXISTS (
+    SELECT 1 FROM correspondence_participants cp
+    WHERE cp.thread_id = correspondence_threads.id
+      AND cp.profile_id = NULLIF(current_setting('app.user_id', true), '')::uuid
+  )) WITH CHECK (EXISTS (
+    SELECT 1 FROM correspondence_participants cp
+    WHERE cp.thread_id = correspondence_threads.id
+      AND cp.profile_id = NULLIF(current_setting('app.user_id', true), '')::uuid
+  ));
+
 COMMIT;
