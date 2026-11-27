@@ -2,93 +2,63 @@
 
 ## Product definition
 
-Lumie is a creative correspondence platform for making, exchanging and preserving personal things. A creation may be a short note, a long-form letter, a visual composition, a memory page or a time-based message. The platform should feel expressive and enjoyable without forcing every user into one template or relationship type.
+Lumie is an AI-assisted creative correspondence platform for making, exchanging and preserving meaningful things. People can write in their own words, design letters and visual messages, and invite an assistant to help when they want another perspective. The assistant supports expression and creative decisions; it does not replace the author's judgement or take actions on their behalf.
+
+Lumie's central product idea is the relationship between what someone wants to say, how they want to say it, how they want it presented and what they choose to preserve.
+
+## Product thesis
+
+Digital communication is optimised for speed, while traditional email is largely utilitarian. Lumie creates room for deliberate, expressive correspondence. Its AI layer should make it easier to begin, clarify intent, explore tone, shape visual compositions and revisit personal memories with consent. AI is a supporting capability across the product, not a chatbot bolted onto a stationery editor.
 
 ## Audience
 
-Lumie is for all genders and a broad range of relationships and contexts:
-- Friends and chosen family.
-- Partners and relatives.
-- People creating group gifts or occasion collections.
-- People who want a private writing space.
-- People preserving memories and meaningful exchanges.
+Lumie is for all genders and a broad range of relationships and contexts: friends and chosen family, partners and relatives, group-gift organisers, private writers, memory keepers and people who want help expressing an idea without surrendering their voice.
 
 Do not assume that users are women, that correspondence is romantic, or that every creation is addressed to another person.
 
 ## Product pillars
 
-### 1. Create
-A flexible editor with structured rich content. Support plain writing first, then typography, colour, backgrounds, images, decorative elements, layout blocks and export. The user can choose how expressive or minimal a creation should be.
+### Create
+A flexible editor for letters, postcards, photo cards, collages and memory pages. Users control the words, typography, colours, backgrounds, images, decorative elements, layout and exports.
 
-### 2. Exchange
-Users can address a creation to one or more recipients, send it through Lumie and receive replies in a correspondence thread. This is intentional, asynchronous correspondence, not a real-time chat interface.
+### Assist
+An optional assistant helps users get started, explore tone, clarify an idea, revise a draft or translate a creative brief into editable design suggestions. Suggestions are proposals, never silent edits. Users can accept, reject, modify or ignore them.
 
-### 3. Preserve
-Users can keep private writing, sent items, received items and completed exchanges in a personal archive. Collections group creations by person, event, place, theme or any other user-defined idea.
+### Exchange
+Users can address a creation to recipients, send it through Lumie and receive replies in a correspondence thread. This is intentional, asynchronous correspondence, not a real-time chat interface.
 
-### 4. Make together
-A collection owner can invite contributors to add messages, notes or memories. Contributors should have explicit, limited permissions and should not automatically gain access to the owner's entire account or archive.
+### Preserve
+Users keep private writing, sent items, received items and completed exchanges in a personal archive. Collections group creations by person, event, place, theme or any user-defined idea.
 
-### 5. Open when
-A user can create a message intended for a future date or a chosen moment. Date-based unlocks must be enforced by trusted server-side logic. The interface must never imply a locked message is secure merely because it is hidden in React.
+### Make together
+Collection owners invite contributors to add messages, notes or memories with explicit, limited permissions.
 
-## Content types
+### Open when
+Users create messages intended for a future date or chosen moment. Unlocks must be enforced by trusted server-side logic.
 
-- Private note: visible only to its owner.
-- Letter: a designed message addressed to a recipient.
-- Memory page: a composition combining writing and media.
-- Open-when message: a creation with a release rule.
-- Collection contribution: a creation submitted to a shared collection.
-- Correspondence reply: a message in an existing thread.
+## AI capability direction
 
-These are content intents, not mandatory layouts. The editor should remain flexible across types.
+- Writing companion: starting points, rewriting, expansion, shortening, clarity and tone exploration.
+- Voice preservation: improve readability while retaining user-selected style and phrasing.
+- Creative direction: turn a natural-language brief into structured, editable composition suggestions.
+- Personal memory: opt-in retrieval across user-selected correspondence and collections, with links to source material.
+- Collection assistance: organise selected contributions into a keepsake, with owner review.
+- Reply assistance: prepare a reply using only context the user explicitly selects.
 
-## Core user journeys
+AI must not send, publish, schedule, share, delete or unlock correspondence without explicit user confirmation and server-side authorisation.
 
-### Private writing
-Sign up → create a private note → save draft → revisit from archive → optionally export or share later.
+## AI MVP boundary
 
-### Sending correspondence
-Create a letter → personalise it → select recipient → review audience and sharing → send → recipient receives an invitation or in-app item → recipient replies → both participants can revisit the thread subject to permissions.
+The pre-programme MVP may include a clearly labelled assistant preview using fixed sample responses. It must not call an external model, transmit prompts to an AI provider, imply that a live model is connected, or present sample output as generated intelligence. The product architecture defines provider-neutral contracts for later AWS Bedrock and NVIDIA integrations.
 
-### Collaborative collection
-Create collection → configure title and purpose → invite contributors → contributors accept → contributors submit items → owner reviews or moderates if configured → collection is shared with its intended audience.
+## Current MVP status
 
-### Open-when message
-Create message → select recipient or self → choose date or availability rule → review access → schedule → server enforces release → eligible recipient is notified.
+Implemented frontend: public site, responsive app shell, Creation Studio with five formats, structured rich text, image composition, local draft storage, PNG/print export and browser-based sample views. The assistant preview is a guided local interaction with fixed sample responses. There is no connected AI model, authentication, cloud persistence, actual sending/receiving or shared-collection backend.
 
-## Product rules
+## MVP validation target
 
-- New writing is private by default.
-- Sharing must be explicit and explain who can access the content.
-- A recipient should not be able to browse the sender's private archive.
-- Collection membership is scoped to that collection.
-- Invitation links need expiry, revocation and permission boundaries.
-- The author should understand whether a message is a draft, scheduled, sent, delivered, opened or replied to.
-- Do not promise delivery, encryption, privacy controls or deletion behaviour until implemented and tested.
-- No real-time presence indicators or typing pressure in the first product direction.
+A user can create and customise a piece, optionally explore the assistant preview, keep a local draft and export it. The next product milestone is persistent accounts and storage, followed by the first real correspondence loop. Programme applications must distinguish working MVP functionality from planned integrations.
 
-## First release priorities
+## Success measures
 
-1. Account and profile foundations.
-2. Flexible text-first creation and autosave.
-3. Private archive.
-4. Send to registered users and invited recipients.
-5. Inbox and threaded replies.
-6. Basic open-when scheduling.
-7. Personal collections.
-8. Guest-contributed collections after the permission model is proven.
-
-Advanced collage tooling, extensive sticker libraries, voice notes, print fulfilment, paid plans and public discovery can follow after core correspondence works reliably.
-
-## Success measures to consider
-
-- Creation completion rate.
-- Percentage of created items that are saved.
-- Percentage of sent items that receive a reply.
-- Repeat correspondence within 30 days.
-- Collection contribution completion.
-- Open-when creation and unlock engagement.
-- User-reported confidence in privacy and sharing controls.
-
-Avoid measuring success solely by time spent in the editor. Lumie should encourage meaningful exchanges, not endless engagement.
+Creation completion, saved/exported creations, assistant usefulness feedback, suggestion acceptance/edit/dismissal, reply rate once sending is live, repeat correspondence and user confidence in privacy and control. Do not optimise solely for time spent in the editor.
