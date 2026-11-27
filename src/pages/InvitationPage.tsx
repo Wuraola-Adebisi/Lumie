@@ -11,7 +11,6 @@ export default function InvitationPage() {
   const navigate = useNavigate()
   const started = useRef(false)
   const [phase, setPhase] = useState<'waiting' | 'accepting' | 'accepted' | 'error'>('waiting')
-  const [threadId, setThreadId] = useState('')
   const [senderName, setSenderName] = useState('')
   const [error, setError] = useState('')
 
@@ -29,7 +28,6 @@ export default function InvitationPage() {
     setPhase('accepting')
     acceptCorrespondenceInvitation(getToken, token)
       .then(result => {
-        setThreadId(result.threadId)
         setSenderName(result.senderName || 'A Lumie member')
         setPhase('accepted')
       })
