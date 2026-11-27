@@ -252,7 +252,7 @@ export async function getCorrespondence(token: TokenProvider, id: string): Promi
 }
 
 export async function sendCorrespondence(token: TokenProvider, recipientEmail: string, creationId: string, availableAt?: string) {
-  return request<{ threadId: string; subject: string; recipientName: string }>(token, '/v1/correspondence', {
+  return request<{ threadId: string; subject: string; recipientName: string; availableAt: string }>(token, '/v1/correspondence', {
     method: 'POST',
     body: JSON.stringify({ recipientEmail, creationId, availableAt }),
   })
@@ -261,6 +261,7 @@ export async function sendCorrespondence(token: TokenProvider, recipientEmail: s
 export interface CorrespondenceInvitation {
   inviteUrl: string
   expiresAt: string
+  availableAt: string
 }
 
 export async function createCorrespondenceInvitation(token: TokenProvider, recipientEmail: string, creationId: string, availableAt?: string) {
