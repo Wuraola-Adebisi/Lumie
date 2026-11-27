@@ -109,6 +109,21 @@ CREATE POLICY correspondence_messages_member_insert ON correspondence_messages
     )
   );
 
+CREATE OR REPLACE FUNCTION lumie_can_grant_asset(asset_uuid uuid, asset_owner uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $
+  SELECT asset_owner = NULLIF(current_setting('app.user_id', true), '')::uuid
+    AND EXISTS (
+      SELECT 1 FROM assets a
+      WHERE a.id = asset_uuid AND a.owner_id = asset_owner AND a.status = 'ready'
+    )
+$;
+REVOKE ALL ON FUNCTION lumie_can_grant_asset(uuid, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION lumie_can_grant_asset(uuid, uuid) TO lumie_app;
+
 ALTER TABLE asset_thread_grants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asset_thread_grants FORCE ROW LEVEL SECURITY;
 CREATE POLICY asset_thread_grants_member_read ON asset_thread_grants
@@ -120,7 +135,7 @@ CREATE POLICY asset_thread_grants_member_read ON asset_thread_grants
 CREATE POLICY asset_thread_grants_owner_insert ON asset_thread_grants
   FOR INSERT WITH CHECK (
     granted_by = NULLIF(current_setting('app.user_id', true), '')::uuid
-    AND EXISTS (SELECT 1 FROM assets a WHERE a.id = asset_id AND a.owner_id = granted_by AND a.status = 'ready')
+    AND lumie_can_grant_asset(asset_id, granted_by)
     AND EXISTS (
       SELECT 1 FROM correspondence_participants cp
       WHERE cp.thread_id = asset_thread_grants.thread_id
