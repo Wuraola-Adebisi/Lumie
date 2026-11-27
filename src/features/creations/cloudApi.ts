@@ -128,7 +128,8 @@ export function toCloudDocument(document: StudioDocument): StudioDocument {
     ...document,
     elements: document.elements.map((element) => {
       if (element.kind !== 'photo') return element
-      const { image: _image, ...rest } = element
+      const rest = { ...element }
+      delete rest.image
       return rest
     }),
   }
