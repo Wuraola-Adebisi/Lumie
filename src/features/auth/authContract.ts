@@ -40,7 +40,9 @@ export function parseVerifiedCognitoIdentity(
 ): AuthContractResult<VerifiedCognitoIdentity> {
   if (!isRecord(value)) return { ok: false, reason: 'Verified identity must be an object.' }
   if (!boundedString(value.sub, 128)) return { ok: false, reason: 'Cognito subject is missing or invalid.' }
-  if (value.iss !== expectedIssuer) return { ok: false, reason: 'Identity issuer is not trusted.' }
+  if (!boundedString(expectedIssuer, 512) || value.iss !== expectedIssuer) {
+    return { ok: false, reason: 'Identity issuer is not trusted.' }
+  }
   if (value.token_use !== 'access' && value.token_use !== 'id') {
     return { ok: false, reason: 'Cognito token use is invalid.' }
   }
@@ -61,7 +63,7 @@ export function createProfileProvisioningInput(
   requestedDisplayName?: string,
 ): AuthContractResult<ProfileProvisioningInput> {
   const displayName = typeof requestedDisplayName === 'string'
-    ? requestedDisplayName.trim().replace(/\\s+/g, ' ').slice(0, 80)
+    ? requestedDisplayName.trim().replace(/\s+/g, ' ').slice(0, 80)
     : ''
 
   return {
