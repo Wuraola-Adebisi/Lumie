@@ -107,3 +107,10 @@ test('lets an authenticated user choose a new password', async ({ page }) => {
   await page.getByRole('button', { name: 'Update password' }).click()
   await expect(page.getByRole('status')).toContainText('Your password has been updated')
 })
+
+test('shows an invitation landing page before requiring sign-in', async ({ page }) => {
+  await page.goto('/invite/test-invitation-token')
+  await expect(page.getByRole('heading', { name: 'Someone has written to you.' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Sign in or create an account' })).toHaveAttribute('href', '/sign-in')
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow')
+})
