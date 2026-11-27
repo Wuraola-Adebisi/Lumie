@@ -96,6 +96,60 @@ export async function archiveCloudCreation(token: TokenProvider, id: string) {
   await request<void>(token, `/v1/creations/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
+
+export interface AssetUploadResult {
+  assetId: string
+  imageUrl: string
+}
+
+export async function uploadCreationAsset(token: TokenProvider, file: File): Promise<AssetUploadResult> {
+  const intent = await request<{ assetId: string; uploadUrl: string; requiredHeaders: Record<string, string> }>(token, '/v1/assets/upload-intents', {
+    method: 'POST',
+    body: JSON.stringify({ fileName: file.name, contentType: file.type, sizeBytes: file.size }),
+  })
+  const uploaded = await fetch(intent.uploadUrl, { method: 'PUT', headers: intent.requiredHeaders, body: file })
+  if (!uploaded.ok) throw new CloudApiError('The photo could not be uploaded. Try again.', uploaded.status, 'ASSET_UPLOAD_FAILED')
+  await request(token, `/v1/assets/${encodeURIComponent(intent.assetId)}/complete`, { method: 'POST' })
+  const download = await request<{ url: string }>(token, `/v1/assets/${encodeURIComponent(intent.assetId)}/download-url`)
+  return { assetId: intent.assetId, imageUrl: download.url }
+}
+
+export async function resolveCreationAssets(token: TokenProvider, document: StudioDocument): Promise<StudioDocument> {
+  const elements = await Promise.all(document.elements.map(async (element) => {
+    if (element.kind !== 'photo' || !element.imageAssetId) return element
+    const result = await request<{ url: string }>(token, `/v1/assets/${encodeURIComponent(element.imageAssetId)}/download-url`)
+    return { ...element, image: result.url }
+  }))
+  return { ...document, elements }
+}
+
+export function toCloudDocument(document: StudioDocument): StudioDocument {
+  return {
+    ...document,
+    elements: document.elements.map((element) => {
+      if (element.kind !== 'photo') return element
+      const { image: _image, ...rest } = element
+      return rest
+    }),
+  }
+}
+
+async function dataUrlToFile(dataUrl: string, name: string): Promise<File> {
+  const response = await fetch(dataUrl)
+  const blob = await response.blob()
+  return new File([blob], name, { type: blob.type })
+}
+
+export async function uploadInlineCreationMedia(token: TokenProvider, document: StudioDocument): Promise<StudioDocument> {
+  const elements = await Promise.all(document.elements.map(async (element, index) => {
+    if (element.kind !== 'photo' || !element.image?.startsWith('data:')) return element
+    const file = await dataUrlToFile(element.image, `lumie-photo-${index + 1}`)
+    const uploaded = await uploadCreationAsset(token, file)
+    return { ...element, imageAssetId: uploaded.assetId, image: uploaded.imageUrl }
+  }))
+  return { ...document, elements }
+}
+
 export function hasInlineMedia(document: StudioDocument) {
   return document.elements.some((element) => typeof element.image === 'string' && element.image.startsWith('data:'))
 }
@@ -135,7 +189,8 @@ export async function importLocalCreations(token: TokenProvider, profileId: stri
       mediaBlocked += 1
       continue
     }
-    const created = await createCloudCreation(token, document)
+    const withAssets = await uploadInlineCreationMedia(token, document)
+    const created = await createCloudCreation(token, toCloudDocument(withAssets))
     imported[document.id] = created.id
     localStorage.setItem(importMapKey(profileId), JSON.stringify(imported))
     importedCount += 1
