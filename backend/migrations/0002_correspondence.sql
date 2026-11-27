@@ -69,7 +69,7 @@ ALTER TABLE correspondence_threads FORCE ROW LEVEL SECURITY;
 CREATE POLICY correspondence_threads_member_read ON correspondence_threads
   FOR SELECT USING (EXISTS (
     SELECT 1 FROM correspondence_participants cp
-    WHERE cp.thread_id = id
+    WHERE cp.thread_id = correspondence_threads.id
       AND cp.profile_id = NULLIF(current_setting('app.user_id', true), '')::uuid
   ));
 CREATE POLICY correspondence_threads_creator_insert ON correspondence_threads
@@ -94,7 +94,7 @@ ALTER TABLE correspondence_messages FORCE ROW LEVEL SECURITY;
 CREATE POLICY correspondence_messages_member_read ON correspondence_messages
   FOR SELECT USING (EXISTS (
     SELECT 1 FROM correspondence_participants cp
-    WHERE cp.thread_id = thread_id
+    WHERE cp.thread_id = correspondence_messages.thread_id
       AND cp.profile_id = NULLIF(current_setting('app.user_id', true), '')::uuid
   ));
 CREATE POLICY correspondence_messages_member_insert ON correspondence_messages
