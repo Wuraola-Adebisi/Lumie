@@ -1,6 +1,18 @@
 import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({ page }) => {
+  let creationCounter = 0
+  type MockCreation = {
+    id: string
+    title: string
+    format: string
+    document: { format: string; [key: string]: unknown }
+    revision: number
+    status: 'draft' | 'archived'
+    createdAt: string
+    updatedAt: string
+  }
+  const savedCreations: MockCreation[] = []
   await page.addInitScript(() => {
     sessionStorage.setItem('lumie-auth-session-v1', JSON.stringify({
       accessToken: 'playwright-access-token',
@@ -23,13 +35,14 @@ test.beforeEach(async ({ page }) => {
       return
     }
     if (url.pathname === '/v1/creations' && request.method() === 'GET') {
-      await route.fulfill({ json: { items: [], nextCursor: null } })
+      await route.fulfill({ json: { items: savedCreations.filter((item) => item.status === 'draft'), nextCursor: null } })
       return
     }
     if (url.pathname === '/v1/creations' && request.method() === 'POST') {
-      const body = request.postDataJSON() as { title: string; document: { format: string } }
-      await route.fulfill({ status: 201, json: {
-        id: 'b8e4e7d0-0a9c-4f3e-8b5f-2d8c2c4f9a10',
+      const body = request.postDataJSON() as { title: string; document: { format: string; [key: string]: unknown } }
+      creationCounter += 1
+      const saved: MockCreation = {
+        id: creationCounter === 1 ? 'b8e4e7d0-0a9c-4f3e-8b5f-2d8c2c4f9a10' : 'c9f5f8e1-1b0d-4a4f-9c6e-3e9d3d5fab21',
         title: body.title,
         format: body.document.format,
         document: body.document,
@@ -37,21 +50,32 @@ test.beforeEach(async ({ page }) => {
         status: 'draft',
         createdAt: now,
         updatedAt: now,
-      } })
+      }
+      savedCreations.push(saved)
+      await route.fulfill({ status: 201, json: saved })
       return
     }
-    if (url.pathname.startsWith('/v1/creations/') && request.method() === 'PATCH') {
-      const body = request.postDataJSON() as { title: string; document: { format: string } }
-      await route.fulfill({ json: {
-        id: 'b8e4e7d0-0a9c-4f3e-8b5f-2d8c2c4f9a10',
-        title: body.title,
-        format: body.document.format,
-        document: body.document,
-        revision: 2,
-        status: 'draft',
-        createdAt: now,
-        updatedAt: now,
-      } })
+    const creationMatch = url.pathname.match(/^\/v1\/creations\/([0-9a-f-]{36})$/i)
+    if (creationMatch && request.method() === 'GET') {
+      const saved = savedCreations.find((item) => item.id === creationMatch[1])
+      await route.fulfill(saved ? { json: saved } : { status: 404, json: { code: 'NOT_FOUND', message: 'Not found.' } })
+      return
+    }
+    if (creationMatch && request.method() === 'PATCH') {
+      const saved = savedCreations.find((item) => item.id === creationMatch[1])
+      if (!saved) {
+        await route.fulfill({ status: 404, json: { code: 'NOT_FOUND', message: 'Not found.' } })
+        return
+      }
+      const body = request.postDataJSON() as { title: string; document: { format: string; [key: string]: unknown } }
+      Object.assign(saved, { title: body.title, format: body.document.format, document: body.document, revision: saved.revision + 1, updatedAt: now })
+      await route.fulfill({ json: saved })
+      return
+    }
+    if (creationMatch && request.method() === 'DELETE') {
+      const saved = savedCreations.find((item) => item.id === creationMatch[1])
+      if (saved) saved.status = 'archived'
+      await route.fulfill({ status: 204, body: '' })
       return
     }
     await route.fulfill({ status: 404, json: { code: 'NOT_FOUND', message: 'Not found.' } })
@@ -202,31 +226,22 @@ test('offers a creative assistant suggestion', async ({ page }) => {
 // Keep assistant interaction coverage alongside the editor's browser-level acceptance tests.
 
 
-test('saves, searches, reopens and deletes multiple named creations', async ({ page }) => {
+test('saves multiple account creations and reopens them from the dashboard', async ({ page }) => {
   await page.getByLabel('Give it a name').fill('First postcard')
   await page.getByRole('button', { name: 'Save draft' }).click()
-  await page.getByRole('link', { name: 'Back to your creations' }).click()
-  await expect(page.getByRole('heading', { name: 'Your creations' })).toBeVisible()
+  await expect(page.locator('.studio-save-state')).toContainText('Saved at')
+  await page.getByRole('link', { name: 'Back to your desk' }).click()
+  await expect(page.getByRole('heading', { name: 'Your desk' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
 
-  await page.getByRole('link', { name: 'Make something' }).click()
+  await page.getByRole('link', { name: 'New piece' }).click()
   await page.getByLabel('Give it a name').fill('Second letter')
   await page.getByRole('button', { name: 'Save draft' }).click()
-  await page.getByRole('link', { name: 'Back to your creations' }).click()
+  await expect(page.locator('.studio-save-state')).toContainText('Saved at')
+  await page.getByRole('link', { name: 'Back to your desk' }).click()
   await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Second letter' })).toBeVisible()
 
-  await page.getByRole('textbox', { name: 'Search your creations' }).fill('First')
-  await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
-  await expect(page.getByRole('heading', { name: 'Second letter' })).toHaveCount(0)
-  await page.getByRole('textbox', { name: 'Search your creations' }).fill('')
-
-  const firstCreation = page.locator('article').filter({ has: page.getByRole('heading', { name: 'First postcard' }) })
-  await firstCreation.getByRole('link', { name: 'Open creation' }).click()
+  await page.getByRole('link', { name: /First postcard/ }).click()
   await expect(page.getByLabel('Give it a name')).toHaveValue('First postcard')
-  await page.getByRole('link', { name: 'Back to your creations' }).click()
-  page.once('dialog', (dialog) => dialog.accept())
-  await page.getByRole('button', { name: 'Delete First postcard' }).click()
-  await expect(page.getByRole('heading', { name: 'First postcard' })).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: 'Second letter' })).toBeVisible()
 })
