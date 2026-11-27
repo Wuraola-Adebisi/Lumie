@@ -114,13 +114,13 @@ RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public, pg_temp
-AS $
+AS $function$
   SELECT asset_owner = NULLIF(current_setting('app.user_id', true), '')::uuid
     AND EXISTS (
       SELECT 1 FROM assets a
       WHERE a.id = asset_uuid AND a.owner_id = asset_owner AND a.status = 'ready'
     )
-$;
+$function$;
 REVOKE ALL ON FUNCTION lumie_can_grant_asset(uuid, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION lumie_can_grant_asset(uuid, uuid) TO lumie_app;
 
