@@ -79,6 +79,8 @@ export default function InboxPage() {
         setCopiedInvite(false)
         setNotice(`An invitation link is ready for ${recipientEmail}. ${availableAt ? `The letter opens on ${new Date(availableAt).toLocaleString()}. ` : ''}Share it with them before the link expires.`)
         setRecipientEmail('')
+        setScheduleForLater(false)
+        setAvailableAtLocal('')
         return
       }
       setInviteUrl('')
