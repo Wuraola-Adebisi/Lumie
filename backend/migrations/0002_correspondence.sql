@@ -72,6 +72,8 @@ CREATE POLICY correspondence_threads_member_read ON correspondence_threads
     WHERE cp.thread_id = correspondence_threads.id
       AND cp.profile_id = NULLIF(current_setting('app.user_id', true), '')::uuid
   ));
+CREATE POLICY correspondence_threads_creator_read ON correspondence_threads
+  FOR SELECT USING (created_by = NULLIF(current_setting('app.user_id', true), '')::uuid);
 CREATE POLICY correspondence_threads_creator_insert ON correspondence_threads
   FOR INSERT WITH CHECK (created_by = NULLIF(current_setting('app.user_id', true), '')::uuid);
 
