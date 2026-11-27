@@ -150,11 +150,13 @@ export async function completeSignIn(search: string) {
   }
 
   if (!signingKey) signingKey = createRemoteJWKSet(new URL(discovery.jwks_uri))
-  await jwtVerify(tokens.id_token, signingKey, {
+  const { payload: idTokenClaims } = await jwtVerify(tokens.id_token, signingKey, {
     issuer: config.authority,
     audience: config.clientId,
-    nonce: transaction.nonce,
   })
+  if (idTokenClaims.nonce !== transaction.nonce) {
+    throw new Error('The sign-in response could not be verified.')
+  }
 
   writeSession({
     accessToken: tokens.access_token,
