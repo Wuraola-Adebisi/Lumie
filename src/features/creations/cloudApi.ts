@@ -173,8 +173,7 @@ export function getLocalImportSummary(profileId: string) {
   const imported = readImportMap(profileId)
   const local = localCreationModule.listLocalCreations()
   const pending = local.filter((item) => !imported[item.id] && !hasInlineMedia(item))
-  const mediaBlocked = local.filter((item) => !imported[item.id] && hasInlineMedia(item))
-  return { pending: pending.length, mediaBlocked: mediaBlocked.length, total: local.length }
+  return { pending: local.filter((item) => !imported[item.id]).length, mediaBlocked: 0, total: local.length }
 }
 
 
