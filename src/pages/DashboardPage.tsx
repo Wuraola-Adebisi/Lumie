@@ -86,7 +86,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      <div className="mt-14 flex items-end justify-between gap-4"><h2 className="display text-[28px]">Pick up where you left off</h2><Link to="/app/library" className="inline-flex items-center gap-1.5 text-[15px] font-bold text-cobalt hover:underline">Your archive <ArrowRight size={16} /></Link></div>
+      <div className="mt-14 flex items-end justify-between gap-4"><h2 className="display text-[28px]">Pick up where you left off</h2><Link to="/app/library" className="inline-flex items-center gap-1.5 text-[15px] font-bold text-cobalt hover:underline">View all creations <ArrowRight size={16} /></Link></div>
       {loading ? <p className="mt-6 text-sm text-muted">Loading your creations…</p> : error ? (
         <div className="mt-6 rounded-xl border border-tomato/30 bg-tomato/10 p-5"><p role="alert" className="text-sm">{error}</p><button type="button" className="mt-3 font-bold text-cobalt" onClick={() => { setLoading(true); void refresh() }}>Try again</button></div>
       ) : recent.length > 0 ? (
