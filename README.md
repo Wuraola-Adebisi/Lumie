@@ -1,10 +1,12 @@
 # Lumie
 
-**A little place for everything you want to say.**
+**A creative correspondence studio with an assistant when you want one.**
 
-Lumie is a creative correspondence platform for making, sending, receiving and preserving meaningful things. It is designed for everyone: friends, partners, families, communities and people writing to themselves.
+Lumie is an AI-assisted creative correspondence platform for making, exchanging and preserving meaningful things. People write in their own words, shape expressive letters and visual messages, and can invite an assistant to help with ideas, phrasing and creative direction. It is designed for everyone: friends, partners, families, communities and people writing to themselves.
 
 The repository currently contains a responsive public site, application shell and browser-local Creation Studio. The editor supports structured rich text, five composition formats, draggable layers, local image uploads, draft autosave, undo/redo, high-resolution PNG export and browser print-to-PDF. Accounts, cloud persistence, actual message delivery, scheduled unlocking and shared collections are not connected.
+
+The current assistant is a local preview with fixed sample responses. It does not call an AI model or transmit prompts. Accounts, cloud persistence, actual correspondence delivery and live AI are not connected yet.
 
 ## Product principles
 
@@ -43,6 +45,7 @@ Drafts and uploaded image data are stored in this browser's local storage. They 
 
 ### Not connected yet
 
+- Live AI inference, model orchestration and personal memory retrieval.
 - Authentication, account recovery and protected routes.
 - Database persistence and cross-device sync.
 - Actual sending, receiving and reply delivery.
@@ -111,8 +114,8 @@ Before real users' writing is stored, enable RLS on every user-content table; de
 
 ## Environment variables
 
-No secrets are required for the current frontend. When Supabase is introduced, public client configuration will use VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY. Never put a service-role key, Resend API key or other server secret in frontend environment variables.
+No secrets are required for the current frontend. When AWS services are introduced, the frontend may use public Cognito and API configuration only. AWS credentials, model access, SES credentials, database credentials and all privileged keys remain server-side. Never place them in VITE_ variables.
 
 ## Status
 
-**Current status: frontend foundation, Creation Studio and public information/policy pages.** Lumie is not yet a production correspondence service. The editor supports local composition and export, but drafts remain in the current browser. Backend functionality and browser-level QA remain future work.
+**Current status: frontend MVP foundation, Creation Studio and local assistant preview.** Lumie is not yet a production correspondence service and no live AI provider is connected. Drafts remain in the current browser. Cloud backend, live model inference and actual correspondence delivery remain future work.
