@@ -482,23 +482,37 @@ Deno.serve(async (req: Request) => {
     }
 
     if (method === "GET" && threadMatch) {
-      const member = await membership(userClient, threadMatch[1], user.id);
-      if (!member) return fail(404, "NOT_FOUND", "Correspondence not found.", origin);
+      const { data: participant, error: memberError } = await userClient.from("correspondence_participants")
+        .select("role").eq("thread_id", threadMatch[1]).eq("profile_id", user.id).maybeSingle();
+      if (memberError) throw memberError;
+      if (!participant) return fail(404, "NOT_FOUND", "Correspondence not found.", origin);
       const { data: thread, error: threadError } = await admin.from("correspondence_threads")
         .select("id,subject").eq("id", threadMatch[1]).maybeSingle();
       if (threadError) throw threadError;
       if (!thread) return fail(404, "NOT_FOUND", "Correspondence not found.", origin);
-      const { data: messages, error: messageError } = await admin.from("correspondence_messages")
-        .select("id,sender_id,snapshot,created_at").eq("thread_id", threadMatch[1])
-        .order("created_at", { ascending: true }).order("id", { ascending: true });
+
+      const [{ data: messages, error: messageError }, { data: lockedMessages, error: lockedError }] = await Promise.all([
+        userClient.from("correspondence_messages")
+          .select("id,sender_id,snapshot,created_at,available_at").eq("thread_id", threadMatch[1])
+          .order("created_at", { ascending: true }).order("id", { ascending: true }),
+        admin.from("correspondence_messages").select("available_at")
+          .eq("thread_id", threadMatch[1]).neq("sender_id", user.id)
+          .gt("available_at", new Date().toISOString()).order("available_at", { ascending: true }).limit(1),
+      ]);
       if (messageError) throw messageError;
+      if (lockedError) throw lockedError;
       const senderIds = [...new Set((messages || []).map((m: Json) => String(m.sender_id)))];
       const { data: profiles, error: profileError } = await admin.from("profiles")
         .select("id,display_name").in("id", senderIds);
       if (profileError) throw profileError;
       const names = new Map((profiles || []).map((p: Json) => [String(p.id), p.display_name || "Lumie member"]));
+      const lastVisible = messages?.length ? messages[messages.length - 1] as Json : null;
+      const lockedUntil = lockedMessages?.[0]?.available_at ? new Date(String(lockedMessages[0].available_at)).toISOString() : null;
+      const subject = lastVisible && typeof lastVisible.snapshot === "object" && lastVisible.snapshot
+        ? (lastVisible.snapshot as Json).title || thread.subject
+        : lockedUntil ? "A letter is waiting" : thread.subject;
       return response(200, {
-        id: thread.id, subject: thread.subject,
+        id: thread.id, subject, lockedUntil,
         messages: (messages || []).map((message: Json) => ({
           id: message.id, senderId: message.sender_id,
           senderName: names.get(String(message.sender_id)) || "Lumie member",
