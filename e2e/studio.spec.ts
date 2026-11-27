@@ -62,6 +62,18 @@ test.beforeEach(async ({ page }) => {
     const collectionMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})$/i)
     const collectionItemsMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items$/i)
     const collectionItemMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items\/([0-9a-f-]{36})$/i)
+    if (collectionMatch && request.method() === 'PATCH') {
+      const body = request.postDataJSON() as { title?: string; description?: string }
+      if (collectionRecord) collectionRecord = { ...collectionRecord, ...body, updatedAt: now }
+      await route.fulfill({ json: collectionRecord })
+      return
+    }
+    if (collectionMatch && request.method() === 'DELETE') {
+      collectionRecord = null
+      collectionItems.splice(0, collectionItems.length)
+      await route.fulfill({ status: 204, body: '' })
+      return
+    }
     if (collectionMatch && request.method() === 'GET') {
       if (!collectionRecord || collectionRecord.id !== collectionMatch[1]) {
         await route.fulfill({ status: 404, json: { code: 'NOT_FOUND', message: 'Collection not found.' } })
@@ -470,6 +482,17 @@ test('creates a private collection and adds a saved creation', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'A postcard to remember' })).toBeVisible()
   await page.getByRole('button', { name: 'Create contribution link' }).click()
   await expect(page.getByLabel('Your contribution link')).toHaveValue('https://www.lumiepost.com/contribute/' + 'a'.repeat(64))
+
+  await page.getByRole('button', { name: 'Edit details' }).click()
+  await page.getByLabel('Collection name').fill('A few good memories')
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByRole('heading', { name: 'A few good memories' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Delete collection' }).click()
+  await expect(page.getByText('Are you sure?')).toBeVisible()
+  await page.getByRole('button', { name: 'Delete collection' }).click()
+  await expect(page).toHaveURL(new RegExp('/app/collections$'))
+  await expect(page.getByRole('heading', { name: 'Collections' })).toBeVisible()
 })
 
 test('lets a guest contribute a note through a collection link', async ({ page }) => {

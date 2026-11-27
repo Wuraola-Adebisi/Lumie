@@ -1,9 +1,9 @@
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
-import { addCreationToCollection, createCollectionGuestLink, getCollection, listCloudCreations, listCollectionContributions, removeCollectionItem, revokeCollectionGuestLink, reviewCollectionContribution } from '../features/creations/cloudApi'
+import { addCreationToCollection, createCollectionGuestLink, deleteCollection, getCollection, listCloudCreations, listCollectionContributions, removeCollectionItem, revokeCollectionGuestLink, reviewCollectionContribution, updateCollection } from '../features/creations/cloudApi'
 import type { CloudCreation } from '../features/creations/cloudCreationContract'
 import type { CollectionDetail } from '../features/creations/cloudApi'
 
@@ -23,6 +23,12 @@ export default function CollectionDetailPage() {
   const [linkLoading, setLinkLoading] = useState(false)
   const [copied, setCopied] = useState(false)
   const [reviewingId, setReviewingId] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [savingDetails, setSavingDetails] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const refresh = useCallback(async () => {
     const [collectionResult, creationResult, contributionResult] = await Promise.all([
@@ -40,6 +46,8 @@ export default function CollectionDetailPage() {
     setGuestLinkExpiresAt('')
     setCopied(false)
     setReviewingId('')
+    setEditing(false)
+    setConfirmDelete(false)
   }, [id])
 
   useEffect(() => {
@@ -128,6 +136,42 @@ export default function CollectionDetailPage() {
     }
   }
 
+  const startEditing = () => {
+    if (!detail) return
+    setEditTitle(detail.collection.title)
+    setEditDescription(detail.collection.description)
+    setEditing(true)
+    setError('')
+  }
+
+  const saveDetails = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!editTitle.trim() || savingDetails) return
+    setSavingDetails(true)
+    setError('')
+    try {
+      await updateCollection(getToken, id, { title: editTitle.trim(), description: editDescription.trim() })
+      setEditing(false)
+      await refresh()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Collection details could not be saved.')
+    } finally {
+      setSavingDetails(false)
+    }
+  }
+
+  const removeCollection = async () => {
+    setDeleting(true)
+    setError('')
+    try {
+      await deleteCollection(getToken, id)
+      navigate('/app/collections', { replace: true })
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'This collection could not be deleted.')
+      setDeleting(false)
+    }
+  }
+
   if (loading) return <p className="text-sm text-muted">Loading collection…</p>
   if (!detail) return <div><p role="alert" className="text-sm text-muted">{error || 'Collection not found.'}</p><Link to="/app/collections" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-cobalt underline"><ArrowLeft size={16}/> Back to collections</Link></div>
 
@@ -136,7 +180,21 @@ export default function CollectionDetailPage() {
       <Link to="/app/collections" className="inline-flex items-center gap-2 text-sm font-bold text-cobalt underline"><ArrowLeft size={16}/> All collections</Link>
       <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
         <div><p className="text-sm font-bold text-muted">{detail.items.length} {detail.items.length === 1 ? 'piece' : 'pieces'}</p><h1 className="display text-[clamp(34px,5vw,54px)]">{detail.collection.title}</h1>{detail.collection.description && <p className="mt-2 max-w-2xl text-[16px] leading-relaxed text-muted">{detail.collection.description}</p>}</div>
+        <button type="button" className="btn btn-paper" onClick={startEditing}><Pencil size={16}/> Edit details</button>
       </div>
+      {editing && <form onSubmit={saveDetails} className="mt-6 max-w-2xl rounded-2xl border-2 border-navy bg-white p-5">
+        <h2 className="display text-xl">Collection details</h2>
+        <label className="mt-4 grid gap-1 text-sm font-semibold">Collection name
+          <input required maxLength={80} value={editTitle} onChange={event => setEditTitle(event.target.value)} className="rounded-lg border-2 border-navy/20 bg-paper px-3 py-2.5 font-normal"/>
+        </label>
+        <label className="mt-3 grid gap-1 text-sm font-semibold">Description
+          <textarea rows={3} maxLength={500} value={editDescription} onChange={event => setEditDescription(event.target.value)} className="rounded-lg border-2 border-navy/20 bg-paper p-3 font-normal"/>
+        </label>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button type="submit" className="btn btn-primary" disabled={savingDetails || !editTitle.trim()}>{savingDetails ? 'Saving…' : 'Save changes'}</button>
+          <button type="button" className="btn btn-paper" onClick={() => setEditing(false)}>Cancel</button>
+        </div>
+      </form>}
 
       {error && <p role="alert" className="mt-6 rounded-xl bg-tomato/10 p-4 text-sm text-ink">{error}</p>}
 
@@ -202,6 +260,15 @@ export default function CollectionDetailPage() {
         <h2 className="display text-2xl">This collection is ready for its first piece.</h2>
         <p className="mt-2 text-sm text-muted">Choose one of your saved creations above to add it here.</p>
       </div>}
+      <section className="mt-12 rounded-2xl border border-tomato/30 bg-tomato/5 p-5">
+        <h2 className="text-sm font-bold">Delete this collection</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">This removes the collection, its saved copies and its guest contributions. The original creations in your studio will stay untouched.</p>
+        {confirmDelete ? <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-semibold">Are you sure?</span>
+          <button type="button" className="btn btn-tomato" disabled={deleting} onClick={() => void removeCollection()}>{deleting ? 'Deleting…' : 'Delete collection'}</button>
+          <button type="button" className="btn btn-paper" disabled={deleting} onClick={() => setConfirmDelete(false)}>Keep collection</button>
+        </div> : <button type="button" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-tomato underline" onClick={() => setConfirmDelete(true)}><Trash2 size={15}/> Delete collection</button>}
+      </section>
     </div>
   )
 }
