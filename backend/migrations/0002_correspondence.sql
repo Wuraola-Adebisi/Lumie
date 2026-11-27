@@ -104,7 +104,7 @@ CREATE POLICY correspondence_messages_member_insert ON correspondence_messages
     sender_id = NULLIF(current_setting('app.user_id', true), '')::uuid
     AND EXISTS (
       SELECT 1 FROM correspondence_participants cp
-      WHERE cp.thread_id = thread_id
+      WHERE cp.thread_id = asset_thread_grants.thread_id
         AND cp.profile_id = NULLIF(current_setting('app.user_id', true), '')::uuid
     )
   );
