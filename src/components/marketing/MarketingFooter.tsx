@@ -11,6 +11,7 @@ export default function MarketingFooter() {
         <div>
           <BrandMark />
           <p className="mt-4 max-w-xs text-[16px] leading-relaxed text-muted">A creative correspondence studio. Write in your own voice, and bring in a helping hand when you want one.</p>
+          <a href="mailto:hello@lumiepost.com" className="mt-4 inline-flex text-[15px] font-bold text-cobalt underline decoration-1 underline-offset-4">hello@lumiepost.com</a>
         </div>
         <nav aria-label="Explore" className="flex flex-col gap-2.5 text-[15px]">
           <strong className="display mb-1 text-[17px]">Explore</strong>

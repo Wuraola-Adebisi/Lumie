@@ -1,5 +1,8 @@
 # Lumie
 
+**Website:** https://www.lumiepost.com  
+**Contact:** hello@lumiepost.com
+
 **A creative correspondence studio with an assistant when you want one.**
 
 Lumie is an AI-assisted creative correspondence platform for making, exchanging and preserving meaningful things. People write in their own words, shape expressive letters and visual messages, and can invite an assistant to help with ideas, phrasing and creative direction. It is designed for everyone: friends, partners, families, communities and people writing to themselves.
@@ -21,7 +24,7 @@ The current assistant is a local preview with fixed sample responses. It does no
 
 ### Public website
 
-The public site includes About, How it Works, Contact, Privacy, Terms, Acceptable Use, Cookies and Accessibility pages. Legal pages are working product drafts and require operator details and jurisdiction-appropriate review before public launch.
+The public site is served at https://www.lumiepost.com and includes About, How it Works, Contact, Privacy, Terms, Acceptable Use, Cookies and Accessibility pages. Public enquiries and privacy, accessibility or security concerns can be sent to hello@lumiepost.com. Legal pages are working product drafts and require operator details and jurisdiction-appropriate review before public launch.
 
 ### Application shell
 

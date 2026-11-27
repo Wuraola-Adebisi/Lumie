@@ -7,6 +7,7 @@ const links = [
   { to: '/how-it-works', label: 'How it works' },
   { to: '/#formats', label: 'Formats' },
   { to: '/about', label: 'About' },
+  { to: '/contact', label: 'Contact' },
 ]
 
 export default function MarketingHeader() {
@@ -15,7 +16,7 @@ export default function MarketingHeader() {
     <header className="relative z-30 border-b-2 border-navy bg-cream">
       <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between px-5 md:px-10">
         <BrandMark />
-        <nav className="marketing-desktop-nav hidden items-center gap-9 text-[16px] font-bold text-ink md:flex" aria-label="Main navigation">
+        <nav className="marketing-desktop-nav hidden items-center gap-6 text-[15px] font-bold text-ink md:flex" aria-label="Main navigation">
           {links.map((link) => <Link key={link.to} to={link.to} className="hover:text-cobalt">{link.label}</Link>)}
         </nav>
         <div className="marketing-desktop-actions hidden items-center gap-2 md:flex">
@@ -28,7 +29,7 @@ export default function MarketingHeader() {
       </div>
       {open && (
         <nav className="flex flex-col border-t-2 border-navy bg-cream px-5 pb-4 md:hidden" aria-label="Mobile navigation">
-          {[...links, { to: '/contact', label: 'Contact' }].map((link) => <Link key={link.to} to={link.to} onClick={() => setOpen(false)} className="border-b border-navy/15 py-3 text-[17px] font-bold">{link.label}</Link>)}
+          {links.map((link) => <Link key={link.to} to={link.to} onClick={() => setOpen(false)} className="border-b border-navy/15 py-3 text-[17px] font-bold">{link.label}</Link>)}
           <Link to="/app/create" onClick={() => setOpen(false)} className="btn btn-primary mt-4">Open the studio <ArrowUpRight size={16} /></Link>
         </nav>
       )}

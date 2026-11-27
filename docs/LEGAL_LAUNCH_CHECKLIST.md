@@ -6,9 +6,9 @@ The public-facing policy pages are implemented as working product drafts. They m
 
 - [ ] Confirm the legal entity or individual operating Lumie.
 - [ ] Confirm the registered/business address and any required registration details.
-- [ ] Publish a monitored general support email.
-- [ ] Publish a privacy/data-protection contact.
-- [ ] Publish an accessibility contact and a security vulnerability reporting route.
+- [x] Publish a general support email: hello@lumiepost.com.
+- [x] Publish a privacy/data-protection contact route: hello@lumiepost.com.
+- [x] Publish accessibility feedback and security concern reporting routes through hello@lumiepost.com.
 - [ ] Confirm whether a Data Protection Officer or other named privacy role is legally required.
 
 ## Jurisdiction and legal review
