@@ -7,6 +7,7 @@ const links = [
   { to: '/how-it-works', label: 'How it works' },
   { to: '/#formats', label: 'Formats' },
   { to: '/about', label: 'About' },
+  { to: '/contact', label: 'Contact' },
 ]
 
 export default function MarketingHeader() {
@@ -28,7 +29,7 @@ export default function MarketingHeader() {
       </div>
       {open && (
         <nav className="flex flex-col border-t-2 border-navy bg-cream px-5 pb-4 md:hidden" aria-label="Mobile navigation">
-          {[...links, { to: '/contact', label: 'Contact' }].map((link) => <Link key={link.to} to={link.to} onClick={() => setOpen(false)} className="border-b border-navy/15 py-3 text-[17px] font-bold">{link.label}</Link>)}
+          {links.map((link) => <Link key={link.to} to={link.to} onClick={() => setOpen(false)} className="border-b border-navy/15 py-3 text-[17px] font-bold">{link.label}</Link>)}
           <Link to="/app/create" onClick={() => setOpen(false)} className="btn btn-primary mt-4">Open the studio <ArrowUpRight size={16} /></Link>
         </nav>
       )}
