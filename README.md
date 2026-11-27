@@ -7,9 +7,9 @@
 
 Lumie is an AI-assisted creative correspondence platform for making, exchanging and preserving meaningful things. People write in their own words, shape expressive letters and visual messages, and can invite an assistant to help with ideas, phrasing and creative direction. It is designed for everyone: friends, partners, families, communities and people writing to themselves.
 
-The repository contains a responsive public site, application shell and Creation Studio with a browser-local library of named creations. The editor supports structured rich text, five composition formats, draggable layers, local image uploads, autosave, undo/redo, high-resolution PNG export and browser print-to-PDF. Accounts, cloud persistence, actual message delivery, scheduled unlocking and shared collections are not connected.
+The repository contains a responsive public site, authenticated application shell and Creation Studio. Sign-in uses OpenID Connect authorization code flow with PKCE; account profiles and creations are persisted through the authenticated API and PostgreSQL. The editor supports structured rich text, five composition formats, draggable layers, image composition, autosave, undo/redo, high-resolution PNG export and browser print-to-PDF.
 
-The current assistant is a local preview with fixed sample responses. It does not call an AI model or transmit prompts. Accounts, cloud persistence, actual correspondence delivery and live AI are not connected yet.
+The assistant foundation remains provider-neutral. Production model inference and actual correspondence delivery are separate roadmap items.
 
 ## Product principles
 
@@ -28,7 +28,7 @@ The public site is served at https://www.lumiepost.com and includes About, How i
 
 ### Application shell
 
-Responsive app navigation and dashboard are implemented. Inbox, archive, collections and open-when views still use sample data; they are not connected to accounts or correspondence delivery.
+Responsive app navigation, OIDC sign-in, profile provisioning, account-scoped creation persistence and archive listing are connected to the API. Inbox, collections and open-when views still need their live correspondence workflows.
 
 ### Creation Studio
 
@@ -47,7 +47,7 @@ Open the editor at /app/create.
 - 3× PNG export after waiting for web fonts and image decoding.
 - Format-sized browser print workflow. Choose Save as PDF in the print dialog. Text and links remain selectable/clickable where supported.
 
-Creations and uploaded image data are stored in this browser's local storage. They do not sync across devices or accounts and are not backed up online. The previous single-draft storage key is migrated into the creation library when available. Browser print output depends on the browser's print engine, printer settings, font availability and colour handling. PNG output is raster.
+Account-backed creation documents and immutable revisions are stored in PostgreSQL through the authenticated API. Existing local creations can be imported into an account. Creations containing embedded image data remain local until private media upload is connected. Browser print output depends on the browser's print engine, printer settings, font availability and colour handling. PNG output is raster.
 
 ### Not connected yet
 
@@ -90,7 +90,7 @@ Lumie is styled as a mail club: perforated stamps, postmarks, envelopes, typewri
 
 Requirements: Node.js 20.19+ or 22.12+ and npm 10+.
 
-Clone the repository, run npm install, then npm run dev. Vite prints the local development URL, usually http://localhost:5173.
+Clone the repository and run npm install. Start the local services with `docker compose up --build -d`, copy `.env.local.example` to `.env.local`, then run `npm run dev`. Vite prints the local development URL, usually http://localhost:5173. The local Keycloak realm includes the disposable account `wuraola.local` / `lumie-local-only`. Do not expose the development stack or reuse these credentials outside localhost.
 
 Available scripts: npm run dev (development server), npm run build (type-check and production build), npm run preview (production preview), npm run lint (ESLint), npm run test (Vitest), and npm run test:e2e (Playwright browser tests).
 
@@ -120,8 +120,8 @@ Before real users' writing is stored, enable RLS on every user-content table; de
 
 ## Environment variables
 
-No secrets are required for the current frontend. When AWS services are introduced, the frontend may use public Cognito and API configuration only. AWS credentials, model access, SES credentials, database credentials and all privileged keys remain server-side. Never place them in VITE_ variables.
+The frontend uses `.env.local` for `VITE_API_BASE_URL`, `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, `VITE_OIDC_REDIRECT_URI` and `VITE_OIDC_POST_LOGOUT_REDIRECT_URI`. The example file targets the local Docker services. Production builds must use the production identity issuer and API origin. AWS credentials, model access, SES credentials, database credentials and all privileged keys remain server-side. Never place them in VITE_ variables.
 
 ## Status
 
-**Current status: frontend MVP foundation, Creation Studio, local creation library and assistant foundation.** Creations remain in the current browser; account persistence, correspondence delivery and live model inference are future backend work. Cloud backend, live model inference and actual correspondence delivery remain future work.
+**Current status: Creation Studio, OIDC account sign-in, profile provisioning and cloud-backed creation persistence are implemented.** The local Docker stack supports end-to-end development without cloud credentials. Private media uploads, live correspondence delivery, collections, scheduled access and production AI inference remain on the delivery roadmap.
