@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { Copy, MessageCircle, WandSparkles } from 'lucide-react'
 
 type AssistantMode = 'start' | 'tone' | 'design'
@@ -14,7 +15,7 @@ export default function StudioAssistant() {
   const [shown, setShown] = useState(false)
   const [copied, setCopied] = useState(false)
   const suggestion = examples[mode]
-  const preview = (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); setShown(true); setCopied(false) }
+  const preview = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setShown(true); setCopied(false) }
   const copySuggestion = async () => {
     try { await navigator.clipboard.writeText(suggestion.response); setCopied(true) }
     catch { setCopied(false) }
