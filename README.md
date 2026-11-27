@@ -4,7 +4,7 @@
 
 Lumie is an AI-assisted creative correspondence platform for making, exchanging and preserving meaningful things. People write in their own words, shape expressive letters and visual messages, and can invite an assistant to help with ideas, phrasing and creative direction. It is designed for everyone: friends, partners, families, communities and people writing to themselves.
 
-The repository currently contains a responsive public site, application shell and browser-local Creation Studio. The editor supports structured rich text, five composition formats, draggable layers, local image uploads, draft autosave, undo/redo, high-resolution PNG export and browser print-to-PDF. Accounts, cloud persistence, actual message delivery, scheduled unlocking and shared collections are not connected.
+The repository contains a responsive public site, application shell and Creation Studio with a browser-local library of named creations. The editor supports structured rich text, five composition formats, draggable layers, local image uploads, autosave, undo/redo, high-resolution PNG export and browser print-to-PDF. Accounts, cloud persistence, actual message delivery, scheduled unlocking and shared collections are not connected.
 
 The current assistant is a local preview with fixed sample responses. It does not call an AI model or transmit prompts. Accounts, cloud persistence, actual correspondence delivery and live AI are not connected yet.
 
@@ -37,11 +37,14 @@ Open the editor at /app/create.
 - Typeface, size, ink colour, paper colour, rotation and width controls.
 - Pointer dragging and keyboard layer movement; Shift + arrow moves in larger increments.
 - Undo/redo, duplicate, delete and browser-local autosave/restore.
+- Multiple named creations, saved independently on this device.
+- Search, reopen and delete from the archive, with recent creations on the dashboard.
+- Migration of the previous single-draft storage key into the library.
 - Local image uploads, limited to 3 MB per image.
 - 3× PNG export after waiting for web fonts and image decoding.
 - Format-sized browser print workflow. Choose Save as PDF in the print dialog. Text and links remain selectable/clickable where supported.
 
-Drafts and uploaded image data are stored in this browser's local storage. They do not sync across devices or accounts. Browser print output depends on the browser's print engine, printer settings, font availability and colour handling. PNG output is raster.
+Creations and uploaded image data are stored in this browser's local storage. They do not sync across devices or accounts and are not backed up online. The previous single-draft storage key is migrated into the creation library when available. Browser print output depends on the browser's print engine, printer settings, font availability and colour handling. PNG output is raster.
 
 ### Not connected yet
 
@@ -96,7 +99,7 @@ Playwright browser tests run in Chromium and cover Studio loading, keyboard move
 
 ## Proposed backend architecture
 
-Supabase is the proposed next step: Auth for accounts; PostgreSQL for profiles, creations, recipients, threads, messages, collections and delivery schedules; RLS for ownership and participant permissions; private Storage for media; and Edge Functions or scheduled jobs for delivery, invitation acceptance, scheduled unlocking and notification dispatch. Resend is proposed for transactional email. Correspondence itself remains inside Lumie.
+AWS is the planned backend foundation: Cognito for identity; API Gateway and Lambda for application APIs; PostgreSQL for profiles, creations, recipients, threads, messages, collections and delivery schedules; private S3 storage for media; and SQS/EventBridge for delivery, invitation acceptance, scheduled unlocking and notification dispatch. SES is planned for transactional email. Bedrock sits behind a provider-neutral Lumie AI gateway, with NVIDIA NIM/NeMo available for selected workloads if justified. Correspondence itself remains inside Lumie.
 
 Keep editor documents as structured JSON, not flattened images. Generate exports from that source. Enforce sharing, guest invitation and time-lock permissions server-side.
 
@@ -106,8 +109,8 @@ Before real users' writing is stored, enable RLS on every user-content table; de
 
 ## Delivery roadmap
 
-1. **Foundation and Creation Studio:** implemented, with browser-level QA still outstanding.
-2. **Accounts and persistence:** Supabase project, schema, RLS, authentication, private media and cloud-backed drafts.
+1. **Foundation and Creation Studio:** implemented, including the local creation library; screen-reader and manual accessibility QA remain outstanding.
+2. **Accounts and persistence:** AWS infrastructure, Cognito, API, database, private media and cloud-backed creations.
 3. **Correspondence:** recipients, threads, replies, invitations, inbox/sent queries and notifications.
 4. **Collections and Open When:** shared collections, contributor roles, moderation and server-enforced scheduled access.
 5. **Production readiness:** legal review, data export/deletion, monitoring, automated tests, accessibility/performance audits, deployment and security review.
@@ -118,4 +121,4 @@ No secrets are required for the current frontend. When AWS services are introduc
 
 ## Status
 
-**Current status: frontend MVP foundation, Creation Studio and local assistant preview.** Lumie is not yet a production correspondence service and no live AI provider is connected. Drafts remain in the current browser. Cloud backend, live model inference and actual correspondence delivery remain future work.
+**Current status: frontend MVP foundation, Creation Studio, local creation library and assistant foundation.** Creations remain in the current browser; account persistence, correspondence delivery and live model inference are future backend work. Cloud backend, live model inference and actual correspondence delivery remain future work.
