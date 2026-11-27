@@ -131,3 +131,16 @@ test('keeps the format chooser and editing controls usable on a narrow screen', 
   const overflow = await page.locator('body').evaluate((element) => element.scrollWidth > window.innerWidth)
   expect(overflow).toBe(false)
 })
+
+test('shows the local assistant preview without connecting to an AI provider', async ({ page }) => {
+  await expect(page.getByRole('heading', { name: 'Lumie assistant' })).toBeVisible()
+  await expect(page.getByText('ASSISTANT PREVIEW · MOCK PROVIDER')).toBeVisible()
+  await page.getByLabel('What would you like help with?').selectOption('design.direction')
+  await page.getByLabel('A little context (optional)').fill('A bright postcard for a friend')
+  await page.getByRole('button', { name: 'Show me an example' }).click()
+  await expect(page.getByRole('heading', { name: 'A visual direction' })).toBeVisible()
+  await expect(page.getByText(/Your prompt is not sent to an AI model/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Copy suggestion' })).toBeVisible()
+})
+
+// Keep assistant preview coverage alongside the editor's browser-level acceptance tests.
