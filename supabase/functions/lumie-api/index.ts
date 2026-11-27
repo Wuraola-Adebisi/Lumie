@@ -32,7 +32,7 @@ function response(status: number, body?: unknown, origin = "") {
       ...(origin ? {
         "access-control-allow-origin": origin,
         "access-control-allow-headers": "authorization, apikey, content-type, x-client-info",
-        "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
+        "access-control-allow-methods": "GET, POST, PATCH, DELETE, PUT, OPTIONS",
         "access-control-max-age": "86400",
         "vary": "Origin",
       } : {}),
@@ -248,13 +248,36 @@ Deno.serve(async (req: Request) => {
         content_type: contentType, size_bytes: sizeBytes,
       });
       if (insertError) throw insertError;
-      const { data, error } = await userClient.storage.from(BUCKET).createSignedUploadUrl(objectKey, { upsert: false });
-      if (error || !data?.signedUrl) throw error || new Error("Could not create upload URL.");
-      const uploadUrl = new URL(data.signedUrl, SUPABASE_URL).toString();
+      const uploadUrl = `${SUPABASE_URL}/functions/v1/lumie-api/v1/assets/${assetId}/upload`;
       return response(201, {
         assetId, uploadUrl, expiresAt: new Date(Date.now() + 300000).toISOString(),
         requiredHeaders: { "Content-Type": contentType },
       }, origin);
+    }
+
+    if (method === "PUT" && assetUploadMatch) {
+      const contentType = req.headers.get("content-type") || "";
+      const contentLength = Number(req.headers.get("content-length") || 0);
+      if (!ASSET_TYPES.has(contentType) || contentLength < 1 || contentLength > MAX_ASSET_BYTES) {
+        return fail(contentLength > MAX_ASSET_BYTES ? 413 : 400, "INVALID_UPLOAD", "Choose a JPEG, PNG, WebP or AVIF image no larger than 10 MB.", origin);
+      }
+      const { data: asset, error } = await userClient.from("assets")
+        .select("id,object_key,content_type,size_bytes,status").eq("id", assetUploadMatch[1]).eq("owner_id", user.id).maybeSingle();
+      if (error) throw error;
+      if (!asset || asset.status !== "pending") return fail(404, "NOT_FOUND", "Upload not found or already completed.", origin);
+      if (asset.content_type !== contentType || Number(asset.size_bytes) !== contentLength) {
+        return fail(422, "UPLOAD_MISMATCH", "The uploaded file does not match its authorised details.", origin);
+      }
+      const bytes = await req.arrayBuffer();
+      if (bytes.byteLength !== contentLength || bytes.byteLength > MAX_ASSET_BYTES) {
+        return fail(413, "INVALID_UPLOAD", "The uploaded file size is invalid.", origin);
+      }
+      const { error: uploadError } = await admin.storage.from(BUCKET).upload(
+        asset.object_key, new Blob([bytes], { type: contentType }),
+        { contentType, upsert: false, cacheControl: "3600" },
+      );
+      if (uploadError) throw uploadError;
+      return response(200, { assetId: asset.id, uploaded: true }, origin);
     }
 
     if (method === "POST" && assetMatch?.[2] === "complete") {
