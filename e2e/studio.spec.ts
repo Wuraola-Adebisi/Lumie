@@ -95,6 +95,26 @@ test.beforeEach(async ({ page }) => {
       await route.fulfill({ status: 204, body: '' })
       return
     }
+    const collectionGuestLinkMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/guest-link$/i)
+    const collectionContributionsMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/contributions$/i)
+    const collectionContributionMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/contributions\/([0-9a-f-]{36})$/i)
+    if (collectionGuestLinkMatch && request.method() === 'POST') {
+      await route.fulfill({ status: 201, json: { inviteUrl: 'https://www.lumiepost.com/contribute/' + 'a'.repeat(64), expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(), maxContributions: 100 } })
+      return
+    }
+    if (collectionGuestLinkMatch && request.method() === 'DELETE') {
+      await route.fulfill({ json: { revoked: 1 } })
+      return
+    }
+    if (collectionContributionsMatch && request.method() === 'GET') {
+      await route.fulfill({ json: { items: [] } })
+      return
+    }
+    if (collectionContributionMatch && request.method() === 'PATCH') {
+      const body = request.postDataJSON() as { status: 'accepted' | 'rejected' }
+      await route.fulfill({ json: { id: collectionContributionMatch[2], status: body.status } })
+      return
+    }
     if (url.pathname === '/v1/inbox' && request.method() === 'GET') {
       await route.fulfill({ json: { items: [] } })
       return
@@ -448,4 +468,28 @@ test('creates a private collection and adds a saved creation', async ({ page }) 
   await page.getByLabel('Add a saved creation').selectOption('b8e4e7d0-0a9c-4f3e-8b5f-2d8c2c4f9a10')
   await page.getByRole('button', { name: 'Add to collection' }).click()
   await expect(page.getByRole('heading', { name: 'A postcard to remember' })).toBeVisible()
+  await page.getByRole('button', { name: 'Create contribution link' }).click()
+  await expect(page.getByLabel('Your contribution link')).toHaveValue('https://www.lumiepost.com/contribute/' + 'a'.repeat(64))
+})
+
+test('lets a guest contribute a note through a collection link', async ({ page }) => {
+  await page.route('**/rest/v1/rpc/lumie_get_collection_guest_link', async route => {
+    await route.fulfill({ json: {
+      collectionTitle: 'Little keepsakes',
+      description: 'Pieces I want to keep close.',
+      ownerName: 'Collection owner',
+      expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+      remaining: 99,
+    } })
+  })
+  await page.route('**/rest/v1/rpc/lumie_submit_collection_contribution', async route => {
+    await route.fulfill({ json: { contributionId: 'f8e5d9b2-4c3d-5e6f-a071-2b3c4d5e6f70', collectionTitle: 'Little keepsakes' } })
+  })
+  await page.goto('/contribute/' + 'a'.repeat(64))
+  await expect(page.getByRole('heading', { name: 'Little keepsakes' })).toBeVisible()
+  await page.getByLabel('Your name').fill('A guest')
+  await page.getByLabel('Email Optional').fill('guest@example.test')
+  await page.getByLabel('Your note').fill('A note worth keeping.')
+  await page.getByRole('button', { name: 'Add my note to the collection' }).click()
+  await expect(page.getByRole('heading', { name: 'Your note is with the collection.' })).toBeVisible()
 })
