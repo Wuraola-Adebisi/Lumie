@@ -46,6 +46,8 @@ export default function CollectionDetailPage() {
     setGuestLinkExpiresAt('')
     setCopied(false)
     setReviewingId('')
+    setEditing(false)
+    setConfirmDelete(false)
   }, [id])
 
   useEffect(() => {
@@ -263,7 +265,7 @@ export default function CollectionDetailPage() {
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">This removes the collection, its saved copies and its guest contributions. The original creations in your studio will stay untouched.</p>
         {confirmDelete ? <div className="mt-4 flex flex-wrap items-center gap-3">
           <span className="text-sm font-semibold">Are you sure?</span>
-          <button type="button" className="btn btn-danger" disabled={deleting} onClick={() => void removeCollection()}>{deleting ? 'Deleting…' : 'Delete collection'}</button>
+          <button type="button" className="btn btn-tomato" disabled={deleting} onClick={() => void removeCollection()}>{deleting ? 'Deleting…' : 'Delete collection'}</button>
           <button type="button" className="btn btn-paper" disabled={deleting} onClick={() => setConfirmDelete(false)}>Keep collection</button>
         </div> : <button type="button" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-tomato underline" onClick={() => setConfirmDelete(true)}><Trash2 size={15}/> Delete collection</button>}
       </section>
