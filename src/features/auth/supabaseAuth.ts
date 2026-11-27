@@ -1,7 +1,6 @@
 const PROJECT_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, '');
 const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 const SESSION_KEY = 'lumie-supabase-session-v1';
-const VERIFIER_KEY = 'lumie-supabase-pkce-verifier-v1';
 
 export interface SupabaseUser {
   id: string;
@@ -79,25 +78,16 @@ function base64Url(bytes: Uint8Array) {
   bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
-async function createPkcePair() {
-  const verifier = base64Url(crypto.getRandomValues(new Uint8Array(48)));
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
-  return { verifier, challenge: base64Url(new Uint8Array(digest)) };
-}
 export async function signUp(email: string, password: string, displayName: string) {
-  const { url } = config();
-  const { verifier, challenge } = await createPkcePair();
-  localStorage.setItem(VERIFIER_KEY, verifier);
+  const { url, key } = config();
   const redirect = new URL('/auth/callback', window.location.origin).toString();
   const response = await fetch(`${url}/auth/v1/signup?redirect_to=${encodeURIComponent(redirect)}`, {
     method: 'POST',
-    headers: { apikey: config().key, 'content-type': 'application/json' },
+    headers: { apikey: key, 'content-type': 'application/json' },
     body: JSON.stringify({
       email: email.trim().toLowerCase(),
       password,
       data: { display_name: displayName.trim().slice(0, 80) },
-      code_challenge: challenge,
-      code_challenge_method: 's256',
     }),
   });
   const payload = await response.json().catch(() => ({})) as Record<string, unknown>;
@@ -115,20 +105,23 @@ export async function signIn(email: string, password: string) {
 }
 export async function completeSignIn(search: string) {
   const params = new URLSearchParams(search);
-  const error = params.get('error_description') || params.get('error');
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const error = hash.get('error_description') || hash.get('error') || params.get('error_description') || params.get('error');
   if (error) throw new Error(error);
-  const code = params.get('code');
-  if (!code) {
+  const accessToken = hash.get('access_token');
+  const refreshToken = hash.get('refresh_token');
+  const expiresIn = Number(hash.get('expires_in') || 3600);
+  if (!accessToken || !refreshToken || !Number.isFinite(expiresIn)) {
     if (readSession()) return readSession();
     throw new Error('The confirmation link is incomplete or has expired. Request a new one and try again.');
   }
-  const verifier = localStorage.getItem(VERIFIER_KEY);
-  if (!verifier) throw new Error('This sign-in link was opened in a different browser or the sign-in request has expired.');
-  const payload = await authRequest<Record<string, unknown>>('token?grant_type=pkce', {
-    auth_code: code, code_verifier: verifier,
-  });
-  localStorage.removeItem(VERIFIER_KEY);
-  const session = toSession(payload);
+  const user = await authRequest<SupabaseUser>('user', undefined, accessToken);
+  const session: SupabaseSession = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_at: Date.now() / 1000 + expiresIn,
+    user,
+  };
   storeSession(session);
   window.history.replaceState({}, document.title, window.location.pathname);
   return session;
@@ -164,7 +157,22 @@ export async function signOut() {
   const current = readSession();
   if (current) await authRequest('logout', {}, current.access_token).catch(() => undefined);
   storeSession(null);
-  localStorage.removeItem(VERIFIER_KEY);
+}
+export async function getLumieProfile(userId: string) {
+  const { url, key } = config();
+  const token = await getAccessToken();
+  const query = new URLSearchParams({
+    select: 'id,display_name,avatar_asset_id,locale,time_zone,created_at',
+    id: `eq.${userId}`,
+    limit: '1',
+  });
+  const response = await fetch(`${url}/rest/v1/profiles?${query}`, {
+    headers: { apikey: key, authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error('Your Lumie profile could not be loaded.');
+  const rows = await response.json() as Array<Record<string, unknown>>;
+  return rows[0] || null;
 }
 export function hasSession() { return Boolean(readSession()); }
 export function onAuthStateChange(listener: AuthListener) {
