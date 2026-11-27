@@ -131,6 +131,7 @@ Deno.serve(async (req: Request) => {
   const creationMatch = path.match(/^\/v1\/creations\/([0-9a-f-]{36})$/i);
   const revisionsMatch = path.match(/^\/v1\/creations\/([0-9a-f-]{36})\/revisions$/i);
   const assetMatch = path.match(/^\/v1\/assets\/([0-9a-f-]{36})\/(complete|download-url)$/i);
+  const assetUploadMatch = path.match(/^\/v1\/assets\/([0-9a-f-]{36})\/upload$/i);
   const threadMatch = path.match(/^\/v1\/threads\/([0-9a-f-]{36})$/i);
   const replyMatch = path.match(/^\/v1\/threads\/([0-9a-f-]{36})\/replies$/i);
 
