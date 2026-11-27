@@ -53,6 +53,7 @@ function validDocument(value: unknown, expectedFormat: StudioFormat): value is S
     ids.add(element.id)
     if (!['text', 'stamp', 'decoration', 'photo'].includes(String(element.kind))) return false
     if (typeof element.image === 'string' && element.image.startsWith('data:')) return false
+    if (element.imageAssetId !== undefined && (element.kind !== 'photo' || typeof element.imageAssetId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(element.imageAssetId))) return false
     for (const key of ['x', 'y', 'width'] as const) {
       if (typeof element[key] !== 'number' || !Number.isFinite(element[key])) return false
     }
