@@ -94,6 +94,7 @@ export default function CreatePage() {
       skipSaveRef.current = false
       return
     }
+    setSaveStatus('saving')
     const timeout = window.setTimeout(() => persistDocument(document), 750)
     return () => window.clearTimeout(timeout)
   }, [document, loadingDraft, draftLoadFailed, persistDocument])
