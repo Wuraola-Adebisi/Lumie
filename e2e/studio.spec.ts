@@ -23,7 +23,15 @@ test.beforeEach(async ({ page }) => {
     const request = route.request()
     const url = new URL(request.url())
     const now = new Date().toISOString()
-    if (url.pathname === '/v1/assets/upload-intents' && request.method() === 'POST') {\n      await route.fulfill({ status: 201, json: { assetId: 'd7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', uploadUrl: 'http://localhost:3001/test-upload/photo', requiredHeaders: { 'Content-Type': 'image/png' } } })\n      return\n    }\n    if (url.pathname === '/test-upload/photo' && request.method() === 'PUT') { await route.fulfill({ status: 200, body: '' }); return }\n    if (url.pathname === '/v1/assets/d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/complete' && request.method() === 'POST') { await route.fulfill({ json: { status: 'ready' } }); return }\n    if (url.pathname === '/v1/assets/d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/download-url') { await route.fulfill({ json: { url: 'http://localhost:3001/test-photo.png' } }); return }\n    if (url.pathname === '/test-photo.png') { await route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=', 'base64') }); return }\n    if (url.pathname === '/v1/me') {
+    if (url.pathname === '/v1/assets/upload-intents' && request.method() === 'POST') {
+      await route.fulfill({ status: 201, json: { assetId: 'd7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', uploadUrl: 'http://localhost:3001/test-upload/photo', requiredHeaders: { 'Content-Type': 'image/png' } } })
+      return
+    }
+    if (url.pathname === '/test-upload/photo' && request.method() === 'PUT') { await route.fulfill({ status: 200, body: '' }); return }
+    if (url.pathname === '/v1/assets/d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/complete' && request.method() === 'POST') { await route.fulfill({ json: { status: 'ready' } }); return }
+    if (url.pathname === '/v1/assets/d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/download-url') { await route.fulfill({ json: { url: 'http://localhost:3001/test-photo.png' } }); return }
+    if (url.pathname === '/test-photo.png') { await route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=', 'base64') }); return }
+    if (url.pathname === '/v1/me') {
       await route.fulfill({ json: {
         id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21',
         displayName: 'Studio Tester',
