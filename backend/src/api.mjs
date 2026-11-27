@@ -356,6 +356,7 @@ export function createApiHandler({ pool, objectStore, logger = console }) {
         const sent = await withAccount(pool, cognitoSub, async (client, sender) => {
           const recipient = await client.query('SELECT profile_id, display_name FROM lumie_find_recipient_by_email($1)', [recipientEmail])
           if (!recipient.rowCount) return { recipientMissing: true }
+          if (recipient.rows[0].profile_id === sender.id) return { selfRecipient: true }
           const creation = await client.query("SELECT id, title, format, document_json, revision FROM creations WHERE id=$1 AND status='draft'", [creationId])
           if (!creation.rowCount) return { creationMissing: true }
           const row = creation.rows[0]
@@ -372,6 +373,7 @@ export function createApiHandler({ pool, objectStore, logger = console }) {
           return { threadId, subject: thread.rows[0].subject, recipientName: recipient.rows[0].display_name }
         }, accountEmail)
         if (sent.recipientMissing) return response(404, { code: 'RECIPIENT_NOT_FOUND', message: 'No Lumie account is registered with that email address yet.' })
+        if (sent.selfRecipient) return response(400, { code: 'SELF_SEND', message: 'Choose someone else to receive this letter.' })
         if (sent.creationMissing) return response(404, { code: 'CREATION_NOT_FOUND', message: 'That saved creation could not be found.' })
         if (sent.assetsUnavailable) return response(409, { code: 'ASSET_UNAVAILABLE', message: 'One or more photos are no longer available. Reopen the creation and try again.' })
         return response(201, { threadId: sent.threadId, subject: sent.subject, recipientName: sent.recipientName })
