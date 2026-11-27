@@ -106,13 +106,6 @@ function decodeCursor(value: string | null) {
 function fail(status: number, code: string, message: string, origin: string) {
   return response(status, { code, message }, origin);
 }
-async function membership(client: SupabaseClient, threadId: string, userId: string) {
-  const { data, error } = await client.from("correspondence_participants")
-    .select("role").eq("thread_id", threadId).eq("profile_id", userId).maybeSingle();
-  if (error) throw error;
-  return data;
-}
-
 Deno.serve(async (req: Request) => {
   const origin = allowedOrigin(req.headers.get("origin"));
   if (req.method === "OPTIONS") return response(204, undefined, origin || "https://www.lumiepost.com");
