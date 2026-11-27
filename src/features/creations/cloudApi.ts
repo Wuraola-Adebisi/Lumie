@@ -170,6 +170,12 @@ function readImportMap(profileId: string): Record<string, string> {
   }
 }
 
+export function markLocalCreationImported(profileId: string, localId: string, cloudId: string) {
+  const imported = readImportMap(profileId)
+  imported[localId] = cloudId
+  localStorage.setItem(importMapKey(profileId), JSON.stringify(imported))
+}
+
 export function getLocalImportSummary(profileId: string) {
   const imported = readImportMap(profileId)
   const local = localCreationModule.listLocalCreations()
