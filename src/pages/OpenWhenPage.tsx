@@ -38,10 +38,10 @@ export default function OpenWhenPage() {
                 <Envelope tone={item.isLocked ? 'cobalt' : 'gold'} />
                 <HoloSeal className="absolute left-1/2 top-[50%] w-[24%] -translate-x-1/2 -translate-y-1/2 rotate-6" style={{ zIndex: 5 }} />
               </div>
-              <p className="mt-5 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted">{item.direction === 'sent' ? 'Sent for later' : 'Waiting for you'}</p>
+              <p className="mt-5 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted">{item.isInvitation ? 'Invitation pending' : item.direction === 'sent' ? 'Sent for later' : 'Waiting for you'}</p>
               <h2 className="display mt-2 text-[22px] leading-tight">{item.title || item.subject}</h2>
               <p className="mt-2 flex items-center gap-2 text-[15px] font-medium text-muted">{item.isLocked ? <LockKeyhole size={16}/> : <Clock3 size={16}/>}Opens {new Date(item.availableAt).toLocaleString()}</p>
-              <p className="mt-1 text-sm text-muted">{item.direction === 'sent' ? 'To ' + item.correspondentName : 'From ' + item.correspondentName}</p>
+              <p className="mt-1 text-sm text-muted">{item.isInvitation ? 'Invitation for ' + item.correspondentName : item.direction === 'sent' ? 'To ' + item.correspondentName : 'From ' + item.correspondentName}</p>
               {item.isLocked && <p className="mt-3 text-sm leading-relaxed text-muted">The letter stays closed until its opening time.</p>}
               <Link to="/app/inbox" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-cobalt underline"><MailOpen size={15}/> View correspondence</Link>
             </article>
