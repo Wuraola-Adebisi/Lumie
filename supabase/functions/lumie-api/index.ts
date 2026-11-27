@@ -313,7 +313,7 @@ Deno.serve(async (req: Request) => {
       if (!body) return fail(400, "INVALID_BODY", "A valid JSON object is required.", origin);
       const recipientEmail = typeof body.recipientEmail === "string" ? body.recipientEmail.trim().toLowerCase() : "";
       const creationId = typeof body.creationId === "string" ? body.creationId : "";
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
         return fail(400, "INVALID_INVITATION", "Choose a recipient email and a saved creation.", origin);
       }
       const { data: existingRecipient, error: recipientError } = await admin.from("profiles")
@@ -340,7 +340,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const bytes = crypto.getRandomValues(new Uint8Array(32));
-      const token = btoa(String.fromCharCode(...bytes)).replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/g, "");
+      const token = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
       const tokenHash = [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
       const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
