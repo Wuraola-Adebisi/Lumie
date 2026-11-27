@@ -504,7 +504,17 @@ Deno.serve(async (req: Request) => {
       const correspondentByThread = new Map<string,string>();
       for (const participant of participants || []) if (participant.profile_id !== user.id) correspondentByThread.set(String(participant.thread_id), String(names.get(String(participant.profile_id)) || "Lumie member"));
       const latest = new Map<string, Json>();
-      for (const message of messages || []) if (!latest.has(String(message.thread_id))) latest.set(String(message.thread_id), message as Json);
+      const visibleTitleByThread = new Map<string, string>();
+      for (const message of messages || []) {
+        const threadId = String(message.thread_id);
+        if (!latest.has(threadId)) latest.set(threadId, message as Json);
+        const availableAt = message.available_at ? new Date(String(message.available_at)) : null;
+        const visibleToUser = message.sender_id === user.id || Boolean(availableAt && availableAt.getTime() <= Date.now());
+        const snapshot = message.snapshot && typeof message.snapshot === "object" ? message.snapshot as Json : {};
+        if (visibleToUser && typeof snapshot.title === "string" && !visibleTitleByThread.has(threadId)) {
+          visibleTitleByThread.set(threadId, snapshot.title);
+        }
+      }
       const items = (threads || []).map((thread: Json) => {
         const last = latest.get(String(thread.id));
         const availableAt = last?.available_at ? new Date(String(last.available_at)) : null;
@@ -514,7 +524,7 @@ Deno.serve(async (req: Request) => {
           : null;
         return {
           id: thread.id,
-          subject: isLocked ? "A letter is waiting" : latestTitle || thread.subject,
+          subject: isLocked ? "A letter is waiting" : latestTitle || visibleTitleByThread.get(String(thread.id)) || thread.subject,
           role: roles.get(String(thread.id)) || "recipient",
           correspondentName: correspondentByThread.get(String(thread.id)) || "Lumie member",
           latestTitle,
@@ -554,9 +564,14 @@ Deno.serve(async (req: Request) => {
       const names = new Map((profiles || []).map((p: Json) => [String(p.id), p.display_name || "Lumie member"]));
       const lastVisible = messages?.length ? messages[messages.length - 1] as Json : null;
       const lockedUntil = lockedMessages?.[0]?.available_at ? new Date(String(lockedMessages[0].available_at)).toISOString() : null;
-      const subject = lastVisible && typeof lastVisible.snapshot === "object" && lastVisible.snapshot
-        ? (lastVisible.snapshot as Json).title || thread.subject
-        : lockedUntil ? "A letter is waiting" : thread.subject;
+      const visibleTitle = (messages || []).map((message: Json) => {
+        const snapshot = message.snapshot && typeof message.snapshot === "object" ? message.snapshot as Json : {};
+        return typeof snapshot.title === "string" ? snapshot.title : null;
+      }).find(Boolean);
+      const latestTitle = lastVisible && typeof lastVisible.snapshot === "object" && lastVisible.snapshot
+        ? (lastVisible.snapshot as Json).title
+        : null;
+      const subject = latestTitle || visibleTitle || (lockedUntil && !messages?.length ? "A letter is waiting" : thread.subject);
       return response(200, {
         id: thread.id, subject, lockedUntil,
         messages: (messages || []).map((message: Json) => ({
