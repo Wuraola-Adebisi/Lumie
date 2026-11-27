@@ -1,65 +1,60 @@
 # Backend foundation
 
-This directory defines Lumie's cloud API and PostgreSQL persistence contract. It is not deployed infrastructure.
+This directory contains the API contract, PostgreSQL schema and runtime-independent HTTP API handlers for Lumie's account-scoped data.
 
-## Scope
+## API runtime
 
-- OpenAPI 3.1 contract for account-scoped profiles, creations, immutable revisions and upload intents.
-- PostgreSQL migration for profiles, creations, revisions and media assets.
-- Forced row-level security (RLS) policies for every user-owned table.
-- Cognito identity-to-profile provisioning contract and transaction-local database identity.
+\`src/api.mjs\` exports \`createApiHandler({ pool, logger })\`, a Node.js handler for API Gateway HTTP API v2 events. The PostgreSQL pool is injected by the deployment entry point, which keeps the domain handler independently testable and avoids embedding database credentials in application code.
+
+Supported operations:
+
+- \`GET /v1/me\`: idempotently provision and return the authenticated profile.
+- \`GET /v1/creations\`: list draft or archived creations with cursor pagination.
+- \`POST /v1/creations\`: create a creation and its first immutable revision in one transaction.
+- \`GET /v1/creations/{id}\`: retrieve an owned draft.
+- \`PATCH /v1/creations/{id}\`: update with optimistic revision checking and append a new immutable revision.
+- \`DELETE /v1/creations/{id}\`: archive a draft; no hard-delete route is exposed.
+- \`GET /v1/creations/{id}/revisions\`: retrieve immutable revision history.
+
+The handler expects API Gateway's verified JWT authorizer context at \`requestContext.authorizer.jwt.claims\`. It requires a Cognito access token claim (\`token_use=access\`) and a subject and issuer. It does not decode JWTs or accept identity values from request bodies. Configure the API Gateway JWT authorizer with the exact Cognito issuer and app-client audience/client ID before routing requests to this handler.
+
+## Database transaction and row-level security
+
+Every operation obtains a database client and performs all work inside one transaction:
+
+1. Set transaction-local \`app.cognito_sub\` from the verified Cognito subject.
+2. Insert the profile if absent, safely handling concurrent first requests.
+3. Resolve exactly one profile under the profile bootstrap RLS policy.
+4. Set transaction-local \`app.user_id\` to the internal profile UUID.
+5. Execute account-scoped SQL under forced RLS.
+6. Commit; on any failure, roll back and release the client.
+
+Use a dedicated application database role that is not the table owner and does not have \`BYPASSRLS\`. Grant only the SQL privileges required by these handlers. Never use a superuser or migration owner as the runtime database identity.
+
+## Deployment composition
+
+The deployment entry point must create a bounded PostgreSQL connection pool, load its connection secret from AWS Secrets Manager, enable TLS with certificate verification, and inject the pool into \`createApiHandler\`. Do not commit database credentials, secret values, Cognito IDs or AWS access keys. Run the Lambda in a VPC with access to the database (or RDS Proxy), restrict outbound access, and configure API Gateway's JWT authorizer separately from the handler.
+
+Recommended initial limits: Lambda timeout 10 seconds, memory 512 MB, database pool maximum 5 connections per execution environment, API Gateway request body limit enforced at the edge and in the handler. Set pool size against the database's total connection budget and expected Lambda concurrency before production traffic.
+
+The API handler returns generic 500 responses and logs server-side errors. Production logging must redact request bodies, cookies, JWTs, email addresses and private document content. Add CloudWatch metrics and alarms for API errors, throttling, Lambda duration and database connection saturation.
 
 ## Identity and profile provisioning
 
-Amazon Cognito is the identity provider. API Gateway validates the JWT signature, issuer, app-client audience/client ID, token use and expiry. Lambda consumes only the trusted authorizer claims; it must not treat decoded, unverified browser claims as identity.
+Amazon Cognito is the identity provider. API Gateway validates the JWT signature, issuer, app-client audience/client ID and expiry. Lambda consumes only the trusted authorizer claims; it must not treat decoded, unverified browser claims as identity.
 
-The first authenticated request to `GET /v1/me` provisions the profile if necessary. Perform the following sequence in one transaction with parameterised queries and a runtime role that does not own tables and does not have `BYPASSRLS`:
+The first authenticated request to \`GET /v1/me\` provisions the profile if necessary. This is done in one transaction with parameterised queries. The unique Cognito subject and \`ON CONFLICT DO NOTHING\` make concurrent first requests idempotent.
 
-```sql
-BEGIN;
-SELECT set_config('app.cognito_sub', $1, true); -- verified JWT subject
+Never accept \`cognitoSub\`, \`ownerId\` or an internal profile UUID as authority from a request body, query string or browser storage. Do not return the Cognito subject, raw JWT, email claims or authorizer context from \`GET /v1/me\`.
 
-INSERT INTO profiles (cognito_sub, display_name)
-VALUES ($1, $2)
-ON CONFLICT (cognito_sub) DO NOTHING;
+## Document storage
 
-SELECT id, display_name, avatar_asset_id, locale, time_zone, created_at
-FROM profiles
-WHERE cognito_sub = $1;
--- Require exactly one row.
-SELECT set_config('app.user_id', $2, true); -- resolved internal profile UUID
-COMMIT;
-```
+The editor's versioned JSON document remains canonical. Revisions are immutable snapshots. The current browser editor can embed image data in its local document; before cloud persistence is enabled in the client, media must be uploaded to private object storage and document elements must reference authorised asset IDs. Do not upload base64 data URLs inside document JSON.
 
-The unique Cognito subject and `ON CONFLICT DO NOTHING` make concurrent first requests idempotent. The existing RLS policy permits the verified subject to select its profile during bootstrap. After resolving the internal UUID, all user-owned data access uses `app.user_id` in the same transaction. Any failure rolls back the whole transaction.
+## Tests
 
-Never accept `cognitoSub`, `ownerId` or an internal profile UUID as authority from a request body, query string or browser storage. Do not return the Cognito subject, raw JWT, email claims or authorizer context from `GET /v1/me`. The public profile contains only the internal profile ID, display name, avatar asset ID, locale, time zone and creation timestamp.
+The API handler tests use a fake PostgreSQL client and exercise authorisation, profile bootstrap, atomic creation/revision writes, malformed documents, revision conflicts and transaction rollback. The existing CI database job independently applies the migration and exercises row-level security against PostgreSQL 16.
 
-## Session boundary
+## Not yet deployed
 
-The browser must not persist Cognito tokens in localStorage. The intended production session uses a backend-for-frontend exchange and Secure, HttpOnly, SameSite cookies, with CSRF protection on state-changing requests. Until that runtime exists, the frontend must not simulate an authenticated session or claim that account sign-in is available.
-
-## Runtime boundary
-
-The planned AWS runtime is Cognito JWT authorisation at API Gateway, Lambda handlers for domain operations, and PostgreSQL for relational state. Every handler must:
-
-1. Consume verified Cognito authorizer claims.
-2. Set `app.cognito_sub` transaction-locally from the verified JWT subject.
-3. Resolve or create only that user's internal profile.
-4. Set `app.user_id` transaction-locally to the resolved profile UUID.
-5. Validate request bodies and enforce resource ownership.
-6. Commit or roll back the transaction as one unit.
-
-Never rely on frontend route guards for authorisation. Never accept `ownerId` as an authority from a request payload.
-
-## Migrations and document storage
-
-Apply migrations in lexical order using a migration runner in a controlled deployment pipeline. Do not apply them manually to production. The initial migration can be exercised against a disposable PostgreSQL database.
-
-The editor's versioned JSON document remains the canonical source. Revisions are immutable snapshots. Sending will later create a correspondence record that references a specific revision so subsequent edits cannot rewrite an item already sent.
-
-The current browser editor can embed image data in its local document. Before cloud persistence, uploads must be moved to private object storage and document elements must reference authorised asset IDs. Do not upload base64 data URLs inside document JSON.
-
-## Deployment gate
-
-No Cognito user pool, app client, hosted UI domain, API Gateway authorizer, Lambda runtime, database or cookie domain is provisioned by this pass. These require an approved AWS account, selected region and credentials. Configure callback/logout URLs for the production Lumie domain and local development separately; do not commit secrets.
+This pass supplies executable request handlers and tests, not a live AWS environment. No Cognito pool, API Gateway, Lambda, database, RDS Proxy, Secrets Manager secret or S3 bucket has been provisioned. The frontend is not yet switched to these endpoints. Provisioning and wiring those services is a separate deployment step requiring an approved AWS account, region, credentials and cost controls.
