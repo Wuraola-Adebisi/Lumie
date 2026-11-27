@@ -68,9 +68,9 @@ Drafts and uploaded image data are stored in this browser's local storage. They 
 | Rich text | Tiptap 2 |
 | Composition export | html-to-image; browser-native print |
 | Tests | Vitest |
-| Future backend | Supabase Auth, PostgreSQL, Storage and server functions |
-| Future email | Resend for transactional notifications |
-| Deployment target | Vercel |
+| Planned backend | Amazon Cognito, API Gateway, Lambda, PostgreSQL and S3 |
+| Planned AI | Amazon Bedrock behind a provider-neutral Lumie AI gateway; NVIDIA NIM/NeMo optional later |
+| Planned email | Amazon SES for transactional notifications |\n| Deployment target | Vercel initially; AWS delivery services may be evaluated later |
 
 ## Design
 
