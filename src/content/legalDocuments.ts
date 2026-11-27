@@ -33,7 +33,7 @@ export const privacyPolicy: LegalDocument = {
     { title: '9. Children and age requirements', paragraphs: ['Lumie has not yet published a final age policy for the connected service. Until an age policy and appropriate safeguards are established, the pre-release editor should not be used to submit personal information about children or sensitive information concerning a child. Any future age requirements will be stated before registration.'] },
     { title: '10. Your privacy rights', paragraphs: ['Depending on where you live, privacy law may give you rights to request access, correction, deletion, restriction, objection or portability, and to complain to a data protection authority. The process for exercising rights, the responsible legal entity and its contact details must be published before Lumie begins collecting personal information through production accounts or correspondence.'] },
     { title: '11. Changes to this policy', paragraphs: ['This policy will change as Lumie adds accounts, cloud storage, correspondence, invitations, notifications or other services. The revision date above will be updated when material changes are made. Where required by law, users will be notified or asked to make a new choice before a change takes effect.'] },
-    { title: '12. Contact', paragraphs: ['A dedicated privacy contact address and the legal operator details have not yet been configured. They must be added before public launch. Do not send sensitive personal information through informal channels.'] },
+    { title: '12. Contact', paragraphs: ['For privacy questions or requests relating to this website, email hello@lumiepost.com with “Privacy request” in the subject line. Please do not include passwords, payment details or highly sensitive personal information. The legal operator name and business address will be added when confirmed.'] },
   ],
 }
 
@@ -88,7 +88,7 @@ export const cookieNotice: LegalDocument = {
     { title: '2. Cookies', paragraphs: ['The current frontend does not intentionally set analytics, advertising or personalisation cookies. The assistant preview is local-only and does not transmit prompts or composition content to an AI provider. The website may be delivered through hosting or security infrastructure that uses strictly necessary technologies. The final hosting configuration must be reviewed before launch so this notice can name any cookies or similar technologies actually used.'] },
     { title: '3. Your choices', paragraphs: ['You can clear local site data through your browser settings. Doing so may permanently remove locally saved compositions. Browser controls can also block or delete cookies, although blocking essential infrastructure technologies may affect website operation.'] },
     { title: '4. Future optional technologies', paragraphs: ['If Lumie introduces analytics, advertising, embedded media, preference cookies or other non-essential tracking, this notice will be updated and any consent required by applicable law will be requested before those technologies are activated.'] },
-    { title: '5. Contact', paragraphs: ['The privacy contact details will be published here before optional tracking or account-based services are introduced.'] },
+    { title: '5. Contact', paragraphs: ['For questions about browser storage, cookies or privacy, email hello@lumiepost.com.'] },
   ],
 }
 
@@ -101,6 +101,6 @@ export const accessibilityStatement: LegalDocument = {
     { title: '1. Our commitment', paragraphs: ['We aim to make the public website and Creation Studio perceivable, operable, understandable and robust. We use semantic page structure, readable text, clear controls and responsive layouts as a foundation.'] },
     { title: '2. Current limitations', paragraphs: ['The Creation Studio is an early implementation. Dragging layers is currently the primary way to reposition them, and full keyboard-based positioning, screen-reader announcements for every canvas change, and a complete accessibility audit have not yet been implemented. Some visual compositions may also rely on colour or spatial arrangement.'] },
     { title: '3. Improvements planned', bullets: ['Keyboard-accessible layer selection and positioning.', 'Clear focus indicators and consistent keyboard navigation.', 'Accessible names and state announcements for editor controls.', 'Contrast and text-resizing checks across public and app pages.', 'Reduced-motion support and testing with assistive technologies.'] },
-    { title: '4. Feedback', paragraphs: ['A dedicated accessibility contact has not yet been configured. The operator must publish an accessible contact route before the public connected service launches.'] },
+    { title: '4. Feedback', paragraphs: ['For accessibility feedback or to request information in another format, email hello@lumiepost.com with “Accessibility” in the subject line.'] },
   ],
 }
