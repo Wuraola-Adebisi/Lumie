@@ -7,7 +7,7 @@ import StudioInspector from '../features/studio/StudioInspector'
 import ShareDialog from '../features/studio/ShareDialog'
 import { createDocument, createId, paperBase, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
 import { saveLocalCreation } from '../features/creations/localCreations'
-import { CloudApiError, archiveCloudCreation, createCloudCreation, getCloudCreation, hasInlineMedia, resolveCreationAssets, toCloudDocument, updateCloudCreation, uploadCreationAsset } from '../features/creations/cloudApi'
+import { CloudApiError, archiveCloudCreation, createCloudCreation, getCloudCreation, hasInlineMedia, markLocalCreationImported, resolveCreationAssets, toCloudDocument, updateCloudCreation, uploadCreationAsset } from '../features/creations/cloudApi'
 import { useAuth } from '../features/auth/AuthProvider'
 import type { StudioDocument, StudioElement, StudioFormat } from '../features/studio/studioTypes'
 
@@ -16,7 +16,7 @@ export default function CreatePage() {
   const [params] = useSearchParams()
   const requestedFormat = (params.get('type') ?? 'letter') as StudioFormat
   const initialFormat = studioFormats.some((item) => item.id === requestedFormat) ? requestedFormat : 'letter'
-  const { getToken } = useAuth()
+  const { getToken, profile } = useAuth()
   const draftId = params.get('draft')
   const [document, setDocument] = useState<StudioDocument>(() => createDocument(initialFormat))
   const [loadingDraft, setLoadingDraft] = useState(Boolean(draftId))
@@ -76,6 +76,7 @@ export default function CreatePage() {
         : await createCloudCreation(getToken, toCloudDocument(snapshot))
       cloudIdRef.current = saved.id
       revisionRef.current = saved.revision
+      if (profile) markLocalCreationImported(profile.id, snapshot.id, saved.id)
       setSavedAt(new Date(saved.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
       setSaveStatus('saved')
     }).catch((reason: unknown) => {
@@ -86,7 +87,7 @@ export default function CreatePage() {
         setToast(reason instanceof Error ? reason.message : 'Your piece could not be saved.')
       }
     })
-  }, [getToken])
+  }, [getToken, profile])
 
   useEffect(() => {
     if (loadingDraft || draftLoadFailed) return
