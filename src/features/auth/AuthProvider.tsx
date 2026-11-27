@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { getAccessToken, getUser, hasSession, isSupabaseConfigured, onAuthStateChange, signIn as authenticate, signOut as endSession, signUp as register, completeSignIn } from './supabaseAuth'
+import { getAccessToken, getLumieProfile, getUser, hasSession, isSupabaseConfigured, onAuthStateChange, signIn as authenticate, signOut as endSession, signUp as register, completeSignIn } from './supabaseAuth'
 import type { SupabaseUser } from './supabaseAuth'
 import type { LumieProfile } from './authContract'
 
@@ -22,14 +22,7 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 function toProfile(user: SupabaseUser): LumieProfile {
   const metadata = user.user_metadata || {}
   const displayName = typeof metadata.display_name === 'string' ? metadata.display_name.slice(0, 80) : ''
-  return {
-    id: user.id,
-    displayName,
-    avatarAssetId: null,
-    locale: 'en',
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    createdAt: new Date().toISOString(),
-  }
+  return { id: user.id, displayName, avatarAssetId: null, locale: 'en', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', createdAt: new Date().toISOString() }
 }
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading')
@@ -39,7 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const reloadProfile = useCallback(async () => {
     const user = await getUser()
-    setProfile(toProfile(user))
+    const row = await getLumieProfile(user.id)
+    const fallback = toProfile(user)
+    setProfile(row ? { id: user.id, displayName: typeof row.display_name === 'string' ? row.display_name : fallback.displayName, avatarAssetId: typeof row.avatar_asset_id === 'string' ? row.avatar_asset_id : null, locale: typeof row.locale === 'string' ? row.locale : fallback.locale, timeZone: typeof row.time_zone === 'string' ? row.time_zone : fallback.timeZone, createdAt: typeof row.created_at === 'string' ? row.created_at : fallback.createdAt } : fallback)
     setStatus('authenticated')
     setError('')
   }, [])
@@ -69,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     setError('')
     const session = await authenticate(email, password)
-    setProfile(toProfile(session.user))
+    await reloadProfile()
     setStatus('authenticated')
   }, [])
   const signUp = useCallback(async (email: string, password: string, displayName: string) => {
