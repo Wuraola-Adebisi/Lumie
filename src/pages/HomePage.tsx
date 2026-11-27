@@ -54,7 +54,6 @@ export default function HomePage() {
                 <Link to="/app/create" className="btn btn-primary">Open the studio <ArrowUpRight size={18} /></Link>
                 <a href="#how" className="btn btn-paper">See how it works <ArrowDown size={16} /></a>
               </div>
-              <p className="mt-8 max-w-[30rem] text-[15px] leading-relaxed text-muted">The assistant shown in this preview uses sample responses. Live AI and cloud accounts are not connected yet.</p>
             </div>
             <HeroScene />
           </div>
@@ -158,7 +157,7 @@ export default function HomePage() {
         <section className="on-dark relative overflow-hidden bg-cobalt text-paper">
           <div className="mx-auto max-w-[900px] px-5 py-24 text-center md:py-32">
             <h2 className="display text-[clamp(44px,7vw,88px)]">Start with a blank page.</h2>
-            <p className="mx-auto mt-5 max-w-[30rem] text-[19px] text-paper/85">No account needed. Your draft stays in this browser.</p>
+            <p className="mx-auto mt-5 max-w-[30rem] text-[19px] text-paper/85">A little room to write, create and send something meaningful.</p>
             <Link to="/app/create" className="btn btn-saffron mt-9">Open the studio <ArrowUpRight size={18} /></Link>
           </div>
           <div className="pointer-events-none absolute left-[4%] top-[18%] hidden w-[110px] rotate-[-10deg] md:block" aria-hidden="true"><Stamp tone="saffron" art="sun" lines={['HELLO']} label="" /></div>

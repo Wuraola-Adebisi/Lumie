@@ -27,7 +27,7 @@ export default function AboutPage() {
       <section className="mt-20 rounded-2xl border-2 border-navy bg-saffron p-8 shadow-[0_4px_0_#121c5a] md:flex md:items-center md:justify-between md:gap-10">
         <div className="max-w-[560px]">
           <h2 className="display text-[28px]">Make your first piece</h2>
-          <p className="mt-3 text-[16px] leading-relaxed">Choose a format, write in your own voice and make the page yours. Try the assistant preview if you want a little help.</p>
+          <p className="mt-3 text-[16px] leading-relaxed">Choose a format, write in your own voice and make the page yours. Bring in the assistant whenever you want a little help.</p>
         </div>
         <Link className="btn btn-primary mt-6 md:mt-0" to="/app/create">Open the studio <ArrowUpRight size={16} /></Link>
       </section>
