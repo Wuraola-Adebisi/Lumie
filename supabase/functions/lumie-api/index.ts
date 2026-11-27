@@ -54,6 +54,13 @@ function parseJson(raw: string): Json | null {
     return value && typeof value === "object" && !Array.isArray(value) ? value as Json : null;
   } catch { return null; }
 }
+function parseFutureDelivery(value: unknown): string | null | false {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string") return false;
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp) || timestamp <= Date.now() || timestamp > Date.now() + 5 * 365 * 24 * 60 * 60 * 1000) return false;
+  return new Date(timestamp).toISOString();
+}
 function validDocument(document: unknown, format: unknown) {
   if (!document || typeof document !== "object" || Array.isArray(document)) return false;
   const d = document as Record<string, unknown>;
@@ -313,6 +320,8 @@ Deno.serve(async (req: Request) => {
       if (!body) return fail(400, "INVALID_BODY", "A valid JSON object is required.", origin);
       const recipientEmail = typeof body.recipientEmail === "string" ? body.recipientEmail.trim().toLowerCase() : "";
       const creationId = typeof body.creationId === "string" ? body.creationId : "";
+      const availableAt = parseFutureDelivery(body.availableAt);
+      if (availableAt === false) return fail(400, "INVALID_DELIVERY_TIME", "Choose a future opening date within the next five years.", origin);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
         return fail(400, "INVALID_INVITATION", "Choose a recipient email and a saved creation.", origin);
       }
@@ -359,7 +368,8 @@ Deno.serve(async (req: Request) => {
       const token = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
       const tokenHash = [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
-      const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      const expiryBase = availableAt ? new Date(availableAt).getTime() + 14 * 24 * 60 * 60 * 1000 : Date.now() + 14 * 24 * 60 * 60 * 1000;
+      const expiresAt = new Date(Math.max(Date.now() + 14 * 24 * 60 * 60 * 1000, expiryBase)).toISOString();
       const snapshot = { title: creation.title, format: creation.format, document: creation.document_json };
       const { error: insertError } = await admin.from("correspondence_invitations").insert({
         sender_id: user.id,
@@ -369,11 +379,13 @@ Deno.serve(async (req: Request) => {
         creation_revision: creation.revision,
         snapshot,
         expires_at: expiresAt,
+        available_at: availableAt || new Date().toISOString(),
       });
       if (insertError) throw insertError;
       return response(201, {
         inviteUrl: `https://www.lumiepost.com/invite/${token}`,
         expiresAt,
+        availableAt: availableAt || new Date().toISOString(),
       }, origin);
     }
 
@@ -408,8 +420,8 @@ Deno.serve(async (req: Request) => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
         return fail(400, "INVALID_CORRESPONDENCE", "Choose a recipient email and a saved creation.", origin);
       }
-      const { data, error } = await admin.rpc("lumie_send_correspondence", {
-        p_sender_id: user.id, p_recipient_email: recipientEmail, p_creation_id: creationId,
+      const { data, error } = await admin.rpc("lumie_send_correspondence_scheduled", {
+        p_sender_id: user.id, p_recipient_email: recipientEmail, p_creation_id: creationId, p_available_at: availableAt,
       });
       if (error) throw error;
       const result = data as Json;
@@ -417,6 +429,7 @@ Deno.serve(async (req: Request) => {
       if (result.error === "SELF_SEND") return fail(400, "SELF_SEND", "Choose someone else to receive this letter.", origin);
       if (result.error === "CREATION_NOT_FOUND") return fail(404, "CREATION_NOT_FOUND", "That saved creation could not be found.", origin);
       if (result.error === "ASSET_UNAVAILABLE") return fail(409, "ASSET_UNAVAILABLE", "One or more photos are no longer available. Reopen the creation and try again.", origin);
+      if (result.error === "INVALID_DELIVERY_TIME") return fail(400, "INVALID_DELIVERY_TIME", "Choose a future opening date within the next five years.", origin);
       return response(201, result, origin);
     }
 
