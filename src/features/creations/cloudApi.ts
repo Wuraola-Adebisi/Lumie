@@ -234,6 +234,7 @@ export interface OpenWhenItem {
   correspondentName: string
   direction: 'sent' | 'received'
   isLocked: boolean
+  isInvitation?: boolean
   availableAt: string
 }
 
