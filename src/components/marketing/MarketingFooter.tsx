@@ -10,7 +10,7 @@ export default function MarketingFooter() {
       <div className="mx-auto grid max-w-[1240px] gap-10 px-5 py-14 md:grid-cols-[1.4fr_1fr_1fr] md:px-10">
         <div>
           <BrandMark />
-          <p className="mt-4 max-w-xs text-[16px] leading-relaxed text-muted">Letters, postcards and photo keepsakes you can make, print and share.</p>
+          <p className="mt-4 max-w-xs text-[16px] leading-relaxed text-muted">A creative correspondence studio. Write in your own voice, and bring in a helping hand when you want one.</p>
         </div>
         <nav aria-label="Explore" className="flex flex-col gap-2.5 text-[15px]">
           <strong className="display mb-1 text-[17px]">Explore</strong>
