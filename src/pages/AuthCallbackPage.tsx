@@ -7,7 +7,7 @@ export default function AuthCallbackPage() {
   const navigate = useNavigate()
   const started = useRef(false)
   const [error, setError] = useState('')
-  const flow = new URLSearchParams(window.location.search).get('flow')
+  const flow = new URLSearchParams(window.location.search).get('flow') || sessionStorage.getItem('lumie-auth-flow')
 
   useEffect(() => {
     if (started.current) return
@@ -15,6 +15,7 @@ export default function AuthCallbackPage() {
     completeCallback(window.location.search + window.location.hash)
       .then(() => {
         if (flow === 'recovery') {
+          sessionStorage.removeItem('lumie-auth-flow')
           navigate('/reset-password', { replace: true })
           return
         }
