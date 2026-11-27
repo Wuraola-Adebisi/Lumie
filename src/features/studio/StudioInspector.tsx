@@ -16,7 +16,7 @@ interface Props {
   onAddText: () => void
   onAddStamp: () => void
   onAddDecoration: () => void
-  onAddPhoto: (dataUrl: string) => void
+  onAddPhoto: (file: File) => void
   onPhotoError: (message: string) => void
   onDelete: () => void
 }
@@ -32,26 +32,19 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
       input.value = ''
       return
     }
-    if (file.size > 3 * 1024 * 1024) {
-      onPhotoError('Choose an image smaller than 3 MB for this local editor.')
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) {
+      onPhotoError('Choose a JPEG, PNG, WebP or AVIF image.')
+      input.value = ''
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      onPhotoError('Choose an image no larger than 10 MB.')
       input.value = ''
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') onAddPhoto(reader.result)
-      else onPhotoError('This image could not be read. Try another file.')
-    }
-    reader.onerror = () => onPhotoError('This image could not be read. Try another file.')
-    reader.onabort = () => onPhotoError('Image upload was cancelled. Try again when ready.')
-    try {
-      reader.readAsDataURL(file)
-    } catch {
-      onPhotoError('This image could not be opened. Try another file.')
-    } finally {
-      input.value = ''
-    }
+    onAddPhoto(file)
+    input.value = ''
   }
 
   const updateRichText = (richText: StudioRichTextNode) => onChange({ richText })
@@ -65,10 +58,10 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
           <button type="button" onClick={onAddText}><Type aria-hidden="true"/><span>Text</span></button>
           <button type="button" onClick={onAddStamp}><Stamp aria-hidden="true"/><span>Stamp</span></button>
           <button type="button" onClick={onAddDecoration}><Plus aria-hidden="true"/><span>Sticker</span></button>
-          <input id="studio-photo-upload" className="studio-visually-hidden" type="file" accept="image/*" aria-label="Choose a photo" onChange={uploadPhoto} />
+          <input id="studio-photo-upload" className="studio-visually-hidden" type="file" accept="image/jpeg,image/png,image/webp,image/avif" aria-label="Choose a photo" onChange={uploadPhoto} />
           <label className="studio-add-upload" htmlFor="studio-photo-upload" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.document.getElementById('studio-photo-upload')?.click() } }}><ImagePlus aria-hidden="true"/><span>Photo</span></label>
         </div>
-        <p className="studio-upload-hint" id="studio-photo-hint">Images only, up to 3 MB. Kept in this browser.</p>
+        <p className="studio-upload-hint" id="studio-photo-hint">JPEG, PNG, WebP or AVIF, up to 10 MB.</p>
       </section>
       <section className="studio-inspector-section" aria-labelledby="studio-paper-heading">
         <h3 id="studio-paper-heading">Paper</h3>
@@ -115,7 +108,6 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
         </section>
       ) : <div className="studio-inspector-empty"><strong>Select a layer on the paper</strong><p>Its words, colour, size and position appear here.</p></div>}
       <StudioAssistant />
-      <div className="studio-inspector-footnote">Drafts and photos are saved in this browser only. Nothing is uploaded.</div>
     </aside>
   )
 }

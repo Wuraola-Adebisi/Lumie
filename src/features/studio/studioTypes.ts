@@ -38,6 +38,7 @@ export interface StudioElement {
   tone?: string
   art?: string
   image?: string
+  imageAssetId?: string
   bold?: boolean
   italic?: boolean
   textAlign?: StudioTextAlign
