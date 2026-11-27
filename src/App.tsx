@@ -19,6 +19,7 @@ import AppShell from './components/app/AppShell'
 import RequireAuth from './features/auth/RequireAuth'
 import SignInPage from './pages/SignInPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/sign-in" element={<SignInPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/how-it-works" element={<HowItWorksPage />} />
       <Route path="/contact" element={<ContactPage />} />
