@@ -101,7 +101,7 @@ export default function InboxPage() {
             void navigator.clipboard.writeText(inviteUrl).then(() => setCopiedInvite(true)).catch(() => setError('Copying was blocked. Select the invitation link and copy it manually.'))
           }}>{copiedInvite ? 'Copied' : 'Copy invitation link'}</button>
         </div>}
-      </div>
+      </div>}
 
       <section className="mt-7 rounded-2xl border-2 border-navy bg-white p-5 shadow-[0_4px_0_#121c5a] md:p-6">
         <div className="flex items-center gap-2"><Mail size={19}/><h2 className="display text-xl">Send a letter</h2></div>
