@@ -6,20 +6,12 @@ import StudioCanvas from '../features/studio/StudioCanvas'
 import StudioInspector from '../features/studio/StudioInspector'
 import ShareDialog from '../features/studio/ShareDialog'
 import { createDocument, createId, migrateStudioDocument, paperBase, plainTextToRichText, studioFormats } from '../features/studio/studioTypes'
+import { getLocalCreation, listLocalCreations, saveLocalCreation } from '../features/creations/localCreations'
 import type { StudioDocument, StudioElement, StudioFormat } from '../features/studio/studioTypes'
 
-const STORAGE_KEY = 'lumie-studio-draft-v1'
-
-function readDraft(format: StudioFormat): StudioDocument {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const migrated = migrateStudioDocument(JSON.parse(raw))
-      if (migrated) return migrated
-    }
-  } catch {
-    // Ignore invalid or unavailable local storage and start a fresh composition.
-  }
+function readDraft(format: StudioFormat, draftId: string | null): StudioDocument {
+  const saved = listLocalCreations()
+  if (draftId) return saved.find((item) => item.id === draftId) ?? createDocument(format)
   return createDocument(format)
 }
 
@@ -27,7 +19,7 @@ export default function CreatePage() {
   const [params] = useSearchParams()
   const requestedFormat = (params.get('type') ?? 'letter') as StudioFormat
   const initialFormat = studioFormats.some((item) => item.id === requestedFormat) ? requestedFormat : 'letter'
-  const [document, setDocument] = useState<StudioDocument>(() => readDraft(initialFormat))
+  const [document, setDocument] = useState<StudioDocument>(() => readDraft(initialFormat, params.get('draft')))
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [history, setHistory] = useState<StudioDocument[]>([])
   const [future, setFuture] = useState<StudioDocument[]>([])
@@ -39,11 +31,10 @@ export default function CreatePage() {
   const closeShare = useCallback(() => setShareOpen(false), [])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(document))
+    if (saveLocalCreation(document)) {
       setSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
-    } catch {
-      setToast('This composition is too large to save in this browser. Try a smaller photo.')
+    } else {
+      setToast('This composition could not be saved. Try removing a large photo.')
     }
   }, [document])
 
@@ -95,7 +86,9 @@ export default function CreatePage() {
   const addPhoto = (image: string) => addElement({ id: createId(), kind: 'photo', x: 48, y: 48, width: 34, image, rotation: 3 })
 
   const changeFormat = (format: StudioFormat) => {
-    commit({ ...document, format, name: studioFormats.find((item) => item.id === format)?.label ?? document.name })
+    const previousDefault = studioFormats.find((item) => item.id === document.format)?.label
+    const nextDefault = studioFormats.find((item) => item.id === format)?.label
+    commit({ ...document, format, name: document.name === previousDefault ? (nextDefault ?? document.name) : document.name })
     setSelectedId(null)
   }
 
@@ -216,8 +209,8 @@ export default function CreatePage() {
 
   const saveDraft = () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(document))
-      setToast('Saved on this device.')
+      if (!saveLocalCreation(document)) throw new Error('Storage unavailable')
+      setToast('Saved to your creations on this device.')
     } catch {
       setToast('Could not save. This composition may be too large.')
     }
@@ -228,7 +221,7 @@ export default function CreatePage() {
     <div className="create-page studio-page">
       <header className="studio-top">
         <div className="studio-top-left">
-          <Link to="/app" className="studio-back"><ArrowLeft size={16}/> Back to your desk</Link>
+          <Link to="/app/archive" className="studio-back"><ArrowLeft size={16}/> Back to your creations</Link>
           <span className="studio-save-state" role="status">{savedAt ? `Saved on this device at ${savedAt}` : 'Saving on this device'}</span>
         </div>
         <div className="studio-heading-actions">
@@ -248,6 +241,8 @@ export default function CreatePage() {
         </div>
         <p className="studio-purpose-note"><strong>First, make the piece.</strong> This is where you write and design it. Sending correspondence is a separate step from your desk.</p>
       </section>
+
+      <label className="studio-title-field"><span>Give it a name</span><input value={document.name} maxLength={80} onChange={(event) => commit({ ...document, name: event.target.value })} /></label>
 
       <section className="studio-formats" aria-label="Choose a composition format">
         <h2>Choose your paper.</h2>
