@@ -272,7 +272,7 @@ export async function createCorrespondenceInvitation(token: TokenProvider, recip
 }
 
 export async function acceptCorrespondenceInvitation(token: TokenProvider, invitationToken: string) {
-  return request<{ threadId: string; subject?: string; senderName?: string; alreadyAccepted?: boolean }>(token, '/v1/invitations/accept', {
+  return request<{ threadId: string; subject?: string; senderName?: string; alreadyAccepted?: boolean; availableAt?: string }>(token, '/v1/invitations/accept', {
     method: 'POST',
     body: JSON.stringify({ token: invitationToken }),
   })
