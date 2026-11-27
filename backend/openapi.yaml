@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Lumie API
   version: 1.0.0
-  description: Authenticated API contract for account-owned creations and media upload intents.
+  description: Authenticated API contract for account-scoped creations, profile provisioning and media upload intents.
 servers:
   - url: https://api.lumiepost.com
     description: Planned production API origin
@@ -17,7 +17,8 @@ paths:
     get:
       tags: [Account]
       operationId: getCurrentProfile
-      summary: Get the authenticated user's Lumie profile
+      summary: Get or provision the authenticated user's Lumie profile
+      description: Resolves the verified Cognito subject to one internal profile. The operation is idempotent and never accepts an account identifier from the client.
       responses:
         '200':
           description: Current profile
@@ -133,6 +134,7 @@ paths:
         '413':
           description: Document exceeds the accepted size limit
     delete:
+      description: Archives the creation; hard deletion is not exposed by this endpoint.
       tags: [Creations]
       operationId: archiveCreation
       summary: Archive a creation (soft delete)
@@ -221,7 +223,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Cognito access token validated by API Gateway and revalidated by trusted backend handlers where required.
+      description: Cognito access token validated by the API Gateway JWT authorizer. Lambda consumes only trusted authorizer claims.
   parameters:
     CreationId:
       name: creationId
@@ -240,7 +242,7 @@ components:
         maxLength: 128
   responses:
     Unauthorized:
-      description: Missing or invalid authentication
+      description: Missing, expired or invalid authentication
     NotFound:
       description: Resource not found or not accessible to this account
     BadRequest:
@@ -252,7 +254,7 @@ components:
   schemas:
     Profile:
       type: object
-      required: [id, displayName, createdAt]
+      required: [id, displayName, avatarAssetId, locale, timeZone, createdAt]
       properties:
         id:
           type: string
@@ -274,7 +276,7 @@ components:
           format: date-time
     CreationPage:
       type: object
-      required: [items]
+      required: [items, nextCursor]
       properties:
         items:
           type: array
