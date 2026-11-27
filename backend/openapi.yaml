@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Lumie API
   version: 1.0.0
-  description: Authenticated API contract for account-scoped creations, profile provisioning and media upload intents.
+  description: Authenticated API contract for account-scoped creations, profile provisioning, private media and correspondence.
 servers:
   - url: https://api.lumiepost.com
     description: Planned production API origin
@@ -12,6 +12,7 @@ tags:
   - name: Account
   - name: Creations
   - name: Assets
+  - name: Correspondence
 paths:
   /v1/me:
     get:
@@ -245,6 +246,122 @@ paths:
           description: File exceeds the upload size limit
         '415':
           description: Unsupported media type
+  /v1/correspondence:
+    post:
+      tags: [Correspondence]
+      operationId: sendCorrespondence
+      summary: Send a saved creation to an existing Lumie account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipientEmail, creationId]
+              properties:
+                recipientEmail:
+                  type: string
+                  format: email
+                creationId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Correspondence sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [threadId, subject, recipientName]
+                properties:
+                  threadId:
+                    type: string
+                    format: uuid
+                  subject:
+                    type: string
+                  recipientName:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Recipient or saved creation was not found
+  /v1/inbox:
+    get:
+      tags: [Correspondence]
+      operationId: listCorrespondence
+      summary: List the authenticated user's correspondence threads
+      responses:
+        '200':
+          description: Inbox threads
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CorrespondenceSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/threads/{threadId}:
+    parameters:
+      - name: threadId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Correspondence]
+      operationId: getCorrespondence
+      summary: Read a thread the authenticated user participates in
+      responses:
+        '200':
+          description: Correspondence thread and immutable message snapshots
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CorrespondenceThread'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/threads/{threadId}/replies:
+    parameters:
+      - name: threadId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Correspondence]
+      operationId: replyToCorrespondence
+      summary: Add a reply to a thread the authenticated user participates in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [snapshot]
+              properties:
+                snapshot:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Reply added
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     cognitoJwt:
@@ -457,6 +574,57 @@ components:
           type: object
           additionalProperties:
             type: string
+    CorrespondenceSummary:
+      type: object
+      required: [id, subject, role, correspondentName, createdAt, lastMessageAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        role:
+          type: string
+          enum: [sender, recipient]
+        correspondentName:
+          type: string
+        latestTitle:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        lastMessageAt:
+          type: string
+          format: date-time
+    CorrespondenceThread:
+      type: object
+      required: [id, subject, messages]
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        messages:
+          type: array
+          items:
+            type: object
+            required: [id, senderId, senderName, snapshot, sentAt]
+            properties:
+              id:
+                type: string
+                format: uuid
+              senderId:
+                type: string
+                format: uuid
+              senderName:
+                type: string
+              snapshot:
+                type: object
+                additionalProperties: true
+              sentAt:
+                type: string
+                format: date-time
     ApiError:
       type: object
       required: [code, message, requestId]
