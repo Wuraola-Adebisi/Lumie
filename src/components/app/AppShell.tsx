@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
@@ -8,6 +8,14 @@ const titles: Record<string, string> = { '/app': 'Your desk', '/app/create': 'Ne
 export default function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
   const { pathname } = useLocation()
+  useEffect(() => {
+    const robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
+    const previousContent = robots?.content
+    if (robots) robots.content = 'noindex, nofollow'
+    return () => {
+      if (robots && previousContent !== undefined) robots.content = previousContent
+    }
+  }, [])
   if (pathname === '/app/create') return <div className="app-layout bg-white"><main className="app-main w-full"><div className="app-content"><Outlet /></div></main></div>
   return (
     <div className="app-layout flex min-h-screen bg-cream">
