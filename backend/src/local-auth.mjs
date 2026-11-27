@@ -29,6 +29,7 @@ export function createLocalTokenVerifier({ issuer, clientId, getKey }) {
       sub: payload.sub,
       iss: payload.iss,
       token_use: payload.token_use,
+      ...(typeof payload.email === 'string' ? { email: payload.email } : {}),
     }
   }
 }

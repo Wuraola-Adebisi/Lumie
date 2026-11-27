@@ -12,7 +12,9 @@ services:
     volumes:
       - lumie-postgres:/var/lib/postgresql/data
       - ./backend/migrations/0001_initial.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+      - ./backend/migrations/0002_correspondence.sql:/docker-entrypoint-initdb.d/25-correspondence.sql:ro
       - ./backend/local/20-runtime-role.sql:/docker-entrypoint-initdb.d/20-runtime-role.sql:ro
+      - ./backend/local/30-correspondence-grants.sql:/docker-entrypoint-initdb.d/30-correspondence-grants.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d lumie_local"]
       interval: 5s

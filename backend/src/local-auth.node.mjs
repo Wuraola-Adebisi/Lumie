@@ -37,6 +37,18 @@ test('local access-token verification', async (t) => {
     })
   })
 
+
+  await t.test('passes through an email only after token signature verification', async () => {
+    const { publicKey, privateKey } = await generateKeyPair('RS256')
+    const verify = createLocalTokenVerifier({
+      issuer,
+      clientId,
+      getKey: async () => publicKey,
+    })
+    const claims = await verify(await createToken(privateKey, { email: 'person@example.com' }))
+    assert.equal(claims.email, 'person@example.com')
+  })
+
   await t.test('rejects a token minted for another client', async () => {
     const { publicKey, privateKey } = await generateKeyPair('RS256')
     const verify = createLocalTokenVerifier({

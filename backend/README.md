@@ -128,3 +128,29 @@ The local API uses `STORAGE_ENDPOINT=http://minio:9000` for server-side checks a
 ### Studio photo persistence
 
 The studio uploads selected JPEG, PNG, WebP and AVIF files (up to 10 MiB) using the authenticated asset intent API. The browser sends file bytes directly to the private object store, then asks the API to verify the stored object's content type and exact size. Creation documents retain only the stable `imageAssetId`; they never retain signed object URLs. When a creation is opened, the client requests a fresh short-lived download URL for each photo layer. Local browser drafts keep their own original image data so they can be recovered or imported later. Importing local creations uploads their photo layers before creating the cloud document.
+
+
+
+## Correspondence (Pass 14)
+
+The correspondence API supports private, account-backed threads:
+
+- `POST /v1/correspondence` sends a saved draft to an existing Lumie account using its exact registered email address. The API copies the selected creation and current revision into an immutable message snapshot; later draft edits do not alter the sent letter.
+- `GET /v1/inbox` returns the authenticated account's threads.
+- `GET /v1/threads/{id}` returns a thread only to one of its participants and marks it read.
+- `POST /v1/threads/{id}/replies` adds a reply to a thread only for a participant.
+
+A sender's ready photo assets are granted to that specific thread. The existing asset download endpoint issues a fresh short-lived URL only when the requester owns the asset or belongs to a thread with an explicit asset grant. Signed URLs are not stored in messages. Thread, participant, message and asset-grant tables use forced row-level security. The recipient lookup uses an exact email match; it does not provide a public directory or partial email search.
+
+The first correspondence pass sends to existing Lumie accounts. Email invitations for people who have not joined, email delivery and notification preferences are a subsequent notification/invitation pass; Mailpit remains the local mail capture service.
+
+### Applying the migration to an existing local database
+
+Fresh Compose databases apply `0001_initial.sql`, create the restricted runtime role, apply `0002_correspondence.sql`, then grant the new table permissions. If the `lumie-postgres` volume already exists, PostgreSQL's init scripts will not run again. Apply the additive migration and grants once:
+
+```powershell
+docker compose exec -T postgres psql -U postgres -d lumie_local < backend/migrations/0002_correspondence.sql
+docker compose exec -T postgres psql -U postgres -d lumie_local < backend/local/30-correspondence-grants.sql
+```
+
+Do not run `docker compose down -v` unless you intend to erase all local account, creation and photo data.

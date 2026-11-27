@@ -197,3 +197,51 @@ export async function importLocalCreations(token: TokenProvider, profileId: stri
   }
   return { importedCount, mediaBlocked: 0 }
 }
+
+
+export interface CorrespondenceSummary {
+  id: string
+  subject: string
+  role: 'sender' | 'recipient'
+  correspondentName: string
+  latestTitle: string | null
+  createdAt: string
+  lastMessageAt: string
+}
+
+export interface CorrespondenceMessage {
+  id: string
+  senderId: string
+  senderName: string
+  snapshot: { title?: string; format?: string; document?: unknown; body?: string }
+  sentAt: string
+}
+
+export interface CorrespondenceThread {
+  id: string
+  subject: string
+  messages: CorrespondenceMessage[]
+}
+
+export async function listCorrespondence(token: TokenProvider): Promise<CorrespondenceSummary[]> {
+  const result = await request<{ items: CorrespondenceSummary[] }>(token, '/v1/inbox')
+  return Array.isArray(result.items) ? result.items : []
+}
+
+export async function getCorrespondence(token: TokenProvider, id: string): Promise<CorrespondenceThread> {
+  return request<CorrespondenceThread>(token, `/v1/threads/${encodeURIComponent(id)}`)
+}
+
+export async function sendCorrespondence(token: TokenProvider, recipientEmail: string, creationId: string) {
+  return request<{ threadId: string; subject: string; recipientName: string }>(token, '/v1/correspondence', {
+    method: 'POST',
+    body: JSON.stringify({ recipientEmail, creationId }),
+  })
+}
+
+export async function replyToCorrespondence(token: TokenProvider, id: string, body: string) {
+  return request<{ id: string; sentAt: string }>(token, `/v1/threads/${encodeURIComponent(id)}/replies`, {
+    method: 'POST',
+    body: JSON.stringify({ snapshot: { title: 'A reply', body } }),
+  })
+}

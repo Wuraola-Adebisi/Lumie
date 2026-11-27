@@ -6,3 +6,5 @@ GRANT SELECT, INSERT, UPDATE ON profiles TO lumie_app;
 GRANT SELECT, INSERT, UPDATE ON creations TO lumie_app;
 GRANT SELECT, INSERT ON creation_revisions TO lumie_app;
 GRANT SELECT, INSERT, UPDATE ON assets TO lumie_app;
+
+

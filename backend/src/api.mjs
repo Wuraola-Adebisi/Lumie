@@ -87,14 +87,14 @@ function mapCreation(row) {
   }
 }
 
-async function withAccount(pool, cognitoSub, operation) {
+async function withAccount(pool, cognitoSub, operation, email = null) {
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
     await client.query("SELECT set_config('app.cognito_sub', $1, true)", [cognitoSub])
     await client.query(
-      'INSERT INTO profiles (cognito_sub) VALUES ($1) ON CONFLICT (cognito_sub) DO NOTHING',
-      [cognitoSub],
+      'INSERT INTO profiles (cognito_sub, email) VALUES ($1, $2) ON CONFLICT (cognito_sub) DO NOTHING',
+      [cognitoSub, email],
     )
     const profile = await client.query(
       'SELECT id, display_name, avatar_asset_id, locale, time_zone, created_at FROM profiles WHERE cognito_sub = $1',
@@ -103,6 +103,7 @@ async function withAccount(pool, cognitoSub, operation) {
     if (profile.rowCount !== 1) throw new Error('Account profile could not be resolved.')
     const userId = profile.rows[0].id
     await client.query("SELECT set_config('app.user_id', $1, true)", [userId])
+    if (email) await client.query('UPDATE profiles SET email = $2 WHERE id = $1 AND email IS DISTINCT FROM $2', [userId, email])
     const result = await operation(client, profile.rows[0])
     await client.query('COMMIT')
     return result
@@ -138,6 +139,7 @@ export function createApiHandler({ pool, objectStore, logger = console }) {
     const cognitoSub = claims?.sub
     const issuer = claims?.iss
     const tokenUse = claims?.token_use
+    const accountEmail = typeof claims?.email === 'string' ? claims.email.trim().toLowerCase() : null
     if (typeof cognitoSub !== 'string' || !cognitoSub || typeof issuer !== 'string' ||
       tokenUse !== 'access') {
       return response(401, { code: 'UNAUTHORIZED', message: 'Sign in to continue.' })
@@ -200,7 +202,7 @@ export function createApiHandler({ pool, objectStore, logger = console }) {
       }
 
       if (method === 'GET' && path === '/v1/me') {
-        const profile = await withAccount(pool, cognitoSub, async (_client, row) => profileResponse(row))
+        const profile = await withAccount(pool, cognitoSub, async (_client, row) => profileResponse(row), accountEmail)
         return response(200, profile)
       }
 
@@ -339,6 +341,91 @@ export function createApiHandler({ pool, objectStore, logger = console }) {
           }))
         })
         return response(200, revisions)
+      }
+
+
+      if (method === 'POST' && path === '/v1/correspondence') {
+        const body = parseBody(event)
+        if (!body.ok) return response(400, { code: 'INVALID_BODY', message: 'A valid JSON object is required.' })
+        const recipientEmail = typeof body.value.recipientEmail === 'string' ? body.value.recipientEmail.trim().toLowerCase() : ''
+        const creationId = body.value.creationId
+        if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(recipientEmail) || typeof creationId !== 'string' || !/^[0-9a-f-]{36}$/i.test(creationId)) {
+          return response(400, { code: 'INVALID_CORRESPONDENCE', message: 'Choose a recipient email and a saved creation.' })
+        }
+        if (accountEmail && recipientEmail === accountEmail) return response(400, { code: 'SELF_SEND', message: 'Choose someone else to receive this letter.' })
+        const sent = await withAccount(pool, cognitoSub, async (client, sender) => {
+          const recipient = await client.query('SELECT profile_id, display_name FROM lumie_find_recipient_by_email($1)', [recipientEmail])
+          if (!recipient.rowCount) return { recipientMissing: true }
+          if (recipient.rows[0].profile_id === sender.id) return { selfRecipient: true }
+          const creation = await client.query("SELECT id, title, format, document_json, revision FROM creations WHERE id=$1 AND status='draft'", [creationId])
+          if (!creation.rowCount) return { creationMissing: true }
+          const row = creation.rows[0]
+          const assetIds = [...new Set((row.document_json.elements || []).map(item => item.imageAssetId).filter(value => typeof value === 'string'))]
+          if (assetIds.length) {
+            const ownedAssets = await client.query("SELECT id FROM assets WHERE id = ANY($1::uuid[]) AND status='ready'", [assetIds])
+            if (ownedAssets.rowCount !== assetIds.length) return { assetsUnavailable: true }
+          }
+          const thread = await client.query("INSERT INTO correspondence_threads (created_by, subject) VALUES ($1,$2) RETURNING id, subject, created_at", [sender.id, row.title])
+          const threadId = thread.rows[0].id
+          await client.query("INSERT INTO correspondence_participants (thread_id, profile_id, role) VALUES ($1,$2,'sender'),($1,$3,'recipient')", [threadId, sender.id, recipient.rows[0].profile_id])
+          await client.query("INSERT INTO correspondence_messages (thread_id, sender_id, creation_id, creation_revision, snapshot) VALUES ($1,$2,$3,$4,$5::jsonb)", [threadId, sender.id, row.id, row.revision, JSON.stringify({ title: row.title, format: row.format, document: row.document_json })])
+          for (const assetId of assetIds) await client.query('INSERT INTO asset_thread_grants (asset_id, thread_id, granted_by) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING', [assetId, threadId, sender.id])
+          return { threadId, subject: thread.rows[0].subject, recipientName: recipient.rows[0].display_name }
+        }, accountEmail)
+        if (sent.recipientMissing) return response(404, { code: 'RECIPIENT_NOT_FOUND', message: 'No Lumie account is registered with that email address yet.' })
+        if (sent.selfRecipient) return response(400, { code: 'SELF_SEND', message: 'Choose someone else to receive this letter.' })
+        if (sent.creationMissing) return response(404, { code: 'CREATION_NOT_FOUND', message: 'That saved creation could not be found.' })
+        if (sent.assetsUnavailable) return response(409, { code: 'ASSET_UNAVAILABLE', message: 'One or more photos are no longer available. Reopen the creation and try again.' })
+        return response(201, { threadId: sent.threadId, subject: sent.subject, recipientName: sent.recipientName })
+      }
+
+      if (method === 'GET' && path === '/v1/inbox') {
+        const inbox = await withAccount(pool, cognitoSub, async (client, account) => {
+          const result = await client.query(
+            `SELECT t.id, t.subject, t.created_at, t.last_message_at, cp.role,
+              (SELECT m.snapshot->>'title' FROM correspondence_messages m WHERE m.thread_id=t.id ORDER BY m.created_at DESC LIMIT 1) AS latest_title,
+              (SELECT m.created_at FROM correspondence_messages m WHERE m.thread_id=t.id ORDER BY m.created_at DESC LIMIT 1) AS latest_message_at,
+              (SELECT p.display_name FROM correspondence_participants other_cp JOIN profiles p ON p.id=other_cp.profile_id WHERE other_cp.thread_id=t.id AND other_cp.profile_id<>$1 LIMIT 1) AS correspondent_name
+             FROM correspondence_threads t
+             JOIN correspondence_participants cp ON cp.thread_id=t.id
+             WHERE cp.profile_id=$1
+             ORDER BY t.last_message_at DESC LIMIT 100`,
+            [account.id],
+          )
+          return result.rows.map(row => ({ id: row.id, subject: row.subject, role: row.role, correspondentName: row.correspondent_name || 'Lumie member', latestTitle: row.latest_title, createdAt: new Date(row.created_at).toISOString(), lastMessageAt: new Date(row.latest_message_at || row.last_message_at).toISOString() }))
+        }, accountEmail)
+        return response(200, { items: inbox })
+      }
+
+      const threadMatch = path.match(/^\/v1\/threads\/([0-9a-f-]{36})$/i)
+      const replyMatch = path.match(/^\/v1\/threads\/([0-9a-f-]{36})\/replies$/i)
+      if (method === 'GET' && threadMatch) {
+        const thread = await withAccount(pool, cognitoSub, async (client, account) => {
+          const access = await client.query('SELECT t.id, t.subject FROM correspondence_threads t JOIN correspondence_participants cp ON cp.thread_id=t.id WHERE t.id=$1 AND cp.profile_id=$2', [threadMatch[1], account.id])
+          if (!access.rowCount) return null
+          await client.query('UPDATE correspondence_participants SET last_read_at=now() WHERE thread_id=$1 AND profile_id=$2', [threadMatch[1], account.id])
+          const messages = await client.query(
+            `SELECT m.id, m.sender_id, p.display_name AS sender_name, m.snapshot, m.created_at
+             FROM correspondence_messages m JOIN profiles p ON p.id=m.sender_id
+             WHERE m.thread_id=$1 ORDER BY m.created_at ASC, m.id ASC`,
+            [threadMatch[1]],
+          )
+          return { id: access.rows[0].id, subject: access.rows[0].subject, messages: messages.rows.map(row => ({ id: row.id, senderId: row.sender_id, senderName: row.sender_name || 'Lumie member', snapshot: row.snapshot, sentAt: new Date(row.created_at).toISOString() })) }
+        }, accountEmail)
+        return thread ? response(200, thread) : response(404, { code: 'NOT_FOUND', message: 'Correspondence not found.' })
+      }
+
+      if (method === 'POST' && replyMatch) {
+        const body = parseBody(event)
+        if (!body.ok || !body.value.snapshot || typeof body.value.snapshot !== 'object' || Array.isArray(body.value.snapshot)) return response(400, { code: 'INVALID_REPLY', message: 'A letter or message is required.' })
+        const reply = await withAccount(pool, cognitoSub, async (client, account) => {
+          const access = await client.query('SELECT t.id FROM correspondence_threads t JOIN correspondence_participants cp ON cp.thread_id=t.id WHERE t.id=$1 AND cp.profile_id=$2', [replyMatch[1], account.id])
+          if (!access.rowCount) return null
+          const inserted = await client.query('INSERT INTO correspondence_messages (thread_id, sender_id, snapshot) VALUES ($1,$2,$3::jsonb) RETURNING id, created_at', [replyMatch[1], account.id, JSON.stringify(body.value.snapshot)])
+          await client.query('UPDATE correspondence_threads SET last_message_at=now(), updated_at=now() WHERE id=$1', [replyMatch[1]])
+          return { id: inserted.rows[0].id, sentAt: new Date(inserted.rows[0].created_at).toISOString() }
+        }, accountEmail)
+        return reply ? response(201, reply) : response(404, { code: 'NOT_FOUND', message: 'Correspondence not found.' })
       }
 
       return response(404, { code: 'NOT_FOUND', message: 'The requested endpoint does not exist.' })
