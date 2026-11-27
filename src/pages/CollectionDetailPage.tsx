@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
-import { addCreationToCollection, getCollection, listCloudCreations, removeCollectionItem } from '../features/creations/cloudApi'
+import { addCreationToCollection, createCollectionGuestLink, getCollection, listCloudCreations, listCollectionContributions, removeCollectionItem, revokeCollectionGuestLink, reviewCollectionContribution } from '../features/creations/cloudApi'
 import type { CloudCreation } from '../features/creations/cloudCreationContract'
 import type { CollectionDetail } from '../features/creations/cloudApi'
 
@@ -17,15 +17,30 @@ export default function CollectionDetailPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [contributions, setContributions] = useState<Awaited<ReturnType<typeof listCollectionContributions>>>([])
+  const [guestLinkUrl, setGuestLinkUrl] = useState('')
+  const [guestLinkExpiresAt, setGuestLinkExpiresAt] = useState('')
+  const [linkLoading, setLinkLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [reviewingId, setReviewingId] = useState('')
 
   const refresh = useCallback(async () => {
-    const [collectionResult, creationResult] = await Promise.all([
+    const [collectionResult, creationResult, contributionResult] = await Promise.all([
       getCollection(getToken, id),
       listCloudCreations(getToken),
+      listCollectionContributions(getToken, id),
     ])
     setDetail(collectionResult)
     setCreations(creationResult)
+    setContributions(contributionResult)
   }, [getToken, id])
+
+  useEffect(() => {
+    setGuestLinkUrl('')
+    setGuestLinkExpiresAt('')
+    setCopied(false)
+    setReviewingId('')
+  }, [id])
 
   useEffect(() => {
     refresh().catch(reason => {
@@ -60,6 +75,59 @@ export default function CollectionDetailPage() {
     }
   }
 
+  const createGuestLink = async () => {
+    setLinkLoading(true)
+    setError('')
+    setCopied(false)
+    try {
+      const result = await createCollectionGuestLink(getToken, id)
+      setGuestLinkUrl(result.inviteUrl)
+      setGuestLinkExpiresAt(result.expiresAt)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'A contribution link could not be created.')
+    } finally {
+      setLinkLoading(false)
+    }
+  }
+
+  const revokeGuestLink = async () => {
+    setLinkLoading(true)
+    setError('')
+    try {
+      await revokeCollectionGuestLink(getToken, id)
+      setGuestLinkUrl('')
+      setGuestLinkExpiresAt('')
+      setCopied(false)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'The contribution link could not be revoked.')
+    } finally {
+      setLinkLoading(false)
+    }
+  }
+
+  const copyGuestLink = async () => {
+    if (!guestLinkUrl) return
+    try {
+      await navigator.clipboard.writeText(guestLinkUrl)
+      setCopied(true)
+    } catch {
+      setError('The link could not be copied. Select and copy it manually.')
+    }
+  }
+
+  const reviewContribution = async (contributionId: string, status: 'accepted' | 'rejected') => {
+    setReviewingId(contributionId)
+    setError('')
+    try {
+      await reviewCollectionContribution(getToken, id, contributionId, status)
+      await refresh()
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'This contribution could not be updated.')
+    } finally {
+      setReviewingId('')
+    }
+  }
+
   if (loading) return <p className="text-sm text-muted">Loading collection…</p>
   if (!detail) return <div><p role="alert" className="text-sm text-muted">{error || 'Collection not found.'}</p><Link to="/app/collections" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-cobalt underline"><ArrowLeft size={16}/> Back to collections</Link></div>
 
@@ -82,6 +150,46 @@ export default function CollectionDetailPage() {
         <button type="submit" disabled={saving || !selectedCreation} className="btn btn-primary"><Plus size={17}/>{saving ? 'Adding…' : 'Add to collection'}</button>
       </form>
       {!creations.length && <p className="mt-3 text-sm text-muted">You do not have any saved creations yet. <Link to="/app/create" className="font-bold text-cobalt underline">Make your first one</Link>.</p>}
+
+      <section className="mt-12 rounded-2xl border-2 border-navy bg-lavender/30 p-5 sm:p-7">
+        <p className="text-xs font-bold uppercase tracking-[.14em] text-muted">Add more voices</p>
+        <h2 className="display mt-2 text-2xl">Invite people to contribute.</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">Create a private link and share it with friends or family. They can leave a note for this collection, and you decide which contributions to keep.</p>
+        {guestLinkUrl ? <div className="mt-5 space-y-3">
+          <label className="grid gap-1 text-sm font-semibold">Your contribution link
+            <input readOnly value={guestLinkUrl} className="w-full rounded-lg border-2 border-navy/20 bg-white px-3 py-2.5 font-normal"/>
+          </label>
+          <p className="text-xs text-muted">This link expires {new Date(guestLinkExpiresAt).toLocaleDateString()}. Creating another link will replace it.</p>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" className="btn btn-primary" onClick={() => void copyGuestLink()}>{copied ? 'Copied' : 'Copy link'}</button>
+            <button type="button" className="btn btn-paper" disabled={linkLoading} onClick={() => void revokeGuestLink()}>Revoke link</button>
+          </div>
+        </div> : <button type="button" className="btn btn-primary mt-5" disabled={linkLoading} onClick={() => void createGuestLink()}>{linkLoading ? 'Creating link…' : 'Create contribution link'}</button>}
+        <p className="mt-4 text-xs text-muted">Each link accepts up to 100 notes and expires after 30 days. You can revoke it at any time.</p>
+      </section>
+
+      <section className="mt-12">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div><p className="text-xs font-bold uppercase tracking-[.14em] text-muted">From your guests</p><h2 className="display mt-2 text-2xl">Contributions</h2></div>
+          <span className="text-sm text-muted">{contributions.length} {contributions.length === 1 ? 'note' : 'notes'}</span>
+        </div>
+        {contributions.length ? <div className="mt-5 grid gap-4 md:grid-cols-2">
+          {contributions.map(contribution => <article key={contribution.id} className="rounded-2xl border-2 border-navy bg-white p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div><h3 className="display text-xl">{contribution.guestName}</h3>{contribution.guestEmail && <p className="mt-1 text-xs text-muted">{contribution.guestEmail}</p>}</div>
+              <span className="rounded-full bg-paper px-3 py-1 text-xs font-bold capitalize">{contribution.status}</span>
+            </div>
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed">{contribution.message}</p>
+            <p className="mt-4 text-xs text-muted">{new Date(contribution.createdAt).toLocaleString()}</p>
+            {contribution.status === 'pending' && <div className="mt-4 flex flex-wrap gap-3">
+              <button type="button" className="text-sm font-bold text-cobalt underline" disabled={reviewingId === contribution.id} onClick={() => void reviewContribution(contribution.id, 'accepted')}>Keep contribution</button>
+              <button type="button" className="text-sm font-semibold text-muted underline" disabled={reviewingId === contribution.id} onClick={() => void reviewContribution(contribution.id, 'rejected')}>Decline</button>
+            </div>}
+          </article>)}
+        </div> : <div className="mt-5 rounded-2xl border-2 border-dashed border-navy/25 bg-white/70 px-6 py-9 text-center">
+          <p className="text-sm text-muted">Guest notes will appear here when people contribute.</p>
+        </div>}
+      </section>
 
       {detail.items.length ? <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {detail.items.map(item => <article key={item.id} className="rounded-2xl border-2 border-navy bg-white p-5 shadow-[0_4px_0_#121c5a]">

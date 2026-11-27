@@ -306,6 +306,42 @@ export async function removeCollectionItem(token: TokenProvider, collectionId: s
   })
 }
 
+export interface CollectionGuestLink {
+  inviteUrl: string
+  expiresAt: string
+  maxContributions: number
+}
+
+export interface CollectionContribution {
+  id: string
+  guestName: string
+  guestEmail: string | null
+  message: string
+  status: 'pending' | 'accepted' | 'rejected'
+  createdAt: string
+}
+
+export async function createCollectionGuestLink(token: TokenProvider, collectionId: string) {
+  return request<CollectionGuestLink>(token, `/v1/collections/${encodeURIComponent(collectionId)}/guest-link`, { method: 'POST' })
+}
+
+export async function revokeCollectionGuestLink(token: TokenProvider, collectionId: string) {
+  return request<{ revoked: number }>(token, `/v1/collections/${encodeURIComponent(collectionId)}/guest-link`, { method: 'DELETE' })
+}
+
+export async function listCollectionContributions(token: TokenProvider, collectionId: string) {
+  const result = await request<{ items: CollectionContribution[] }>(token, `/v1/collections/${encodeURIComponent(collectionId)}/contributions`)
+  return Array.isArray(result.items) ? result.items : []
+}
+
+export async function reviewCollectionContribution(token: TokenProvider, collectionId: string, contributionId: string, status: 'accepted' | 'rejected') {
+  return request<{ id: string; status: 'accepted' | 'rejected' }>(
+    token,
+    `/v1/collections/${encodeURIComponent(collectionId)}/contributions/${encodeURIComponent(contributionId)}`,
+    { method: 'PATCH', body: JSON.stringify({ status }) },
+  )
+}
+
 export async function listCorrespondence(token: TokenProvider): Promise<CorrespondenceSummary[]> {
   const result = await request<{ items: CorrespondenceSummary[] }>(token, '/v1/inbox')
   return Array.isArray(result.items) ? result.items : []

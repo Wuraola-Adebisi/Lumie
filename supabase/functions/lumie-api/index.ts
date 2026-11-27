@@ -137,6 +137,9 @@ Deno.serve(async (req: Request) => {
   const collectionMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})$/i);
   const collectionItemsMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items$/i);
   const collectionItemMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items\/([0-9a-f-]{36})$/i);
+  const collectionGuestLinkMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})\/guest-link$/i);
+  const collectionContributionsMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})\/contributions$/i);
+  const collectionContributionMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})\/contributions\/([0-9a-f-]{36})$/i);
 
   try {
     if (method === "GET" && path === "/v1/me") {
@@ -467,6 +470,68 @@ Deno.serve(async (req: Request) => {
         createdAt: new Date(data.created_at).toISOString(),
         updatedAt: new Date(data.updated_at).toISOString(),
       }, origin);
+    }
+
+    if (method === "POST" && collectionGuestLinkMatch) {
+      const { data: collection, error: collectionError } = await userClient.from("collections")
+        .select("id").eq("id", collectionGuestLinkMatch[1]).eq("owner_id", user.id).maybeSingle();
+      if (collectionError) throw collectionError;
+      if (!collection) return fail(404, "NOT_FOUND", "Collection not found.", origin);
+      const now = new Date();
+      const { error: revokeError } = await admin.from("collection_guest_links")
+        .update({ revoked_at: now.toISOString() }).eq("owner_id", user.id).eq("collection_id", collectionGuestLinkMatch[1]).is("revoked_at", null);
+      if (revokeError) throw revokeError;
+      const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
+      const rawToken = Array.from(tokenBytes).map(byte => byte.toString(16).padStart(2, "0")).join("");
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken));
+      const tokenHash = Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+      const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await admin.from("collection_guest_links").insert({
+        collection_id: collectionGuestLinkMatch[1], owner_id: user.id, token_hash: tokenHash,
+        expires_at: expiresAt, max_contributions: 100,
+      }).select("id,expires_at,max_contributions").single();
+      if (error) throw error;
+      return response(201, {
+        inviteUrl: `https://www.lumiepost.com/contribute/${rawToken}`,
+        expiresAt: new Date(data.expires_at).toISOString(),
+        maxContributions: data.max_contributions,
+      }, origin);
+    }
+
+    if (method === "DELETE" && collectionGuestLinkMatch) {
+      const { data, error } = await admin.from("collection_guest_links").update({ revoked_at: new Date().toISOString() })
+        .eq("collection_id", collectionGuestLinkMatch[1]).eq("owner_id", user.id).is("revoked_at", null)
+        .select("id");
+      if (error) throw error;
+      return response(200, { revoked: (data || []).length }, origin);
+    }
+
+    if (method === "GET" && collectionContributionsMatch) {
+      const { data: collection, error: collectionError } = await userClient.from("collections")
+        .select("id").eq("id", collectionContributionsMatch[1]).eq("owner_id", user.id).maybeSingle();
+      if (collectionError) throw collectionError;
+      if (!collection) return fail(404, "NOT_FOUND", "Collection not found.", origin);
+      const { data, error } = await userClient.from("collection_contributions")
+        .select("id,guest_name,guest_email,message,status,created_at")
+        .eq("collection_id", collectionContributionsMatch[1]).order("created_at", { ascending: false });
+      if (error) throw error;
+      return response(200, { items: (data || []).map((item: Json) => ({
+        id: item.id, guestName: item.guest_name, guestEmail: item.guest_email,
+        message: item.message, status: item.status, createdAt: new Date(String(item.created_at)).toISOString(),
+      })) }, origin);
+    }
+
+    if (method === "PATCH" && collectionContributionMatch) {
+      const body = parseJson(await req.text());
+      const status = body?.status;
+      if (status !== "accepted" && status !== "rejected") return fail(400, "INVALID_STATUS", "Choose whether to accept or decline this contribution.", origin);
+      const { data, error } = await userClient.from("collection_contributions")
+        .update({ status, reviewed_at: new Date().toISOString() })
+        .eq("id", collectionContributionMatch[2]).eq("collection_id", collectionContributionMatch[1])
+        .eq("owner_id", user.id).select("id,status").maybeSingle();
+      if (error) throw error;
+      if (!data) return fail(404, "NOT_FOUND", "Contribution not found.", origin);
+      return response(200, { id: data.id, status: data.status }, origin);
     }
 
     if (method === "GET" && collectionMatch) {
