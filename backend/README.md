@@ -116,3 +116,10 @@ The local adapter does not accept decoded claims from the browser. It verifies t
 ### Boundaries
 
 This is a development environment, not a production deployment. The bundled credentials, Keycloak dev mode, local HTTP endpoints and local storage must not be exposed to the public internet. The MinIO bucket is local infrastructure; asset upload/download API routes and frontend media integration are subsequent work. Mailpit captures mail locally; it does not deliver real email. No AWS account, AWS resource, NVIDIA service or live AI model is required or configured by this pass.
+
+
+## Private media pipeline
+
+`POST /v1/assets/upload-intents` creates an account-owned pending asset and returns a five-minute presigned PUT URL for JPEG, PNG, WebP or AVIF images up to 10 MiB. The server creates the object key. Upload bytes directly to the returned URL with its required Content-Type header. `POST /v1/assets/{assetId}/complete` verifies actual object size and MIME type before marking the asset ready; mismatches are deleted and rejected. `GET /v1/assets/{assetId}/download-url` returns a five-minute GET URL only for a ready asset owned by the caller. All metadata operations use the authenticated account's RLS context. Signed URLs are bearer capabilities and must not be logged or persisted. The bucket remains private.
+
+The local API uses `STORAGE_ENDPOINT=http://minio:9000` for server-side checks and `STORAGE_PUBLIC_ENDPOINT=http://localhost:9001` for browser-facing URLs. Local credentials are development-only. No hosted AWS bucket or credentials are provisioned by this pass. Hosted deployment requires a private S3 bucket, least-privilege access, encryption, restricted CORS and cleanup of abandoned pending uploads. The editor still needs UI upload integration and document asset-ID replacement before photos persist cross-device.

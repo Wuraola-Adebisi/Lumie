@@ -2,6 +2,7 @@ import { createServer } from 'node:http'
 import { createRemoteJWKSet } from 'jose'
 import pg from 'pg'
 import { createApiHandler } from './api.mjs'
+import { createS3CompatibleStorage } from './object-storage.mjs'
 import { createLocalTokenVerifier } from './local-auth.mjs'
 
 const { Pool } = pg
@@ -10,6 +11,7 @@ const issuer = process.env.LOCAL_OIDC_ISSUER
 const jwksUrl = process.env.LOCAL_OIDC_JWKS_URL
 const clientId = process.env.LOCAL_OIDC_CLIENT_ID
 const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
+const objectStore = createS3CompatibleStorage({ endpoint: process.env.STORAGE_ENDPOINT, publicEndpoint: process.env.STORAGE_PUBLIC_ENDPOINT, bucket: process.env.STORAGE_BUCKET, region: process.env.STORAGE_REGION || 'us-east-1', accessKeyId: process.env.STORAGE_ACCESS_KEY_ID, secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY })
 
 if (!process.env.DATABASE_URL || !issuer || !jwksUrl || !clientId) {
   throw new Error('DATABASE_URL, LOCAL_OIDC_ISSUER, LOCAL_OIDC_JWKS_URL and LOCAL_OIDC_CLIENT_ID are required.')
@@ -27,7 +29,7 @@ const verifyAccessToken = createLocalTokenVerifier({
   clientId,
   getKey: keySet,
 })
-const apiHandler = createApiHandler({ pool })
+const apiHandler = createApiHandler({ pool, objectStore })
 
 function sendJson(response, statusCode, value, corsHeaders) {
   response.writeHead(statusCode, {

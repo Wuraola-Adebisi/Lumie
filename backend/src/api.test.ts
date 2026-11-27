@@ -63,6 +63,55 @@ function document() {
 }
 
 describe('Lumie API handler', () => {
+
+  it('creates a private account-scoped upload intent', async () => {
+    const { pool, queries } = makePool(async sql => sql.includes('INSERT INTO assets') ? { rows: [{ id: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', object_key: 'private/owner/asset', content_type: 'image/png' }], rowCount: 1 } : { rows: [], rowCount: 0 })
+    const objectStore = { presignPut: vi.fn(() => 'https://storage.invalid/upload') }
+    const handler = createApiHandler({ pool, objectStore })
+    const result = await handler(event('POST', '/v1/assets/upload-intents', { body: JSON.stringify({ fileName: 'card.png', contentType: 'image/png', sizeBytes: 2048 }) }))
+    expect(result.statusCode).toBe(201)
+    expect(JSON.parse(result.body).requiredHeaders).toEqual({ 'Content-Type': 'image/png' })
+    expect(queries.some(query => query.sql.includes('INSERT INTO assets'))).toBe(true)
+    expect(objectStore.presignPut).toHaveBeenCalledWith('private/owner/asset', 'image/png', 300)
+  })
+
+  it('rejects unsupported media types before inserting an asset', async () => {
+    const { pool, queries } = makePool()
+    const handler = createApiHandler({ pool, objectStore: { presignPut: vi.fn() } })
+    const result = await handler(event('POST', '/v1/assets/upload-intents', { body: JSON.stringify({ fileName: 'vector.svg', contentType: 'image/svg+xml', sizeBytes: 20 }) }))
+    expect(result.statusCode).toBe(400)
+    expect(queries.some(query => query.sql.includes('INSERT INTO assets'))).toBe(false)
+  })
+
+  it('marks an asset ready only after storage size and MIME type match', async () => {
+    const { pool, queries } = makePool(async sql => sql.includes('SELECT id, object_key, content_type, size_bytes, status') ? { rows: [{ id: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', object_key: 'private/owner/asset', content_type: 'image/png', size_bytes: '2048', status: 'pending' }], rowCount: 1 } : { rows: [], rowCount: 1 })
+    const objectStore = { headObject: vi.fn(async () => ({ contentLength: 2048, contentType: 'image/png' })) }
+    const handler = createApiHandler({ pool, objectStore })
+    const result = await handler(event('POST', '/v1/assets/b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/complete'))
+    expect(result.statusCode).toBe(200)
+    expect(queries.some(query => query.sql.includes("UPDATE assets SET status='ready'"))).toBe(true)
+  })
+
+  it('deletes and rejects an uploaded object with mismatched metadata', async () => {
+    const { pool, queries } = makePool(async sql => sql.includes('SELECT id, object_key, content_type, size_bytes, status') ? { rows: [{ id: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', object_key: 'private/owner/asset', content_type: 'image/png', size_bytes: '2048', status: 'pending' }], rowCount: 1 } : { rows: [], rowCount: 1 })
+    const objectStore = { headObject: vi.fn(async () => ({ contentLength: 2048, contentType: 'image/jpeg' })), deleteObject: vi.fn(async () => {}) }
+    const handler = createApiHandler({ pool, objectStore })
+    const result = await handler(event('POST', '/v1/assets/b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/complete'))
+    expect(result.statusCode).toBe(422)
+    expect(objectStore.deleteObject).toHaveBeenCalledWith('private/owner/asset')
+    expect(queries.some(query => query.sql.includes("UPDATE assets SET status='rejected'"))).toBe(true)
+  })
+
+  it('returns download URLs only for ready assets owned by the account', async () => {
+    const { pool } = makePool(async sql => sql.includes("SELECT object_key FROM assets WHERE id=$1 AND status='ready'") ? { rows: [{ object_key: 'private/owner/asset' }], rowCount: 1 } : { rows: [], rowCount: 0 })
+    const objectStore = { presignGet: vi.fn(() => 'https://storage.invalid/download') }
+    const handler = createApiHandler({ pool, objectStore })
+    const result = await handler(event('GET', '/v1/assets/b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/download-url'))
+    expect(result.statusCode).toBe(200)
+    expect(JSON.parse(result.body).url).toBe('https://storage.invalid/download')
+    expect(objectStore.presignGet).toHaveBeenCalledWith('private/owner/asset', 300)
+  })
+
   it('rejects requests without verified authorizer claims before opening a database connection', async () => {
     const { pool } = makePool()
     const handler = createApiHandler({ pool })
