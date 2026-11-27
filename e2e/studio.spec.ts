@@ -142,3 +142,32 @@ test('offers a creative assistant suggestion', async ({ page }) => {
 })
 
 // Keep assistant interaction coverage alongside the editor's browser-level acceptance tests.
+
+
+test('saves, searches, reopens and deletes multiple named creations', async ({ page }) => {
+  await page.getByLabel('Give it a name').fill('First postcard')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await page.getByRole('link', { name: 'Back to your creations' }).click()
+  await expect(page.getByRole('heading', { name: 'Your creations' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
+
+  await page.getByRole('link', { name: 'Make something' }).click()
+  await page.getByLabel('Give it a name').fill('Second letter')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await page.getByRole('link', { name: 'Back to your creations' }).click()
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Second letter' })).toBeVisible()
+
+  await page.getByRole('textbox', { name: 'Search your creations' }).fill('First')
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Second letter' })).toHaveCount(0)
+  await page.getByRole('textbox', { name: 'Search your creations' }).fill('')
+
+  await page.getByRole('link', { name: 'Open creation' }).first().click()
+  await expect(page.getByLabel('Give it a name')).toHaveValue('First postcard')
+  await page.getByRole('link', { name: 'Back to your creations' }).click()
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Delete First postcard' }).click()
+  await expect(page.getByRole('heading', { name: 'First postcard' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Second letter' })).toBeVisible()
+})
