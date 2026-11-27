@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
-import { listCloudCreations, listCorrespondence, getCorrespondence, sendCorrespondence, replyToCorrespondence } from '../features/creations/cloudApi'
+import { CloudApiError, listCloudCreations, listCorrespondence, getCorrespondence, sendCorrespondence, createCorrespondenceInvitation, replyToCorrespondence } from '../features/creations/cloudApi'
 import type { CorrespondenceSummary, CorrespondenceThread } from '../features/creations/cloudApi'
 import type { CloudCreation } from '../features/creations/cloudCreationContract'
 
@@ -22,6 +22,8 @@ export default function InboxPage() {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [inviteUrl, setInviteUrl] = useState('')
+  const [copiedInvite, setCopiedInvite] = useState(false)
 
   const refresh = useCallback(async () => {
     const [inbox, saved] = await Promise.all([listCorrespondence(getToken), listCloudCreations(getToken)])
@@ -47,7 +49,19 @@ export default function InboxPage() {
     if (!recipientEmail.trim() || !creationId || sending) return
     setSending(true); setError(''); setNotice('')
     try {
-      const result = await sendCorrespondence(getToken, recipientEmail, creationId)
+      let result: Awaited<ReturnType<typeof sendCorrespondence>>
+      try {
+        result = await sendCorrespondence(getToken, recipientEmail, creationId)
+      } catch (reason) {
+        if (!(reason instanceof CloudApiError) || reason.code !== 'RECIPIENT_NOT_FOUND') throw reason
+        const invitation = await createCorrespondenceInvitation(getToken, recipientEmail, creationId)
+        setInviteUrl(invitation.inviteUrl)
+        setCopiedInvite(false)
+        setNotice(`An invitation link is ready for ${recipientEmail}. Share it with them within the next 14 days.`)
+        setRecipientEmail('')
+        return
+      }
+      setInviteUrl('')
       setNotice(`Sent to ${result.recipientName}.`)
       setRecipientEmail('')
       await refresh()
@@ -79,11 +93,19 @@ export default function InboxPage() {
       </div>
 
       {error && <p role="alert" className="mt-5 rounded-lg bg-tomato/10 p-3 text-sm text-ink">{error}</p>}
-      {notice && <p role="status" className="mt-5 rounded-lg bg-lime p-3 text-sm font-semibold text-ink">{notice}</p>}
+      {notice && <div role="status" className="mt-5 rounded-lg bg-lime p-3 text-sm font-semibold text-ink">
+        <p>{notice}</p>
+        {inviteUrl && <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input aria-label="Invitation link" readOnly value={inviteUrl} className="min-w-0 flex-1 rounded-lg border border-navy/20 bg-white px-3 py-2 font-normal text-ink"/>
+          <button type="button" className="btn btn-paper btn-sm" onClick={() => {
+            void navigator.clipboard.writeText(inviteUrl).then(() => setCopiedInvite(true)).catch(() => setError('Copying was blocked. Select the invitation link and copy it manually.'))
+          }}>{copiedInvite ? 'Copied' : 'Copy invitation link'}</button>
+        </div>}
+      </div>
 
       <section className="mt-7 rounded-2xl border-2 border-navy bg-white p-5 shadow-[0_4px_0_#121c5a] md:p-6">
         <div className="flex items-center gap-2"><Mail size={19}/><h2 className="display text-xl">Send a letter</h2></div>
-        <p className="mt-1 text-sm text-muted">Choose a saved creation and send it to someone with a Lumie account.</p>
+        <p className="mt-1 text-sm text-muted">Choose a saved creation and send it to someone. If they are new to Lumie, you can share an invitation link.</p>
         <form onSubmit={send} className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_auto]">
           <label className="grid gap-1 text-sm font-semibold">Recipient email
             <input type="email" required value={recipientEmail} onChange={event => setRecipientEmail(event.target.value)} placeholder="name@example.com" className="min-w-0 rounded-lg border-2 border-navy/20 bg-paper px-3 py-2.5 font-normal"/>
