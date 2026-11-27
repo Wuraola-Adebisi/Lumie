@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "backend:dev": "node backend/src/local-server.mjs",
+    "backend:check": "node --check backend/src/local-server.mjs && node --check backend/src/local-auth.mjs && node --check backend/src/api.mjs",
+    "backend:test": "node --test backend/src/local-auth.test.mjs"
   },
   "dependencies": {
     "@fontsource/caveat": "^5.3.0",
@@ -25,7 +28,9 @@
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.1"
+    "react-router-dom": "^6.28.1",
+    "pg": "^8.13.1",
+    "jose": "^5.10.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
