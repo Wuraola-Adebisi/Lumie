@@ -472,7 +472,7 @@ Deno.serve(async (req: Request) => {
           availableAt: new Date(String(message.available_at)).toISOString(),
         };
       });
-      const pendingInvitations = (invitations || []).filter((invite: Json) => Date.parse(String(invite.available_at)) - Date.parse(String(invite.created_at)) > 60 * 1000).map((invite: Json) => {
+      const pendingInvitations = (invitations || []).filter((invite: Json) => Date.parse(String(invite.available_at)) - Date.parse(String(invite.created_at)) > 5 * 1000).map((invite: Json) => {
         const snapshot = invite.snapshot && typeof invite.snapshot === "object" ? invite.snapshot as Json : {};
         const title = typeof snapshot.title === "string" ? snapshot.title : "A letter for later";
         return {
