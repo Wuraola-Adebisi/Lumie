@@ -107,7 +107,7 @@ export async function uploadCreationAsset(token: TokenProvider, file: File): Pro
     method: 'POST',
     body: JSON.stringify({ fileName: file.name, contentType: file.type, sizeBytes: file.size }),
   })
-  const uploaded = await fetch(intent.uploadUrl, { method: 'PUT', headers: intent.requiredHeaders, body: file })
+  const uploaded = await fetch(intent.uploadUrl, { method: 'PUT', headers: { ...intent.requiredHeaders, authorization: `Bearer ${await token()}` }, body: file })
   if (!uploaded.ok) throw new CloudApiError('The photo could not be uploaded. Try again.', uploaded.status, 'ASSET_UPLOAD_FAILED')
   await request(token, `/v1/assets/${encodeURIComponent(intent.assetId)}/complete`, { method: 'POST' })
   const download = await request<{ url: string }>(token, `/v1/assets/${encodeURIComponent(intent.assetId)}/download-url`)

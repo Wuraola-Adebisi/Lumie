@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+// Authenticated browser coverage uses the same Supabase session shape as the app.
+
 test.beforeEach(async ({ page }) => {
   let creationCounter = 0
   type MockCreation = {
@@ -14,10 +16,24 @@ test.beforeEach(async ({ page }) => {
   }
   const savedCreations: MockCreation[] = []
   await page.addInitScript(() => {
-    sessionStorage.setItem('lumie-auth-session-v1', JSON.stringify({
-      accessToken: 'playwright-access-token',
-      expiresAt: Date.now() + 60 * 60 * 1000,
+    localStorage.setItem('lumie-supabase-session-v1', JSON.stringify({
+      access_token: 'playwright-access-token',
+      refresh_token: 'playwright-refresh-token',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: { id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', email: 'studio@example.test', user_metadata: { display_name: 'Studio Tester' } },
     }))
+  })
+  await page.route('https://lumie-e2e.supabase.co/**', async (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (path === '/auth/v1/user') {
+      await route.fulfill({ json: { id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', email: 'studio@example.test', user_metadata: { display_name: 'Studio Tester' } } })
+      return
+    }
+    if (path === '/rest/v1/profiles') {
+      await route.fulfill({ json: [{ id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', display_name: 'Studio Tester', avatar_asset_id: null, locale: 'en', time_zone: 'UTC', created_at: new Date().toISOString() }] })
+      return
+    }
+    await route.fulfill({ status: 404, json: { message: 'Not found' } })
   })
   await page.route('http://localhost:3001/**', async (route) => {
     const request = route.request()
