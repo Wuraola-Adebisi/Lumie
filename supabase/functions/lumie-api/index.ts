@@ -434,17 +434,20 @@ Deno.serve(async (req: Request) => {
       if (membershipError) throw membershipError;
       const threadIds = (memberships || []).map((item: Json) => String(item.thread_id));
       if (!threadIds.length) return response(200, { items: [] }, origin);
-      const [{ data: messages, error: messageError }, { data: threads, error: threadError }, { data: participants, error: participantError }] = await Promise.all([
+      const [{ data: messages, error: messageError }, { data: threads, error: threadError }, { data: participants, error: participantError }, { data: invitations, error: invitationError }] = await Promise.all([
         admin.from("correspondence_messages")
           .select("id,thread_id,sender_id,snapshot,created_at,available_at")
           .in("thread_id", threadIds).gt("available_at", new Date().toISOString())
           .order("available_at", { ascending: true }),
         admin.from("correspondence_threads").select("id,subject").in("id", threadIds),
         admin.from("correspondence_participants").select("thread_id,profile_id").in("thread_id", threadIds),
+        admin.from("correspondence_invitations").select("id,recipient_email,snapshot,available_at")
+          .eq("sender_id", user.id).eq("status", "pending").gt("available_at", new Date().toISOString()),
       ]);
       if (messageError) throw messageError;
       if (threadError) throw threadError;
       if (participantError) throw participantError;
+      if (invitationError) throw invitationError;
       const otherIds = [...new Set((participants || []).filter((p: Json) => p.profile_id !== user.id).map((p: Json) => String(p.profile_id)))];
       const { data: profiles, error: profileError } = await admin.from("profiles").select("id,display_name").in("id", otherIds);
       if (profileError) throw profileError;
@@ -469,7 +472,21 @@ Deno.serve(async (req: Request) => {
           availableAt: new Date(String(message.available_at)).toISOString(),
         };
       });
-      return response(200, { items }, origin);
+      const pendingInvitations = (invitations || []).map((invite: Json) => {
+        const snapshot = invite.snapshot && typeof invite.snapshot === "object" ? invite.snapshot as Json : {};
+        const title = typeof snapshot.title === "string" ? snapshot.title : "A letter for later";
+        return {
+          id: invite.id,
+          threadId: "",
+          subject: title,
+          title,
+          correspondentName: invite.recipient_email,
+          direction: "sent",
+          isLocked: false,
+          availableAt: new Date(String(invite.available_at)).toISOString(),
+        };
+      });
+      return response(200, { items: [...items, ...pendingInvitations].sort((a, b) => Date.parse(a.availableAt) - Date.parse(b.availableAt)) }, origin);
     }
 
     if (method === "GET" && path === "/v1/inbox") {
