@@ -36,6 +36,13 @@ export default function CollectionDetailPage() {
   }, [getToken, id])
 
   useEffect(() => {
+    setGuestLinkUrl('')
+    setGuestLinkExpiresAt('')
+    setCopied(false)
+    setReviewingId('')
+  }, [id])
+
+  useEffect(() => {
     refresh().catch(reason => {
       setError(reason instanceof Error ? reason.message : 'This collection could not be loaded.')
       if (reason && typeof reason === 'object' && 'status' in reason && reason.status === 404) navigate('/app/collections', { replace: true })
