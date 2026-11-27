@@ -54,7 +54,7 @@ export default function InvitationPage() {
           {phase === 'accepted' ? <>
             <h1 className="display mt-2 text-4xl">It found its way to you.</h1>
             <p className="mt-4 text-[16px] leading-relaxed text-muted">{senderName} has sent you a letter. It is now waiting in your inbox.</p>
-            <button type="button" className="btn btn-primary mt-7 w-full" onClick={() => navigate(`/app/inbox?thread=${encodeURIComponent(threadId)}`)}>Open your inbox <ArrowRight size={17}/></button>
+            <button type="button" className="btn btn-primary mt-7 w-full" onClick={() => navigate('/app/inbox')}>Open your inbox <ArrowRight size={17}/></button>
           </> : phase === 'accepting' ? <>
             <h1 className="display mt-2 text-4xl">Opening your letter.</h1>
             <p className="mt-4 text-[16px] leading-relaxed text-muted">We are adding this correspondence to your inbox.</p>
