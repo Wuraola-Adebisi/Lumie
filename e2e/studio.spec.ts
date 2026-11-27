@@ -15,6 +15,8 @@ test.beforeEach(async ({ page }) => {
     updatedAt: string
   }
   const savedCreations: MockCreation[] = []
+  let collectionRecord: { id: string; title: string; description: string; createdAt: string; updatedAt: string } | null = null
+  const collectionItems: { id: string; creationId: string; creationRevision: number; snapshot: { title: string; format: string; document: unknown }; position: number; createdAt: string }[] = []
   await page.addInitScript(() => {
     localStorage.setItem('lumie-supabase-session-v1', JSON.stringify({
       access_token: 'playwright-access-token',
@@ -47,6 +49,52 @@ test.beforeEach(async ({ page }) => {
     if (url.pathname === '/v1/assets/d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/complete' && request.method() === 'POST') { await route.fulfill({ json: { status: 'ready' } }); return }
     if (url.pathname === '/v1/assets/d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/download-url') { await route.fulfill({ json: { url: 'http://localhost:3001/test-photo.png' } }); return }
     if (url.pathname === '/test-photo.png') { await route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=', 'base64') }); return }
+    if (url.pathname === '/v1/collections' && request.method() === 'GET') {
+      await route.fulfill({ json: { items: collectionRecord ? [{ ...collectionRecord, itemCount: collectionItems.length }] : [] } })
+      return
+    }
+    if (url.pathname === '/v1/collections' && request.method() === 'POST') {
+      const body = request.postDataJSON() as { title: string; description: string }
+      collectionRecord = { id: 'e7f4d8a1-3b2c-4d5e-9f60-1a2b3c4d5e6f', title: body.title, description: body.description, createdAt: now, updatedAt: now }
+      await route.fulfill({ status: 201, json: { ...collectionRecord, itemCount: 0 } })
+      return
+    }
+    const collectionMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})$/i)
+    const collectionItemsMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items$/i)
+    const collectionItemMatch = url.pathname.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items\/([0-9a-f-]{36})$/i)
+    if (collectionMatch && request.method() === 'GET') {
+      if (!collectionRecord || collectionRecord.id !== collectionMatch[1]) {
+        await route.fulfill({ status: 404, json: { code: 'NOT_FOUND', message: 'Collection not found.' } })
+        return
+      }
+      await route.fulfill({ json: { collection: { ...collectionRecord, itemCount: collectionItems.length }, items: collectionItems } })
+      return
+    }
+    if (collectionItemsMatch && request.method() === 'POST') {
+      const body = request.postDataJSON() as { creationId: string }
+      const creation = savedCreations.find(item => item.id === body.creationId)
+      if (!collectionRecord || !creation) {
+        await route.fulfill({ status: 404, json: { code: 'NOT_FOUND', message: 'Saved creation not found.' } })
+        return
+      }
+      const item = {
+        id: 'f8e5d9b2-4c3d-5e6f-a071-2b3c4d5e6f70',
+        creationId: creation.id,
+        creationRevision: creation.revision,
+        snapshot: { title: creation.title, format: creation.format, document: creation.document },
+        position: collectionItems.length,
+        createdAt: now,
+      }
+      collectionItems.push(item)
+      await route.fulfill({ status: 201, json: item })
+      return
+    }
+    if (collectionItemMatch && request.method() === 'DELETE') {
+      const index = collectionItems.findIndex(item => item.id === collectionItemMatch[2])
+      if (index >= 0) collectionItems.splice(index, 1)
+      await route.fulfill({ status: 204, body: '' })
+      return
+    }
     if (url.pathname === '/v1/inbox' && request.method() === 'GET') {
       await route.fulfill({ json: { items: [] } })
       return
@@ -382,4 +430,22 @@ test('keeps a scheduled incoming letter closed in the conversation view', async 
   await expect(page.getByRole('status')).toContainText('A letter is waiting here.')
   await expect(page.getByRole('status')).toContainText(new Date(unlockAt).toLocaleString())
   await expect(page.getByPlaceholder('Put your reply into words…')).toHaveCount(0)
+})
+
+test('creates a private collection and adds a saved creation', async ({ page }) => {
+  await page.getByLabel('Give it a name').fill('A postcard to remember')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await expect(page.locator('.studio-save-state')).toContainText('Saved at')
+
+  await page.goto('/app/collections')
+  await expect(page.getByRole('heading', { name: 'Collections' })).toBeVisible()
+  await page.getByRole('button', { name: 'New collection' }).click()
+  await page.getByLabel('Collection name').fill('Little keepsakes')
+  await page.getByLabel('Description Optional').fill('Pieces I want to keep close.')
+  await page.getByRole('button', { name: 'Create collection' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Little keepsakes' })).toBeVisible()
+  await page.getByLabel('Add a saved creation').selectOption('b8e4e7d0-0a9c-4f3e-8b5f-2d8c2c4f9a10')
+  await page.getByRole('button', { name: 'Add to collection' }).click()
+  await expect(page.getByRole('heading', { name: 'A postcard to remember' })).toBeVisible()
 })

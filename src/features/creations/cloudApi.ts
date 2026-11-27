@@ -243,6 +243,69 @@ export async function listOpenWhen(token: TokenProvider): Promise<OpenWhenItem[]
   return Array.isArray(result.items) ? result.items : []
 }
 
+export interface CollectionSummary {
+  id: string
+  title: string
+  description: string
+  itemCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CollectionItem {
+  id: string
+  creationId: string
+  creationRevision: number
+  snapshot: { title: string; format: string; document: unknown }
+  position: number
+  createdAt: string
+}
+
+export interface CollectionDetail {
+  collection: CollectionSummary
+  items: CollectionItem[]
+}
+
+export async function listCollections(token: TokenProvider): Promise<CollectionSummary[]> {
+  const result = await request<{ items: CollectionSummary[] }>(token, '/v1/collections')
+  return Array.isArray(result.items) ? result.items : []
+}
+
+export async function createCollection(token: TokenProvider, title: string, description: string) {
+  return request<CollectionSummary>(token, '/v1/collections', {
+    method: 'POST',
+    body: JSON.stringify({ title, description }),
+  })
+}
+
+export async function getCollection(token: TokenProvider, id: string) {
+  return request<CollectionDetail>(token, `/v1/collections/${encodeURIComponent(id)}`)
+}
+
+export async function updateCollection(token: TokenProvider, id: string, changes: { title?: string; description?: string }) {
+  return request<Omit<CollectionSummary, 'itemCount'>>(token, `/v1/collections/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(changes),
+  })
+}
+
+export async function deleteCollection(token: TokenProvider, id: string) {
+  await request<void>(token, `/v1/collections/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export async function addCreationToCollection(token: TokenProvider, collectionId: string, creationId: string) {
+  return request<CollectionItem>(token, `/v1/collections/${encodeURIComponent(collectionId)}/items`, {
+    method: 'POST',
+    body: JSON.stringify({ creationId }),
+  })
+}
+
+export async function removeCollectionItem(token: TokenProvider, collectionId: string, itemId: string) {
+  await request<void>(token, `/v1/collections/${encodeURIComponent(collectionId)}/items/${encodeURIComponent(itemId)}`, {
+    method: 'DELETE',
+  })
+}
+
 export async function listCorrespondence(token: TokenProvider): Promise<CorrespondenceSummary[]> {
   const result = await request<{ items: CorrespondenceSummary[] }>(token, '/v1/inbox')
   return Array.isArray(result.items) ? result.items : []

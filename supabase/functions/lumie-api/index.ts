@@ -134,6 +134,9 @@ Deno.serve(async (req: Request) => {
   const assetUploadMatch = path.match(/^\/v1\/assets\/([0-9a-f-]{36})\/upload$/i);
   const threadMatch = path.match(/^\/v1\/threads\/([0-9a-f-]{36})$/i);
   const replyMatch = path.match(/^\/v1\/threads\/([0-9a-f-]{36})\/replies$/i);
+  const collectionMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})$/i);
+  const collectionItemsMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items$/i);
+  const collectionItemMatch = path.match(/^\/v1\/collections\/([0-9a-f-]{36})\/items\/([0-9a-f-]{36})$/i);
 
   try {
     if (method === "GET" && path === "/v1/me") {
@@ -426,6 +429,148 @@ Deno.serve(async (req: Request) => {
       if (result.error === "ASSET_UNAVAILABLE") return fail(409, "ASSET_UNAVAILABLE", "One or more photos are no longer available. Reopen the creation and try again.", origin);
       if (result.error === "INVALID_DELIVERY_TIME") return fail(400, "INVALID_DELIVERY_TIME", "Choose a future opening date within the next five years.", origin);
       return response(201, result, origin);
+    }
+
+    if (method === "GET" && path === "/v1/collections") {
+      const { data: rows, error } = await userClient.from("collections")
+        .select("id,title,description,created_at,updated_at")
+        .eq("owner_id", user.id).order("updated_at", { ascending: false });
+      if (error) throw error;
+      const ids = (rows || []).map((row: Json) => String(row.id));
+      const { data: entries, error: entriesError } = ids.length
+        ? await userClient.from("collection_items").select("collection_id").in("collection_id", ids)
+        : { data: [], error: null };
+      if (entriesError) throw entriesError;
+      const counts = new Map<string,number>();
+      for (const entry of entries || []) counts.set(String(entry.collection_id),(counts.get(String(entry.collection_id)) || 0)+1);
+      return response(200, { items: (rows || []).map((row: Json) => ({
+        id: row.id, title: row.title, description: row.description,
+        itemCount: counts.get(String(row.id)) || 0,
+        createdAt: new Date(String(row.created_at)).toISOString(),
+        updatedAt: new Date(String(row.updated_at)).toISOString(),
+      })) }, origin);
+    }
+
+    if (method === "POST" && path === "/v1/collections") {
+      const body = parseJson(await req.text());
+      const title = typeof body?.title === "string" ? body.title.trim() : "";
+      const description = typeof body?.description === "string" ? body.description.trim() : "";
+      if (!title || title.length > 80 || description.length > 500) {
+        return fail(400, "INVALID_COLLECTION", "Add a collection title and keep its description under 500 characters.", origin);
+      }
+      const { data, error } = await userClient.from("collections")
+        .insert({ owner_id: user.id, title, description })
+        .select("id,title,description,created_at,updated_at").single();
+      if (error) throw error;
+      return response(201, {
+        id: data.id, title: data.title, description: data.description, itemCount: 0,
+        createdAt: new Date(data.created_at).toISOString(),
+        updatedAt: new Date(data.updated_at).toISOString(),
+      }, origin);
+    }
+
+    if (method === "GET" && collectionMatch) {
+      const { data: collection, error } = await userClient.from("collections")
+        .select("id,title,description,created_at,updated_at")
+        .eq("id", collectionMatch[1]).eq("owner_id", user.id).maybeSingle();
+      if (error) throw error;
+      if (!collection) return fail(404, "NOT_FOUND", "Collection not found.", origin);
+      const { data: items, error: itemsError } = await userClient.from("collection_items")
+        .select("id,creation_id,creation_revision,snapshot,position,created_at")
+        .eq("collection_id", collectionMatch[1]).order("position", { ascending: true }).order("created_at", { ascending: true });
+      if (itemsError) throw itemsError;
+      return response(200, {
+        collection: {
+          id: collection.id, title: collection.title, description: collection.description,
+          itemCount: (items || []).length,
+          createdAt: new Date(collection.created_at).toISOString(),
+          updatedAt: new Date(collection.updated_at).toISOString(),
+        },
+        items: (items || []).map((item: Json) => ({
+          id: item.id, creationId: item.creation_id, creationRevision: item.creation_revision,
+          snapshot: item.snapshot, position: item.position, createdAt: new Date(String(item.created_at)).toISOString(),
+        })),
+      }, origin);
+    }
+
+    if (method === "PATCH" && collectionMatch) {
+      const body = parseJson(await req.text());
+      if (!body) return fail(400, "INVALID_BODY", "A valid JSON object is required.", origin);
+      const updates: Json = {};
+      if (body.title !== undefined) {
+        if (typeof body.title !== "string" || !body.title.trim() || body.title.trim().length > 80) {
+          return fail(400, "INVALID_COLLECTION", "Collection titles must be between 1 and 80 characters.", origin);
+        }
+        updates.title = body.title.trim();
+      }
+      if (body.description !== undefined) {
+        if (typeof body.description !== "string" || body.description.trim().length > 500) {
+          return fail(400, "INVALID_COLLECTION", "Collection descriptions must be under 500 characters.", origin);
+        }
+        updates.description = body.description.trim();
+      }
+      if (!Object.keys(updates).length) return fail(400, "INVALID_COLLECTION", "There are no collection changes to save.", origin);
+      const { data, error } = await userClient.from("collections").update(updates)
+        .eq("id", collectionMatch[1]).eq("owner_id", user.id)
+        .select("id,title,description,created_at,updated_at").maybeSingle();
+      if (error) throw error;
+      if (!data) return fail(404, "NOT_FOUND", "Collection not found.", origin);
+      return response(200, {
+        id: data.id, title: data.title, description: data.description,
+        createdAt: new Date(data.created_at).toISOString(), updatedAt: new Date(data.updated_at).toISOString(),
+      }, origin);
+    }
+
+    if (method === "DELETE" && collectionMatch) {
+      const { data, error } = await userClient.from("collections").delete()
+        .eq("id", collectionMatch[1]).eq("owner_id", user.id).select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return fail(404, "NOT_FOUND", "Collection not found.", origin);
+      return response(204, undefined, origin);
+    }
+
+    if (method === "POST" && collectionItemsMatch) {
+      const body = parseJson(await req.text());
+      const creationId = typeof body?.creationId === "string" ? body.creationId : "";
+      if (!/^[0-9a-f-]{36}$/i.test(creationId)) return fail(400, "INVALID_COLLECTION_ITEM", "Choose a saved creation.", origin);
+      const { data: collection, error: collectionError } = await userClient.from("collections")
+        .select("id").eq("id", collectionItemsMatch[1]).eq("owner_id", user.id).maybeSingle();
+      if (collectionError) throw collectionError;
+      if (!collection) return fail(404, "NOT_FOUND", "Collection not found.", origin);
+      const { data: creation, error: creationError } = await userClient.from("creations")
+        .select("id,title,format,document_json,revision").eq("id", creationId).eq("owner_id", user.id).eq("status", "draft").maybeSingle();
+      if (creationError) throw creationError;
+      if (!creation) return fail(404, "CREATION_NOT_FOUND", "Saved creation not found.", origin);
+      const { count, error: countError } = await userClient.from("collection_items")
+        .select("id", { count: "exact", head: true }).eq("collection_id", collectionItemsMatch[1]);
+      if (countError) throw countError;
+      const snapshot = { title: creation.title, format: creation.format, document: creation.document_json };
+      const { data: item, error } = await userClient.from("collection_items").insert({
+        collection_id: collectionItemsMatch[1], owner_id: user.id,
+        creation_id: creation.id, creation_revision: creation.revision,
+        snapshot, position: count || 0,
+      }).select("id,creation_id,creation_revision,snapshot,position,created_at").single();
+      if (error?.code === "23505") return fail(409, "ALREADY_IN_COLLECTION", "This saved version is already in the collection.", origin);
+      if (error) throw error;
+      const { error: touchError } = await admin.from("collections").update({ updated_at: new Date().toISOString() })
+        .eq("id", collectionItemsMatch[1]).eq("owner_id", user.id);
+      if (touchError) throw touchError;
+      return response(201, {
+        id: item.id, creationId: item.creation_id, creationRevision: item.creation_revision,
+        snapshot: item.snapshot, position: item.position, createdAt: new Date(item.created_at).toISOString(),
+      }, origin);
+    }
+
+    if (method === "DELETE" && collectionItemMatch) {
+      const { data, error } = await userClient.from("collection_items").delete()
+        .eq("id", collectionItemMatch[2]).eq("collection_id", collectionItemMatch[1]).eq("owner_id", user.id)
+        .select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return fail(404, "NOT_FOUND", "Collection item not found.", origin);
+      const { error: touchError } = await admin.from("collections").update({ updated_at: new Date().toISOString() })
+        .eq("id", collectionItemMatch[1]).eq("owner_id", user.id);
+      if (touchError) throw touchError;
+      return response(204, undefined, origin);
     }
 
     if (method === "GET" && path === "/v1/open-when") {
