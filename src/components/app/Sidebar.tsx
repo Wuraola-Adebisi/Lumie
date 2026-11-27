@@ -14,7 +14,7 @@ const links = [
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const { profile, signOut } = useAuth()
   const displayName = profile?.displayName || 'Your space'
-  const initials = displayName.split(/\\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'L'
+  const initials = displayName.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'L'
   return (
     <aside className="app-sidebar sticky top-0 flex h-screen flex-col border-r-2 border-navy bg-cream px-5 py-6">
       <div className="flex items-center justify-between pb-8"><BrandMark /><button type="button" className="btn btn-ghost btn-sm md:hidden" onClick={onClose} aria-label="Close menu"><ArrowLeft size={18} /></button></div>
