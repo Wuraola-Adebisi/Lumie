@@ -93,7 +93,7 @@ async function withAccount(pool, cognitoSub, operation, email = null) {
     await client.query('BEGIN')
     await client.query("SELECT set_config('app.cognito_sub', $1, true)", [cognitoSub])
     await client.query(
-      'INSERT INTO profiles (cognito_sub, email) VALUES ($1, $2) ON CONFLICT (cognito_sub) DO UPDATE SET email = COALESCE(EXCLUDED.email, profiles.email)',
+      'INSERT INTO profiles (cognito_sub, email) VALUES ($1, $2) ON CONFLICT (cognito_sub) DO NOTHING',
       [cognitoSub, email],
     )
     const profile = await client.query(
@@ -103,6 +103,7 @@ async function withAccount(pool, cognitoSub, operation, email = null) {
     if (profile.rowCount !== 1) throw new Error('Account profile could not be resolved.')
     const userId = profile.rows[0].id
     await client.query("SELECT set_config('app.user_id', $1, true)", [userId])
+    if (email) await client.query('UPDATE profiles SET email = $2 WHERE id = $1 AND email IS DISTINCT FROM $2', [userId, email])
     const result = await operation(client, profile.rows[0])
     await client.query('COMMIT')
     return result
