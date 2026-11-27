@@ -478,15 +478,15 @@ Deno.serve(async (req: Request) => {
       if (collectionError) throw collectionError;
       if (!collection) return fail(404, "NOT_FOUND", "Collection not found.", origin);
       const now = new Date();
-      const { error: revokeError } = await userClient.from("collection_guest_links")
-        .update({ revoked_at: now.toISOString() }).eq("collection_id", collectionGuestLinkMatch[1]).is("revoked_at", null);
+      const { error: revokeError } = await admin.from("collection_guest_links")
+        .update({ revoked_at: now.toISOString() }).eq("owner_id", user.id).eq("collection_id", collectionGuestLinkMatch[1]).is("revoked_at", null);
       if (revokeError) throw revokeError;
       const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
       const rawToken = Array.from(tokenBytes).map(byte => byte.toString(16).padStart(2, "0")).join("");
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken));
       const tokenHash = Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
       const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data, error } = await userClient.from("collection_guest_links").insert({
+      const { data, error } = await admin.from("collection_guest_links").insert({
         collection_id: collectionGuestLinkMatch[1], owner_id: user.id, token_hash: tokenHash,
         expires_at: expiresAt, max_contributions: 100,
       }).select("id,expires_at,max_contributions").single();
@@ -499,7 +499,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (method === "DELETE" && collectionGuestLinkMatch) {
-      const { data, error } = await userClient.from("collection_guest_links").update({ revoked_at: new Date().toISOString() })
+      const { data, error } = await admin.from("collection_guest_links").update({ revoked_at: new Date().toISOString() })
         .eq("collection_id", collectionGuestLinkMatch[1]).eq("owner_id", user.id).is("revoked_at", null)
         .select("id");
       if (error) throw error;

@@ -50,7 +50,7 @@ export default function GuestContributionPage() {
             <div className="py-8 text-center">
               <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-mint text-navy"><MailCheck size={28}/></span>
               <h1 className="display mt-6 text-3xl">Your note is with the collection.</h1>
-              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">Your contribution has been sent to {info?.ownerName}. You can close this page now.</p>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">Your note has been added to {info?.collectionTitle}. The collection owner can review it in Lumie.</p>
               <Link to="/" className="mt-7 inline-flex items-center gap-2 text-sm font-bold text-cobalt underline"><ArrowLeft size={16}/> Back to Lumie</Link>
             </div>
           ) : !info ? (
