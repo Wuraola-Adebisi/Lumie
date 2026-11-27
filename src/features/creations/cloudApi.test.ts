@@ -75,7 +75,7 @@ describe('cloud API client', () => {
     document.elements.push({ id: 'photo', kind: 'photo', x: 10, y: 10, width: 30, imageAssetId: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', image: 'https://storage.test/short-lived' })
     const cloud = toCloudDocument(document)
     expect(cloud.elements[cloud.elements.length - 1]).toMatchObject({ kind: 'photo', imageAssetId: 'b7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21' })
-    expect(cloud.elements.at(-1)).not.toHaveProperty('image')
+    expect(cloud.elements[cloud.elements.length - 1]).not.toHaveProperty('image')
   })
 
   it('resolves private image URLs when opening a saved composition', async () => {
