@@ -31,10 +31,10 @@ function publishSession(session: SupabaseSession | null) {
 if (typeof window !== 'undefined') window.addEventListener('storage', (event) => {
   if (event.key === SESSION_KEY) listeners.forEach((listener) => listener(readSession()));
 });
-async function authRequest<T>(path: string, body?: Record<string, unknown>, token?: string): Promise<T> {
+async function authRequest<T>(path: string, body?: Record<string, unknown>, token?: string, method?: 'POST' | 'PUT'): Promise<T> {
   const { url, key } = config();
   const response = await fetch(`${url}/auth/v1/${path}`, {
-    method: body ? 'POST' : 'GET',
+    method: method || (body ? 'POST' : 'GET'),
     headers: { apikey: key, 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
@@ -67,6 +67,7 @@ async function createPkceChallenge() {
   return { verifier, challenge: base64Url(new Uint8Array(digest)) };
 }
 export async function signUp(email: string, password: string, displayName: string) {
+  sessionStorage.removeItem('lumie-auth-flow');
   const { verifier, challenge } = await createPkceChallenge();
   sessionStorage.setItem(PKCE_KEY, verifier);
   const redirect = new URL('/auth/callback', window.location.origin).toString();
@@ -86,7 +87,25 @@ export async function signUp(email: string, password: string, displayName: strin
     throw error;
   }
 }
+export async function requestPasswordReset(email: string) {
+  const { verifier, challenge } = await createPkceChallenge();
+  sessionStorage.setItem(PKCE_KEY, verifier);
+  sessionStorage.setItem('lumie-auth-flow', 'recovery');
+  const redirect = new URL('/auth/callback', window.location.origin).toString();
+  try {
+    await authRequest('recover?redirect_to=' + encodeURIComponent(redirect), {
+      email: email.trim().toLowerCase(),
+      code_challenge: challenge,
+      code_challenge_method: 's256',
+    });
+  } catch (error) {
+    sessionStorage.removeItem(PKCE_KEY);
+    sessionStorage.removeItem('lumie-auth-flow');
+    throw error;
+  }
+}
 export async function signIn(email: string, password: string) {
+  sessionStorage.removeItem('lumie-auth-flow');
   const payload = await authRequest<Record<string, unknown>>('token?grant_type=password', { email: email.trim().toLowerCase(), password });
   const session = toSession(payload);
   publishSession(session);
@@ -144,6 +163,10 @@ export async function signOut() {
   if (current) await authRequest('logout', {}, current.access_token).catch(() => undefined);
   sessionStorage.removeItem(PKCE_KEY);
   publishSession(null);
+}
+export async function updatePassword(password: string) {
+  const token = await getAccessToken();
+  await authRequest('user', { password }, token, 'PUT');
 }
 export async function getLumieProfile(userId: string) {
   const { url, key } = config();

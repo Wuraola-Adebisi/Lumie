@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { getAccessToken, getLumieProfile, getUser, hasSession, isSupabaseConfigured, onAuthStateChange, signIn as authenticate, signOut as endSession, signUp as register, completeSignIn } from './supabaseAuth'
+import { getAccessToken, getLumieProfile, getUser, hasSession, isSupabaseConfigured, onAuthStateChange, signIn as authenticate, signOut as endSession, signUp as register, completeSignIn, requestPasswordReset as requestReset, updatePassword as savePassword } from './supabaseAuth'
 import type { SupabaseUser } from './supabaseAuth'
 import type { LumieProfile } from './authContract'
 
@@ -13,6 +13,8 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, displayName: string) => Promise<{ needsEmailConfirmation: boolean }>
   signOut: () => Promise<void>
+  requestPasswordReset: (email: string) => Promise<void>
+  updatePassword: (password: string) => Promise<void>
   completeCallback: (search: string) => Promise<void>
   getToken: () => Promise<string>
   reloadProfile: () => Promise<void>
@@ -76,15 +78,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
     setStatus('unauthenticated')
   }, [])
+  const requestPasswordReset = useCallback(async (email: string) => {
+    await requestReset(email)
+  }, [])
+  const updatePassword = useCallback(async (password: string) => {
+    await savePassword(password)
+  }, [])
   const completeCallback = useCallback(async (search: string) => {
     setStatus('loading')
     await completeSignIn(search)
     await reloadProfile()
   }, [reloadProfile])
   const value = useMemo<AuthContextValue>(() => ({
-    status, profile, error, configured, signIn, signUp, signOut,
+    status, profile, error, configured, signIn, signUp, signOut, requestPasswordReset, updatePassword,
     completeCallback, getToken: getAccessToken, reloadProfile,
-  }), [status, profile, error, configured, signIn, signUp, signOut, completeCallback, reloadProfile])
+  }), [status, profile, error, configured, signIn, signUp, signOut, requestPasswordReset, updatePassword, completeCallback, reloadProfile])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 export function useAuth() {
