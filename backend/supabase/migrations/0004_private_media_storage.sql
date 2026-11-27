@@ -34,10 +34,4 @@ using (
       )
   )
 );
-
-create policy lumie_private_delete_owner on storage.objects
-for delete to authenticated
-using (
-  bucket_id = 'lumie-private'
-  and (storage.foldername(name))[1] = (select auth.uid())::text
-);
+\n
