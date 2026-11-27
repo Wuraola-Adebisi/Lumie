@@ -41,6 +41,7 @@ function validDocument(document, format) {
     if (!element || typeof element !== 'object' || Array.isArray(element)) return false
     if (typeof element.id !== 'string' || !element.id || ids.has(element.id)) return false
     ids.add(element.id)
+    if (typeof element.image === 'string' && element.image.startsWith('data:')) return false
     if (!['text', 'stamp', 'decoration', 'photo'].includes(element.kind)) return false
     for (const key of ['x', 'y', 'width']) {
       if (typeof element[key] !== 'number' || !Number.isFinite(element[key])) return false
