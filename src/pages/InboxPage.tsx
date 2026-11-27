@@ -1,4 +1,5 @@
 import { ArrowUpRight, Mail, Send } from 'lucide-react'
+import type { FormEvent } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -41,7 +42,7 @@ export default function InboxPage() {
       .catch(reason => setError(reason instanceof Error ? reason.message : 'This correspondence could not be opened.'))
   }, [activeId, getToken])
 
-  const send = async (event: React.FormEvent<HTMLFormElement>) => {
+  const send = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!recipientEmail.trim() || !creationId || sending) return
     setSending(true); setError(''); setNotice('')
