@@ -1,5 +1,5 @@
 import { parseCloudCreation, parseCloudCreationPage } from './cloudCreationContract'
-import type { CloudCreation, CloudCreationPage } from './cloudCreationContract'
+import type { CloudCreation } from './cloudCreationContract'
 import type { StudioDocument } from '../studio/studioTypes'
 import * as localCreationModule from './localCreations'
 
