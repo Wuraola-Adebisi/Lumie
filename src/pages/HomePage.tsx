@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowDown, ArrowUpRight } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, Archive as ArchiveIcon, Palette as PaletteIcon, PenLine as PenLineIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import MarketingHeader from '../components/marketing/MarketingHeader'
 import MarketingFooter from '../components/marketing/MarketingFooter'
@@ -49,13 +49,40 @@ export default function HomePage() {
           <div className="mx-auto grid max-w-[1240px] items-center gap-10 px-5 py-14 md:grid-cols-[1fr_1.05fr] md:px-10 md:py-20">
             <div>
               <h1 className="display text-[clamp(46px,7vw,92px)]">Letters and postcards, made in your own words.</h1>
-              <p className="mt-6 max-w-[34rem] text-[19px] leading-relaxed text-muted">Make something thoughtful, then make it yours. Write freely, shape the page, add photographs and postal details, and ask Lumie's assistant for a starting point or a fresh perspective when you want one.</p>
+              <p className="mt-6 max-w-[34rem] text-[19px] leading-relaxed text-muted">Create a letter, postcard or keepsake that feels unmistakably yours.</p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link to="/app/create" className="btn btn-primary">Open the studio <ArrowUpRight size={18} /></Link>
                 <a href="#how" className="btn btn-paper">See how it works <ArrowDown size={16} /></a>
               </div>
             </div>
             <HeroScene />
+          </div>
+        </section>
+
+        <section id="what-is-lumie" className="bg-paper">
+          <div className="mx-auto max-w-[1240px] px-5 py-20 md:px-10 md:py-24">
+            <div className="max-w-[760px]">
+              <p className="text-[11px] font-extrabold tracking-[.16em] text-cobalt">WHAT IS LUMIE?</p>
+              <h2 className="display mt-4 text-[clamp(38px,5vw,62px)]">A little more than a blank page.</h2>
+              <p className="mt-5 max-w-[650px] text-[18px] leading-relaxed text-muted">Lumie brings writing and visual creation together. Make thoughtful correspondence in your own words, give it a look and feel of its own, then keep, print or share the finished piece.</p>
+            </div>
+            <div className="mt-12 grid gap-5 md:grid-cols-3">
+              <article className="rounded-2xl border-2 border-navy/15 bg-white p-7 shadow-[0_4px_0_rgba(18,28,90,.10)]">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-tomato text-ink"><PenLineIcon /></span>
+                <h3 className="display mt-7 text-[25px]">Start with your words.</h3>
+                <p className="mt-3 text-[16px] leading-relaxed text-muted">Write a long letter, a quick note or a postcard. The words and the meaning behind them stay yours.</p>
+              </article>
+              <article className="rounded-2xl border-2 border-navy/15 bg-white p-7 shadow-[0_4px_0_rgba(18,28,90,.10)]">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-lilac text-ink"><PaletteIcon /></span>
+                <h3 className="display mt-7 text-[25px]">Make it look like you.</h3>
+                <p className="mt-3 text-[16px] leading-relaxed text-muted">Choose the paper, type, colours and layout. Add photographs, stamps, stickers and little details.</p>
+              </article>
+              <article className="rounded-2xl border-2 border-navy/15 bg-white p-7 shadow-[0_4px_0_rgba(18,28,90,.10)]">
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-saffron text-ink"><ArchiveIcon /></span>
+                <h3 className="display mt-7 text-[25px]">Keep the pieces.</h3>
+                <p className="mt-3 text-[16px] leading-relaxed text-muted">Save your creations, print them at their intended size or turn them into images worth sharing.</p>
+              </article>
+            </div>
           </div>
         </section>
 
