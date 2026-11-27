@@ -16,15 +16,25 @@ export default function InvitationPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const existing = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
-    const meta = existing || document.createElement('meta')
-    const previous = meta.getAttribute('content')
-    meta.name = 'robots'
-    meta.content = 'noindex,nofollow'
-    if (!existing) document.head.appendChild(meta)
+    const existingRobots = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
+    const robots = existingRobots || document.createElement('meta')
+    const previousRobots = robots.getAttribute('content')
+    robots.name = 'robots'
+    robots.content = 'noindex,nofollow'
+    if (!existingRobots) document.head.appendChild(robots)
+
+    const existingReferrer = document.querySelector<HTMLMetaElement>('meta[name="referrer"]')
+    const referrer = existingReferrer || document.createElement('meta')
+    const previousReferrer = referrer.getAttribute('content')
+    referrer.name = 'referrer'
+    referrer.content = 'no-referrer'
+    if (!existingReferrer) document.head.appendChild(referrer)
+
     return () => {
-      if (existing && previous !== null) existing.content = previous
-      else if (!existing) meta.remove()
+      if (existingRobots && previousRobots !== null) existingRobots.content = previousRobots
+      else if (!existingRobots) robots.remove()
+      if (existingReferrer && previousReferrer !== null) existingReferrer.content = previousReferrer
+      else if (!existingReferrer) referrer.remove()
     }
   }, [])
 

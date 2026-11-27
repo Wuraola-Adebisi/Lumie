@@ -489,6 +489,8 @@ test('lets a guest contribute a note through a collection link', async ({ page }
   })
   await page.goto('/contribute/' + 'a'.repeat(64))
   await expect(page.getByRole('heading', { name: 'Little keepsakes' })).toBeVisible()
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow')
+  await expect(page.locator('meta[name="referrer"]')).toHaveAttribute('content', 'no-referrer')
   await page.getByLabel('Your name').fill('A guest')
   await page.getByLabel('Email Optional').fill('guest@example.test')
   await page.getByLabel('Your note').fill('A note worth keeping.')
