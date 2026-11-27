@@ -142,3 +142,5 @@ test('shows the local assistant preview without connecting to an AI provider', a
   await expect(page.getByText(/Your prompt is not sent to an AI model/)).toBeVisible()
   await expect(page.getByRole('button', { name: 'Copy suggestion' })).toBeVisible()
 })
+
+// Keep assistant preview coverage alongside the editor's browser-level acceptance tests.
