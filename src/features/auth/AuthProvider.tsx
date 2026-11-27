@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authenticate(email, password)
     await reloadProfile()
     setStatus('authenticated')
-  }, [])
+  }, [reloadProfile])
   const signUp = useCallback(async (email: string, password: string, displayName: string) => {
     setError('')
     return register(email, password, displayName)
