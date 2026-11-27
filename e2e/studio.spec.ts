@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+// Authenticated browser coverage uses the same Supabase session shape as the app.
+
 test.beforeEach(async ({ page }) => {
   let creationCounter = 0
   type MockCreation = {
