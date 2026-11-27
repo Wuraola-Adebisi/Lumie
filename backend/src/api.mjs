@@ -395,8 +395,8 @@ export function createApiHandler({ pool, objectStore, logger = console }) {
         return response(200, { items: inbox })
       }
 
-      const threadMatch = path.match(/^\\/v1\\/threads\\/([0-9a-f-]{36})$/i)
-      const replyMatch = path.match(/^\\/v1\\/threads\\/([0-9a-f-]{36})\\/replies$/i)
+      const threadMatch = path.match(/^\/v1\/threads\/([0-9a-f-]{36})$/i)
+      const replyMatch = path.match(/^\/v1\/threads\/([0-9a-f-]{36})\\/replies$/i)
       if (method === 'GET' && threadMatch) {
         const thread = await withAccount(pool, cognitoSub, async (client, account) => {
           const access = await client.query('SELECT t.id, t.subject FROM correspondence_threads t JOIN correspondence_participants cp ON cp.thread_id=t.id WHERE t.id=$1 AND cp.profile_id=$2', [threadMatch[1], account.id])
