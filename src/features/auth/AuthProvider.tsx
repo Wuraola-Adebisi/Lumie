@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     setError('')
-    const session = await authenticate(email, password)
+    await authenticate(email, password)
     await reloadProfile()
     setStatus('authenticated')
   }, [])
