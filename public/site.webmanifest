@@ -1,0 +1,17 @@
+{
+  "name": "Lumie",
+  "short_name": "Lumie",
+  "description": "Letters and postcards, made in your own words.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#1f4fd6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
