@@ -166,7 +166,8 @@ test('saves, searches, reopens and deletes multiple named creations', async ({ p
   await expect(page.getByRole('heading', { name: 'Second letter' })).toHaveCount(0)
   await page.getByRole('textbox', { name: 'Search your creations' }).fill('')
 
-  await page.getByRole('link', { name: 'Open creation' }).first().click()
+  const firstCreation = page.locator('article').filter({ has: page.getByRole('heading', { name: 'First postcard' }) })
+  await firstCreation.getByRole('link', { name: 'Open creation' }).click()
   await expect(page.getByLabel('Give it a name')).toHaveValue('First postcard')
   await page.getByRole('link', { name: 'Back to your creations' }).click()
   page.once('dialog', (dialog) => dialog.accept())
