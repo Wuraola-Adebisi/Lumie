@@ -210,9 +210,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (method === "DELETE" && creationMatch) {
-      const { data, error } = await userClient.from("creations")
-        .update({ status: "archived", archived_at: new Date().toISOString() })
-        .eq("id", creationMatch[1]).eq("owner_id", user.id).eq("status", "draft").select("id").maybeSingle();
+      const { data, error } = await userClient.rpc("lumie_archive_creation", {
+        p_creation_id: creationMatch[1],
+      });
       if (error) throw error;
       return data ? response(204, undefined, origin) : fail(404, "NOT_FOUND", "Creation not found.", origin);
     }
