@@ -12,6 +12,7 @@ DECLARE
   thread_id uuid;
   asset_id uuid;
   visible_count integer;
+  lookup_id uuid;
 BEGIN
   PERFORM set_config('app.cognito_sub', 'correspondence-sender', true);
   INSERT INTO profiles (cognito_sub, email, display_name)
@@ -33,8 +34,8 @@ BEGIN
   PERFORM set_config('app.user_id', sender_id::text, true);
   PERFORM set_config('app.cognito_sub', 'correspondence-sender', true);
 
-  SELECT profile_id INTO visible_count FROM lumie_find_recipient_by_email('RECIPIENT@lumie.test');
-  ASSERT visible_count::text = recipient_id::text, 'Exact email lookup should find the registered recipient';
+  SELECT profile_id INTO lookup_id FROM lumie_find_recipient_by_email('RECIPIENT@lumie.test');
+  ASSERT lookup_id = recipient_id, 'Exact email lookup should find the registered recipient';
 
   INSERT INTO correspondence_threads (created_by, subject)
   VALUES (sender_id, 'A private letter') RETURNING id INTO thread_id;
@@ -56,7 +57,7 @@ BEGIN
   ASSERT visible_count = 1, 'Recipient should see the thread they belong to';
   SELECT count(*) INTO visible_count FROM correspondence_messages;
   ASSERT visible_count = 1, 'Recipient should read the sent snapshot';
-  SELECT count(*) INTO visible_count FROM assets WHERE id = asset_id;
+  SELECT count(*) INTO visible_count FROM assets WHERE assets.id = asset_id;
   ASSERT visible_count = 1, 'Recipient should read an asset explicitly shared in the thread';
 
   PERFORM set_config('app.user_id', outsider_id::text, true);
