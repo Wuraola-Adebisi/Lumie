@@ -6,6 +6,7 @@ import Sticker, { stickerKinds, stickerLabels } from '../../components/mail/Stic
 import { normalizeSticker } from '../../components/mail/Sticker'
 import { stampArts, stampTones } from '../../components/mail/Stamp'
 import RichTextEditor from './RichTextEditor'
+import StudioAssistant from './StudioAssistant'
 
 interface Props {
   document: StudioDocument
@@ -113,7 +114,8 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
           <input id="studio-layer-width" className="studio-range" type="range" min="8" max="92" value={selected.width} onChange={(event) => onChange({ width: Number(event.target.value) })}/>
         </section>
       ) : <div className="studio-inspector-empty"><strong>Select a layer on the paper</strong><p>Its words, colour, size and position appear here.</p></div>}
-      <div className="studio-inspector-footnote">Drafts are saved in this browser only. Nothing is uploaded.</div>
+      <StudioAssistant />
+      <div className="studio-inspector-footnote">Drafts and photos are saved in this browser only. Nothing is uploaded.</div>
     </aside>
   )
 }

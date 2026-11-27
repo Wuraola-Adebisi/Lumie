@@ -48,13 +48,13 @@ export default function HomePage() {
         <section className="graph">
           <div className="mx-auto grid max-w-[1240px] items-center gap-10 px-5 py-14 md:grid-cols-[1fr_1.05fr] md:px-10 md:py-20">
             <div>
-              <h1 className="display text-[clamp(46px,7vw,92px)]">Letters and postcards that feel like real mail.</h1>
-              <p className="mt-6 max-w-[34rem] text-[19px] leading-relaxed text-muted">Lumie is a studio for making letters, postcards and photo keepsakes. Add stamps and stickers, print at true size, or export a picture to share.</p>
+              <h1 className="display text-[clamp(46px,7vw,92px)]">Letters and postcards, made in your own words.</h1>
+              <p className="mt-6 max-w-[34rem] text-[19px] leading-relaxed text-muted">Make something thoughtful, then make it yours. Write freely, shape the page, add photographs and postal details, and ask Lumie's assistant for a starting point or a fresh perspective when you want one.</p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link to="/app/create" className="btn btn-primary">Open the studio <ArrowUpRight size={18} /></Link>
                 <a href="#how" className="btn btn-paper">See how it works <ArrowDown size={16} /></a>
               </div>
-              <p className="mt-8 max-w-[30rem] text-[15px] leading-relaxed text-muted">No account needed. Your draft stays in this browser.</p>
+              <p className="mt-8 max-w-[30rem] text-[15px] leading-relaxed text-muted">The assistant shown in this preview uses sample responses. Live AI and cloud accounts are not connected yet.</p>
             </div>
             <HeroScene />
           </div>
@@ -62,8 +62,8 @@ export default function HomePage() {
 
         <section id="formats" className="on-dark bg-cobalt text-paper">
           <div className="mx-auto max-w-[1240px] px-5 py-20 md:px-10 md:py-28">
-            <h2 className="display max-w-[720px] text-[clamp(38px,5.5vw,68px)]">Five formats to start from.</h2>
-            <p className="mt-4 max-w-[560px] text-[19px] leading-relaxed text-paper/85">Each one is a page you can edit. Change the words, paper, ink, stamps and stickers.</p>
+            <h2 className="display max-w-[720px] text-[clamp(38px,5.5vw,68px)]">Start with a format. Take it anywhere.</h2>
+            <p className="mt-4 max-w-[560px] text-[19px] leading-relaxed text-paper/85">Choose a letter, postcard, photo card, collage or memory page. Then change the words, paper, ink, stamps and stickers until it feels like yours.</p>
             <div className="mt-16 grid gap-x-8 gap-y-16 md:grid-cols-6">
               <div className="md:col-span-2">
                 <div className="tilt mx-auto w-[82%] rotate-[-3deg]"><LetterSheet issue="No. 03" title="Dear Mara," sign="Jo"><p>The cherry tree outside the flat is finally in flower.</p><p>Come in April if you can.</p></LetterSheet></div>
