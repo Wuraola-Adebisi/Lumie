@@ -16,7 +16,7 @@ export default function MarketingHeader() {
     <header className="relative z-30 border-b-2 border-navy bg-cream">
       <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between px-5 md:px-10">
         <BrandMark />
-        <nav className="marketing-desktop-nav hidden items-center gap-9 text-[16px] font-bold text-ink md:flex" aria-label="Main navigation">
+        <nav className="marketing-desktop-nav hidden items-center gap-6 text-[15px] font-bold text-ink md:flex" aria-label="Main navigation">
           {links.map((link) => <Link key={link.to} to={link.to} className="hover:text-cobalt">{link.label}</Link>)}
         </nav>
         <div className="marketing-desktop-actions hidden items-center gap-2 md:flex">
