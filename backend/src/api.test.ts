@@ -161,13 +161,15 @@ describe('Lumie API handler', () => {
     expect(JSON.parse(result.body).code).toBe('REVISION_CONFLICT')
   })
 
-  it('rolls back and releases the client when a database operation fails', async () => {
+  it('rolls back and releases the client when a creation write fails', async () => {
     const { pool, client } = makePool(async sql => {
-      if (sql.includes('FROM profiles WHERE cognito_sub')) throw new Error('database unavailable')
+      if (sql.includes('INSERT INTO creations')) throw new Error('database unavailable')
       return { rows: [], rowCount: 0 }
     })
     const handler = createApiHandler({ pool, logger: { error: vi.fn() } })
-    const result = await handler(event('GET', '/v1/me'))
+    const result = await handler(event('POST', '/v1/creations', {
+      body: JSON.stringify({ title: 'A postcard', document: document() }),
+    }))
     expect(result.statusCode).toBe(500)
     expect(client.query).toHaveBeenCalledWith('ROLLBACK')
     expect(client.release).toHaveBeenCalledOnce()
