@@ -160,6 +160,7 @@ test('supports touch-pointer dragging of a composition layer', async ({ page }) 
 })
 
 test('uploads a photo and keeps only its asset identifier in cloud drafts', async ({ page }) => {
+  const saveRequestPromise = page.waitForRequest((request) => request.url() === 'http://localhost:3001/v1/creations' && request.method() === 'POST')
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=', 'base64')
   await page.locator('#studio-photo-upload').setInputFiles({
     name: 'tiny.png',
@@ -167,6 +168,11 @@ test('uploads a photo and keeps only its asset identifier in cloud drafts', asyn
     buffer: png,
   })
   await expect(page.locator('.studio-element-photo img')).toBeVisible()
+  const saveRequest = await saveRequestPromise
+  const body = saveRequest.postDataJSON() as { document: { elements: Array<{ kind: string; imageAssetId?: string; image?: string }> } }
+  const photo = body.document.elements.find((element) => element.kind === 'photo')
+  expect(photo?.imageAssetId).toBe('d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21')
+  expect(photo).not.toHaveProperty('image')
 })
 
 test('rejects an image larger than the 10 MB upload limit', async ({ page }) => {
