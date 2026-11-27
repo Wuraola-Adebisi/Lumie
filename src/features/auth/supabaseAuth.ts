@@ -99,7 +99,7 @@ export async function signIn(email: string, password: string) {
   return session;
 }
 export async function completeSignIn(search: string) {
-  const params = new URLSearchParams(search);
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   const error = hash.get('error_description') || hash.get('error') || params.get('error_description') || params.get('error');
   if (error) throw new Error(error);
