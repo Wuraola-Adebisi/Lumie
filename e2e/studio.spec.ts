@@ -234,7 +234,7 @@ test('saves multiple account creations and reopens them from the dashboard', asy
   await expect(page.getByRole('heading', { name: 'Your desk' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'First postcard' })).toBeVisible()
 
-  await page.getByRole('link', { name: 'New piece' }).click()
+  await page.getByRole('main').getByRole('link', { name: 'New piece' }).click()
   await page.getByLabel('Give it a name').fill('Second letter')
   await page.getByRole('button', { name: 'Save draft' }).click()
   await expect(page.locator('.studio-save-state')).toContainText('Saved at')
