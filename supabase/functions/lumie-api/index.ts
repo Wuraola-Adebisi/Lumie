@@ -96,10 +96,6 @@ function decodeCursor(value: string | null) {
     return parsed as { updatedAt: string; id: string };
   } catch { return undefined; }
 }
-function apiError(error: { message?: string; code?: string; details?: string } | null) {
-  if (!error) return null;
-  return { message: error.message || "The request could not be completed.", code: error.code || "REQUEST_FAILED" };
-}
 function fail(status: number, code: string, message: string, origin: string) {
   return response(status, { code, message }, origin);
 }
@@ -244,7 +240,7 @@ Deno.serve(async (req: Request) => {
       const objectKey = `${user.id}/${assetId}`;
       const { error: insertError } = await userClient.from("assets").insert({
         id: assetId, owner_id: user.id, object_key: objectKey,
-        original_file_name: fileName.trim().replace(/[\\/\u0000-\u001f\u007f]/g, "_"),
+        original_file_name: Array.from(fileName.trim(), (character) => { const code = character.charCodeAt(0); return code < 32 || code === 127 || character === "/" || character === "\\\\" ? "_" : character; }).join(""),
         content_type: contentType, size_bytes: sizeBytes,
       });
       if (insertError) throw insertError;
