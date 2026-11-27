@@ -1,8 +1,16 @@
 -- Pass 15 follow-up: close bootstrap and asset lifecycle gaps found in live RLS review.
 -- Thread creators need to see their own newly-created thread while adding the initial participants.
-create policy threads_select_creator on public.correspondence_threads
+drop policy if exists threads_select_creator on public.correspondence_threads;
+drop policy if exists threads_select_member on public.correspondence_threads;
+create policy threads_select_creator_or_member on public.correspondence_threads
 for select to authenticated
-using (created_by = (select auth.uid()));
+using (
+  created_by = (select auth.uid())
+  or exists (
+    select 1 from public.correspondence_participants cp
+    where cp.thread_id = correspondence_threads.id and cp.profile_id = (select auth.uid())
+  )
+);
 
 -- Asset status transitions and shared-asset grants are server-controlled.
 -- Authenticated users may create pending metadata and upload their own object,
