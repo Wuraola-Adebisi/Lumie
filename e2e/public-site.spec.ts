@@ -35,3 +35,9 @@ test('keeps the authenticated creation workspace out of search indexing', async 
   await page.goto('/app')
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
 })
+
+test('redirects visitors to sign-in before opening the private workspace', async ({ page }) => {
+  await page.goto('/app')
+  await expect(page).toHaveURL(/\/sign-in$/)
+  await expect(page.getByRole('heading', { name: 'Come on in.' })).toBeVisible()
+})
