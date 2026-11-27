@@ -1,4 +1,7 @@
+import { randomUUID } from 'node:crypto'
 const MAX_BODY_BYTES = 1_048_576
+const MAX_ASSET_BYTES = 10485760
+const ASSET_TYPES = new Set(['image/jpeg','image/png','image/webp','image/avif'])
 const FORMATS = new Set(['letter', 'postcard', 'photo-card', 'collage', 'memory'])
 
 function response(statusCode, body) {
@@ -127,7 +130,7 @@ function profileResponse(profile) {
  * The event must come from an API Gateway JWT authorizer configured for Cognito.
  * Do not invoke this handler with browser-decoded JWT claims.
  */
-export function createApiHandler({ pool, logger = console }) {
+export function createApiHandler({ pool, objectStore, logger = console }) {
   if (!pool || typeof pool.connect !== 'function') throw new TypeError('A PostgreSQL pool is required.')
 
   return async function handler(event) {
@@ -144,8 +147,58 @@ export function createApiHandler({ pool, logger = console }) {
     const path = event.rawPath || event.requestContext?.http?.path || ''
     const creationMatch = path.match(/^\/v1\/creations\/([0-9a-f-]{36})$/i)
     const revisionsMatch = path.match(/^\/v1\/creations\/([0-9a-f-]{36})\/revisions$/i)
+    const assetMatch = path.match(/^\/v1\/assets\/([0-9a-f-]{36})\/(complete|download-url)$/i)
 
     try {
+
+      if (method === 'POST' && path === '/v1/assets/upload-intents') {
+        if (!objectStore) return response(503, { code: 'STORAGE_UNAVAILABLE', message: 'Media storage is unavailable.' })
+        const body = parseBody(event)
+        if (!body.ok) return response(400, { code: 'INVALID_BODY', message: 'A valid JSON object is required.' })
+        const { fileName, contentType, sizeBytes } = body.value
+        if (typeof fileName !== 'string' || !fileName.trim() || fileName.length > 180 || !ASSET_TYPES.has(contentType) || !Number.isInteger(sizeBytes) || sizeBytes < 1 || sizeBytes > MAX_ASSET_BYTES) return response(sizeBytes > MAX_ASSET_BYTES ? 413 : 400, { code: 'INVALID_UPLOAD', message: 'Choose a JPEG, PNG, WebP or AVIF image no larger than 10 MB.' })
+        const id = randomUUID()
+        const asset = await withAccount(pool, cognitoSub, async (client, account) => {
+          const key = 'private/' + account.id + '/' + id
+          const result = await client.query('INSERT INTO assets (id, owner_id, object_key, original_file_name, content_type, size_bytes) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, object_key, content_type', [id, account.id, key, fileName.trim().replace(/[\\/\\\\\\u0000-\\u001f\\u007f]/g, '_'), contentType, sizeBytes])
+          return result.rows[0]
+        })
+        const expiresIn = 300
+        return response(201, { assetId: asset.id, uploadUrl: await objectStore.presignPut(asset.object_key, asset.content_type, expiresIn), expiresAt: new Date(Date.now()+expiresIn*1000).toISOString(), requiredHeaders: { 'Content-Type': asset.content_type } })
+      }
+      if (method === 'POST' && assetMatch?.[2] === 'complete') {
+        if (!objectStore) return response(503, { code: 'STORAGE_UNAVAILABLE', message: 'Media storage is unavailable.' })
+        const result = await withAccount(pool, cognitoSub, async client => {
+          const found = await client.query("SELECT id, object_key, content_type, size_bytes, status FROM assets WHERE id=$1 AND status IN ('pending','ready')", [assetMatch[1]])
+          if (!found.rowCount) return { missing: true }
+          const a = found.rows[0]
+          if (a.status === 'ready') return { ready: a.id }
+          const actual = await objectStore.headObject(a.object_key)
+          if (!actual) return { incomplete: true }
+          if (actual.contentLength !== Number(a.size_bytes) || actual.contentType !== a.content_type) {
+            await objectStore.deleteObject(a.object_key)
+            await client.query("UPDATE assets SET status='rejected' WHERE id=$1", [a.id])
+            return { rejected: true }
+          }
+          await client.query("UPDATE assets SET status='ready' WHERE id=$1", [a.id])
+          return { ready: a.id }
+        })
+        if (result.missing) return response(404, { code: 'NOT_FOUND', message: 'Asset not found.' })
+        if (result.incomplete) return response(409, { code: 'UPLOAD_INCOMPLETE', message: 'The image has not finished uploading.' })
+        if (result.rejected) return response(422, { code: 'UPLOAD_REJECTED', message: 'Uploaded image details do not match the authorised file.' })
+        return response(200, { assetId: result.ready, status: 'ready' })
+      }
+      if (method === 'GET' && assetMatch?.[2] === 'download-url') {
+        if (!objectStore) return response(503, { code: 'STORAGE_UNAVAILABLE', message: 'Media storage is unavailable.' })
+        const asset = await withAccount(pool, cognitoSub, async client => {
+          const found = await client.query("SELECT object_key FROM assets WHERE id=$1 AND status='ready'", [assetMatch[1]])
+          return found.rowCount ? found.rows[0] : null
+        })
+        if (!asset) return response(404, { code: 'NOT_FOUND', message: 'Asset not found.' })
+        const expiresIn = 300
+        return response(200, { assetId: assetMatch[1], url: await objectStore.presignGet(asset.object_key, expiresIn), expiresAt: new Date(Date.now()+expiresIn*1000).toISOString() })
+      }
+
       if (method === 'GET' && path === '/v1/me') {
         const profile = await withAccount(pool, cognitoSub, async (_client, row) => profileResponse(row))
         return response(200, profile)
