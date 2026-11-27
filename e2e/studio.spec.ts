@@ -518,30 +518,3 @@ test('lets a guest contribute a note through a collection link', async ({ page }
   await page.getByRole('button', { name: 'Add my note to the collection' }).click()
   await expect(page.getByRole('heading', { name: 'Your note is with the collection.' })).toBeVisible()
 })
-))
-  await expect(page.getByRole('heading', { name: 'Collections' })).toBeVisible()
-})
-
-test('lets a guest contribute a note through a collection link', async ({ page }) => {
-  await page.route('**/functions/v1/lumie-guest', async route => {
-    const body = route.request().postDataJSON() as { action: string }
-    if (body.action === 'info') {
-      await route.fulfill({ json: {
-        collectionTitle: 'Little keepsakes',
-        description: 'Pieces I want to keep close.',
-        ownerName: 'Collection owner',
-        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
-        remaining: 99,
-      } })
-    } else {
-      await route.fulfill({ status: 201, json: { contributionId: 'f8e5d9b2-4c3d-5e6f-a071-2b3c4d5e6f70', collectionTitle: 'Little keepsakes' } })
-    }
-  })
-  await page.goto('/contribute/' + 'a'.repeat(64))
-  await expect(page.getByRole('heading', { name: 'Little keepsakes' })).toBeVisible()
-  await page.getByLabel('Your name').fill('A guest')
-  await page.getByLabel('Email Optional').fill('guest@example.test')
-  await page.getByLabel('Your note').fill('A note worth keeping.')
-  await page.getByRole('button', { name: 'Add my note to the collection' }).click()
-  await expect(page.getByRole('heading', { name: 'Your note is with the collection.' })).toBeVisible()
-})
