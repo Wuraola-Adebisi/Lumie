@@ -108,7 +108,6 @@ export default function StudioInspector({ document, selected, onChange, onBackgr
         </section>
       ) : <div className="studio-inspector-empty"><strong>Select a layer on the paper</strong><p>Its words, colour, size and position appear here.</p></div>}
       <StudioAssistant />
-      
     </aside>
   )
 }
