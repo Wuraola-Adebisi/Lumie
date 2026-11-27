@@ -207,6 +207,8 @@ export interface CorrespondenceSummary {
   latestTitle: string | null
   createdAt: string
   lastMessageAt: string
+  isLocked?: boolean
+  unlockAt?: string | null
 }
 
 export interface CorrespondenceMessage {
@@ -221,6 +223,24 @@ export interface CorrespondenceThread {
   id: string
   subject: string
   messages: CorrespondenceMessage[]
+  lockedUntil?: string | null
+}
+
+export interface OpenWhenItem {
+  id: string
+  threadId: string
+  subject: string
+  title: string | null
+  correspondentName: string
+  direction: 'sent' | 'received'
+  isLocked: boolean
+  isInvitation?: boolean
+  availableAt: string
+}
+
+export async function listOpenWhen(token: TokenProvider): Promise<OpenWhenItem[]> {
+  const result = await request<{ items: OpenWhenItem[] }>(token, '/v1/open-when')
+  return Array.isArray(result.items) ? result.items : []
 }
 
 export async function listCorrespondence(token: TokenProvider): Promise<CorrespondenceSummary[]> {
@@ -232,27 +252,28 @@ export async function getCorrespondence(token: TokenProvider, id: string): Promi
   return request<CorrespondenceThread>(token, `/v1/threads/${encodeURIComponent(id)}`)
 }
 
-export async function sendCorrespondence(token: TokenProvider, recipientEmail: string, creationId: string) {
-  return request<{ threadId: string; subject: string; recipientName: string }>(token, '/v1/correspondence', {
+export async function sendCorrespondence(token: TokenProvider, recipientEmail: string, creationId: string, availableAt?: string) {
+  return request<{ threadId: string; subject: string; recipientName: string; availableAt: string }>(token, '/v1/correspondence', {
     method: 'POST',
-    body: JSON.stringify({ recipientEmail, creationId }),
+    body: JSON.stringify({ recipientEmail, creationId, availableAt }),
   })
 }
 
 export interface CorrespondenceInvitation {
   inviteUrl: string
   expiresAt: string
+  availableAt: string
 }
 
-export async function createCorrespondenceInvitation(token: TokenProvider, recipientEmail: string, creationId: string) {
+export async function createCorrespondenceInvitation(token: TokenProvider, recipientEmail: string, creationId: string, availableAt?: string) {
   return request<CorrespondenceInvitation>(token, '/v1/invitations', {
     method: 'POST',
-    body: JSON.stringify({ recipientEmail, creationId }),
+    body: JSON.stringify({ recipientEmail, creationId, availableAt }),
   })
 }
 
 export async function acceptCorrespondenceInvitation(token: TokenProvider, invitationToken: string) {
-  return request<{ threadId: string; subject?: string; senderName?: string; alreadyAccepted?: boolean }>(token, '/v1/invitations/accept', {
+  return request<{ threadId: string; subject?: string; senderName?: string; alreadyAccepted?: boolean; availableAt?: string }>(token, '/v1/invitations/accept', {
     method: 'POST',
     body: JSON.stringify({ token: invitationToken }),
   })

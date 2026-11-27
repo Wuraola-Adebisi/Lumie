@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.57.4";
+import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -54,6 +54,13 @@ function parseJson(raw: string): Json | null {
     return value && typeof value === "object" && !Array.isArray(value) ? value as Json : null;
   } catch { return null; }
 }
+function parseFutureDelivery(value: unknown): string | null | false {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string") return false;
+  const timestamp = Date.parse(value);
+  if (!Number.isFinite(timestamp) || timestamp <= Date.now() || timestamp > Date.now() + 5 * 365 * 24 * 60 * 60 * 1000) return false;
+  return new Date(timestamp).toISOString();
+}
 function validDocument(document: unknown, format: unknown) {
   if (!document || typeof document !== "object" || Array.isArray(document)) return false;
   const d = document as Record<string, unknown>;
@@ -99,13 +106,6 @@ function decodeCursor(value: string | null) {
 function fail(status: number, code: string, message: string, origin: string) {
   return response(status, { code, message }, origin);
 }
-async function membership(client: SupabaseClient, threadId: string, userId: string) {
-  const { data, error } = await client.from("correspondence_participants")
-    .select("role").eq("thread_id", threadId).eq("profile_id", userId).maybeSingle();
-  if (error) throw error;
-  return data;
-}
-
 Deno.serve(async (req: Request) => {
   const origin = allowedOrigin(req.headers.get("origin"));
   if (req.method === "OPTIONS") return response(204, undefined, origin || "https://www.lumiepost.com");
@@ -313,6 +313,8 @@ Deno.serve(async (req: Request) => {
       if (!body) return fail(400, "INVALID_BODY", "A valid JSON object is required.", origin);
       const recipientEmail = typeof body.recipientEmail === "string" ? body.recipientEmail.trim().toLowerCase() : "";
       const creationId = typeof body.creationId === "string" ? body.creationId : "";
+      const availableAt = parseFutureDelivery(body.availableAt);
+      if (availableAt === false) return fail(400, "INVALID_DELIVERY_TIME", "Choose a future opening date within the next five years.", origin);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
         return fail(400, "INVALID_INVITATION", "Choose a recipient email and a saved creation.", origin);
       }
@@ -359,7 +361,8 @@ Deno.serve(async (req: Request) => {
       const token = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
       const tokenHash = [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
-      const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      const expiryBase = availableAt ? new Date(availableAt).getTime() + 14 * 24 * 60 * 60 * 1000 : Date.now() + 14 * 24 * 60 * 60 * 1000;
+      const expiresAt = new Date(Math.max(Date.now() + 14 * 24 * 60 * 60 * 1000, expiryBase)).toISOString();
       const snapshot = { title: creation.title, format: creation.format, document: creation.document_json };
       const { error: insertError } = await admin.from("correspondence_invitations").insert({
         sender_id: user.id,
@@ -369,11 +372,13 @@ Deno.serve(async (req: Request) => {
         creation_revision: creation.revision,
         snapshot,
         expires_at: expiresAt,
+        available_at: availableAt || new Date().toISOString(),
       });
       if (insertError) throw insertError;
       return response(201, {
         inviteUrl: `https://www.lumiepost.com/invite/${token}`,
         expiresAt,
+        availableAt: availableAt || new Date().toISOString(),
       }, origin);
     }
 
@@ -405,11 +410,13 @@ Deno.serve(async (req: Request) => {
       if (!body) return fail(400, "INVALID_BODY", "A valid JSON object is required.", origin);
       const recipientEmail = typeof body.recipientEmail === "string" ? body.recipientEmail.trim().toLowerCase() : "";
       const creationId = typeof body.creationId === "string" ? body.creationId : "";
+      const availableAt = parseFutureDelivery(body.availableAt);
+      if (availableAt === false) return fail(400, "INVALID_DELIVERY_TIME", "Choose a future opening date within the next five years.", origin);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
         return fail(400, "INVALID_CORRESPONDENCE", "Choose a recipient email and a saved creation.", origin);
       }
-      const { data, error } = await admin.rpc("lumie_send_correspondence", {
-        p_sender_id: user.id, p_recipient_email: recipientEmail, p_creation_id: creationId,
+      const { data, error } = await admin.rpc("lumie_send_correspondence_scheduled", {
+        p_sender_id: user.id, p_recipient_email: recipientEmail, p_creation_id: creationId, p_available_at: availableAt,
       });
       if (error) throw error;
       const result = data as Json;
@@ -417,7 +424,70 @@ Deno.serve(async (req: Request) => {
       if (result.error === "SELF_SEND") return fail(400, "SELF_SEND", "Choose someone else to receive this letter.", origin);
       if (result.error === "CREATION_NOT_FOUND") return fail(404, "CREATION_NOT_FOUND", "That saved creation could not be found.", origin);
       if (result.error === "ASSET_UNAVAILABLE") return fail(409, "ASSET_UNAVAILABLE", "One or more photos are no longer available. Reopen the creation and try again.", origin);
+      if (result.error === "INVALID_DELIVERY_TIME") return fail(400, "INVALID_DELIVERY_TIME", "Choose a future opening date within the next five years.", origin);
       return response(201, result, origin);
+    }
+
+    if (method === "GET" && path === "/v1/open-when") {
+      const { data: memberships, error: membershipError } = await userClient.from("correspondence_participants")
+        .select("thread_id").eq("profile_id", user.id);
+      if (membershipError) throw membershipError;
+      const threadIds = (memberships || []).map((item: Json) => String(item.thread_id));
+      if (!threadIds.length) return response(200, { items: [] }, origin);
+      const [{ data: messages, error: messageError }, { data: threads, error: threadError }, { data: participants, error: participantError }, { data: invitations, error: invitationError }] = await Promise.all([
+        admin.from("correspondence_messages")
+          .select("id,thread_id,sender_id,snapshot,created_at,available_at")
+          .in("thread_id", threadIds).gt("available_at", new Date().toISOString())
+          .order("available_at", { ascending: true }),
+        admin.from("correspondence_threads").select("id,subject").in("id", threadIds),
+        admin.from("correspondence_participants").select("thread_id,profile_id").in("thread_id", threadIds),
+        admin.from("correspondence_invitations").select("id,recipient_email,snapshot,available_at,created_at")
+          .eq("sender_id", user.id).eq("status", "pending").gt("expires_at", new Date().toISOString()),
+      ]);
+      if (messageError) throw messageError;
+      if (threadError) throw threadError;
+      if (participantError) throw participantError;
+      if (invitationError) throw invitationError;
+      const otherIds = [...new Set((participants || []).filter((p: Json) => p.profile_id !== user.id).map((p: Json) => String(p.profile_id)))];
+      const { data: profiles, error: profileError } = await admin.from("profiles").select("id,display_name").in("id", otherIds);
+      if (profileError) throw profileError;
+      const names = new Map((profiles || []).map((p: Json) => [String(p.id), p.display_name || "Lumie member"]));
+      const correspondentByThread = new Map<string,string>();
+      for (const participant of participants || []) if (participant.profile_id !== user.id) {
+        correspondentByThread.set(String(participant.thread_id), String(names.get(String(participant.profile_id)) || "Lumie member"));
+      }
+      const subjects = new Map((threads || []).map((thread: Json) => [String(thread.id), String(thread.subject)]));
+      const items = (messages || []).map((message: Json) => {
+        const isLocked = message.sender_id !== user.id;
+        const snapshot = message.snapshot && typeof message.snapshot === "object" ? message.snapshot as Json : {};
+        const title = !isLocked && typeof snapshot.title === "string" ? snapshot.title : null;
+        return {
+          id: message.id,
+          threadId: message.thread_id,
+          subject: isLocked ? "A letter is waiting" : title || subjects.get(String(message.thread_id)) || "A letter for later",
+          title,
+          correspondentName: correspondentByThread.get(String(message.thread_id)) || "Lumie member",
+          direction: isLocked ? "received" : "sent",
+          isLocked,
+          availableAt: new Date(String(message.available_at)).toISOString(),
+        };
+      });
+      const pendingInvitations = (invitations || []).filter((invite: Json) => Date.parse(String(invite.available_at)) - Date.parse(String(invite.created_at)) > 5 * 1000).map((invite: Json) => {
+        const snapshot = invite.snapshot && typeof invite.snapshot === "object" ? invite.snapshot as Json : {};
+        const title = typeof snapshot.title === "string" ? snapshot.title : "A letter for later";
+        return {
+          id: invite.id,
+          threadId: "",
+          subject: title,
+          title,
+          correspondentName: invite.recipient_email,
+          direction: "sent",
+          isLocked: false,
+          isInvitation: true,
+          availableAt: new Date(String(invite.available_at)).toISOString(),
+        };
+      });
+      return response(200, { items: [...items, ...pendingInvitations].sort((a, b) => Date.parse(a.availableAt) - Date.parse(b.availableAt)) }, origin);
     }
 
     if (method === "GET" && path === "/v1/inbox") {
@@ -434,7 +504,7 @@ Deno.serve(async (req: Request) => {
       const threadIds = (threads || []).map((item: Json) => String(item.id));
       const [{ data: participants, error: participantError }, { data: messages, error: messageError }] = await Promise.all([
         admin.from("correspondence_participants").select("thread_id,profile_id").in("thread_id", threadIds),
-        admin.from("correspondence_messages").select("thread_id,snapshot,created_at").in("thread_id", threadIds).order("created_at", { ascending: false }),
+        admin.from("correspondence_messages").select("thread_id,sender_id,snapshot,created_at,available_at").in("thread_id", threadIds).order("created_at", { ascending: false }),
       ]);
       if (participantError) throw participantError;
       if (messageError) throw messageError;
@@ -445,13 +515,32 @@ Deno.serve(async (req: Request) => {
       const correspondentByThread = new Map<string,string>();
       for (const participant of participants || []) if (participant.profile_id !== user.id) correspondentByThread.set(String(participant.thread_id), String(names.get(String(participant.profile_id)) || "Lumie member"));
       const latest = new Map<string, Json>();
-      for (const message of messages || []) if (!latest.has(String(message.thread_id))) latest.set(String(message.thread_id), message as Json);
+      const visibleTitleByThread = new Map<string, string>();
+      for (const message of messages || []) {
+        const threadId = String(message.thread_id);
+        if (!latest.has(threadId)) latest.set(threadId, message as Json);
+        const availableAt = message.available_at ? new Date(String(message.available_at)) : null;
+        const visibleToUser = message.sender_id === user.id || Boolean(availableAt && availableAt.getTime() <= Date.now());
+        const snapshot = message.snapshot && typeof message.snapshot === "object" ? message.snapshot as Json : {};
+        if (visibleToUser && typeof snapshot.title === "string" && !visibleTitleByThread.has(threadId)) {
+          visibleTitleByThread.set(threadId, snapshot.title);
+        }
+      }
       const items = (threads || []).map((thread: Json) => {
         const last = latest.get(String(thread.id));
+        const availableAt = last?.available_at ? new Date(String(last.available_at)) : null;
+        const isLocked = Boolean(last && last.sender_id !== user.id && availableAt && availableAt.getTime() > Date.now());
+        const latestTitle = !isLocked && typeof last?.snapshot === "object" && last.snapshot
+          ? (last.snapshot as Json).title || null
+          : null;
         return {
-          id: thread.id, subject: thread.subject, role: roles.get(String(thread.id)) || "recipient",
+          id: thread.id,
+          subject: isLocked ? "A letter is waiting" : latestTitle || visibleTitleByThread.get(String(thread.id)) || thread.subject,
+          role: roles.get(String(thread.id)) || "recipient",
           correspondentName: correspondentByThread.get(String(thread.id)) || "Lumie member",
-          latestTitle: typeof last?.snapshot === "object" && last.snapshot ? (last.snapshot as Json).title || null : null,
+          latestTitle,
+          isLocked,
+          unlockAt: isLocked ? availableAt?.toISOString() : null,
           createdAt: new Date(String(thread.created_at)).toISOString(),
           lastMessageAt: new Date(String(last?.created_at || thread.last_message_at)).toISOString(),
         };
@@ -460,23 +549,42 @@ Deno.serve(async (req: Request) => {
     }
 
     if (method === "GET" && threadMatch) {
-      const member = await membership(userClient, threadMatch[1], user.id);
-      if (!member) return fail(404, "NOT_FOUND", "Correspondence not found.", origin);
+      const { data: participant, error: memberError } = await userClient.from("correspondence_participants")
+        .select("role").eq("thread_id", threadMatch[1]).eq("profile_id", user.id).maybeSingle();
+      if (memberError) throw memberError;
+      if (!participant) return fail(404, "NOT_FOUND", "Correspondence not found.", origin);
       const { data: thread, error: threadError } = await admin.from("correspondence_threads")
         .select("id,subject").eq("id", threadMatch[1]).maybeSingle();
       if (threadError) throw threadError;
       if (!thread) return fail(404, "NOT_FOUND", "Correspondence not found.", origin);
-      const { data: messages, error: messageError } = await admin.from("correspondence_messages")
-        .select("id,sender_id,snapshot,created_at").eq("thread_id", threadMatch[1])
-        .order("created_at", { ascending: true }).order("id", { ascending: true });
+
+      const [{ data: messages, error: messageError }, { data: lockedMessages, error: lockedError }] = await Promise.all([
+        userClient.from("correspondence_messages")
+          .select("id,sender_id,snapshot,created_at,available_at").eq("thread_id", threadMatch[1])
+          .order("created_at", { ascending: true }).order("id", { ascending: true }),
+        admin.from("correspondence_messages").select("available_at")
+          .eq("thread_id", threadMatch[1]).neq("sender_id", user.id)
+          .gt("available_at", new Date().toISOString()).order("available_at", { ascending: true }).limit(1),
+      ]);
       if (messageError) throw messageError;
+      if (lockedError) throw lockedError;
       const senderIds = [...new Set((messages || []).map((m: Json) => String(m.sender_id)))];
       const { data: profiles, error: profileError } = await admin.from("profiles")
         .select("id,display_name").in("id", senderIds);
       if (profileError) throw profileError;
       const names = new Map((profiles || []).map((p: Json) => [String(p.id), p.display_name || "Lumie member"]));
+      const lastVisible = messages?.length ? messages[messages.length - 1] as Json : null;
+      const lockedUntil = lockedMessages?.[0]?.available_at ? new Date(String(lockedMessages[0].available_at)).toISOString() : null;
+      const visibleTitle = (messages || []).map((message: Json) => {
+        const snapshot = message.snapshot && typeof message.snapshot === "object" ? message.snapshot as Json : {};
+        return typeof snapshot.title === "string" ? snapshot.title : null;
+      }).find(Boolean);
+      const latestTitle = lastVisible && typeof lastVisible.snapshot === "object" && lastVisible.snapshot
+        ? (lastVisible.snapshot as Json).title
+        : null;
+      const subject = latestTitle || visibleTitle || (lockedUntil && !messages?.length ? "A letter is waiting" : thread.subject);
       return response(200, {
-        id: thread.id, subject: thread.subject,
+        id: thread.id, subject, lockedUntil,
         messages: (messages || []).map((message: Json) => ({
           id: message.id, senderId: message.sender_id,
           senderName: names.get(String(message.sender_id)) || "Lumie member",

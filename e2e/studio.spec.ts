@@ -51,8 +51,31 @@ test.beforeEach(async ({ page }) => {
       await route.fulfill({ json: { items: [] } })
       return
     }
+    if (url.pathname === '/v1/open-when' && request.method() === 'GET') {
+      await route.fulfill({ json: { items: [{
+        id: 'd7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21',
+        threadId: 'c7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21',
+        subject: 'A letter is waiting',
+        title: null,
+        correspondentName: 'Friend',
+        direction: 'received',
+        isLocked: true,
+        availableAt: new Date(Date.now() + 86400000).toISOString(),
+      }] } })
+      return
+    }
     if (url.pathname === '/v1/correspondence' && request.method() === 'POST') {
-      await route.fulfill({ status: 404, json: { code: 'RECIPIENT_NOT_FOUND', message: 'No Lumie account is registered with that email address yet.' } })
+      const body = request.postDataJSON() as { recipientEmail: string; availableAt?: string }
+      if (body.recipientEmail === 'newfriend@example.test') {
+        await route.fulfill({ status: 404, json: { code: 'RECIPIENT_NOT_FOUND', message: 'No Lumie account is registered with that email address yet.' } })
+        return
+      }
+      await route.fulfill({ status: 201, json: {
+        threadId: 'c7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21',
+        subject: 'A letter for later',
+        recipientName: 'Friend',
+        availableAt: body.availableAt || new Date().toISOString(),
+      } })
       return
     }
     if (url.pathname === '/v1/invitations' && request.method() === 'POST') {
@@ -310,4 +333,53 @@ test('creates a shareable invitation when sending to someone without a Lumie acc
   await expect(page.getByRole('status')).toContainText('An invitation link is ready')
   await expect(page.getByLabel('Invitation link')).toHaveValue(/https:\/\/www\.lumiepost\.com\/invite\//)
   await expect(page.getByRole('button', { name: 'Copy invitation link' })).toBeVisible()
+})
+
+test('schedules a saved letter to open at a future date', async ({ page }) => {
+  await page.getByLabel('Give it a name').fill('A letter for later')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await expect(page.locator('.studio-save-state')).toContainText('Saved at')
+  await page.goto('/app/inbox?openWhen=1')
+  const scheduleCheckbox = page.getByLabel('Keep this letter closed until a date')
+  await expect(scheduleCheckbox).toBeChecked()
+  await page.getByLabel('Recipient email').fill('friend@example.test')
+  const future = new Date(Date.now() + 24 * 60 * 60 * 1000)
+  const localFuture = new Date(future.getTime() - future.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  await page.getByLabel('Open on date and time').fill(localFuture)
+  await page.getByRole('button', { name: 'Send letter' }).click()
+  await expect(page.getByRole('status')).toContainText('Scheduled to open for Friend')
+})
+
+test('shows upcoming sent and received letters in Open When', async ({ page }) => {
+  await page.goto('/app/open-when')
+  await expect(page.getByRole('heading', { name: 'Open when' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'A letter is waiting' })).toBeVisible()
+  await expect(page.getByText('From Friend')).toBeVisible()
+  await expect(page.getByText('The letter stays closed until its opening time.')).toBeVisible()
+})
+
+test('keeps a scheduled incoming letter closed in the conversation view', async ({ page }) => {
+  const threadId = 'c7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21'
+  const unlockAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  await page.route('http://localhost:3001/v1/inbox', async route => {
+    await route.fulfill({ json: { items: [{
+      id: threadId,
+      subject: 'A letter is waiting',
+      role: 'recipient',
+      correspondentName: 'Friend',
+      latestTitle: null,
+      isLocked: true,
+      unlockAt,
+      createdAt: new Date().toISOString(),
+      lastMessageAt: new Date().toISOString(),
+    }] } })
+  })
+  await page.route(`http://localhost:3001/v1/threads/${threadId}`, async route => {
+    await route.fulfill({ json: { id: threadId, subject: 'A letter is waiting', lockedUntil: unlockAt, messages: [] } })
+  })
+  await page.goto('/app/inbox')
+  await page.getByRole('button').filter({ hasText: 'A letter is waiting' }).click()
+  await expect(page.getByRole('status')).toContainText('A letter is waiting here.')
+  await expect(page.getByRole('status')).toContainText(new Date(unlockAt).toLocaleString())
+  await expect(page.getByPlaceholder('Put your reply into words…')).toHaveCount(0)
 })
