@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import test from 'node:test'
+import assert from 'node:assert/strict'
 import { generateKeyPair, SignJWT } from 'jose'
 import { createLocalTokenVerifier } from './local-auth.mjs'
 
@@ -19,8 +20,8 @@ async function createToken(privateKey, overrides = {}) {
     .sign(privateKey)
 }
 
-describe('local access-token verification', () => {
-  it('returns only trusted identity claims from a signed access token', async () => {
+test('local access-token verification', async (t) => {
+  await t.test('returns only trusted identity claims from a signed access token', async () => {
     const { publicKey, privateKey } = await generateKeyPair('RS256')
     const verify = createLocalTokenVerifier({
       issuer,
@@ -29,34 +30,34 @@ describe('local access-token verification', () => {
     })
     const claims = await verify(await createToken(privateKey))
 
-    expect(claims).toEqual({
+    assert.deepEqual(claims, {
       sub: 'local-user-123',
       iss: issuer,
       token_use: 'access',
     })
   })
 
-  it('rejects a token minted for another client', async () => {
+  await t.test('rejects a token minted for another client', async () => {
     const { publicKey, privateKey } = await generateKeyPair('RS256')
     const verify = createLocalTokenVerifier({
       issuer,
       clientId,
       getKey: async () => publicKey,
     })
-    await expect(verify(await createToken(privateKey, { azp: 'another-client' }))).rejects.toThrow()
+    await assert.rejects(verify(await createToken(privateKey, { azp: 'another-client' })))
   })
 
-  it('rejects an ID token', async () => {
+  await t.test('rejects an ID token', async () => {
     const { publicKey, privateKey } = await generateKeyPair('RS256')
     const verify = createLocalTokenVerifier({
       issuer,
       clientId,
       getKey: async () => publicKey,
     })
-    await expect(verify(await createToken(privateKey, { token_use: 'id' }))).rejects.toThrow()
+    await assert.rejects(verify(await createToken(privateKey, { token_use: 'id' })))
   })
 
-  it('rejects a token from another issuer', async () => {
+  await t.test('rejects a token from another issuer', async () => {
     const { publicKey, privateKey } = await generateKeyPair('RS256')
     const verify = createLocalTokenVerifier({
       issuer,
@@ -71,10 +72,10 @@ describe('local access-token verification', () => {
       .setExpirationTime('5m')
       .sign(privateKey)
 
-    await expect(verify(token)).rejects.toThrow()
+    await assert.rejects(verify(token))
   })
 
-  it('rejects a token with an invalid signature', async () => {
+  await t.test('rejects a token with an invalid signature', async () => {
     const first = await generateKeyPair('RS256')
     const second = await generateKeyPair('RS256')
     const verify = createLocalTokenVerifier({
@@ -82,6 +83,6 @@ describe('local access-token verification', () => {
       clientId,
       getKey: async () => first.publicKey,
     })
-    await expect(verify(await createToken(second.privateKey))).rejects.toThrow()
+    await assert.rejects(verify(await createToken(second.privateKey)))
   })
 })
