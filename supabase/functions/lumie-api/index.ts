@@ -483,6 +483,7 @@ Deno.serve(async (req: Request) => {
           correspondentName: invite.recipient_email,
           direction: "sent",
           isLocked: false,
+          isInvitation: true,
           availableAt: new Date(String(invite.available_at)).toISOString(),
         };
       });
