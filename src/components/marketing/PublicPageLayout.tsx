@@ -24,6 +24,20 @@ export default function PublicPageLayout({ title, intro, children, updated, stam
     if (ogTitle) ogTitle.content = `${title} | Lumie`
     const ogDescription = document.querySelector<HTMLMetaElement>('meta[property="og:description"]')
     if (ogDescription) ogDescription.content = intro
+    const canonicalUrl = `https://www.lumiepost.com${window.location.pathname}`
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
+    if (!canonical) {
+      canonical = document.createElement('link')
+      canonical.rel = 'canonical'
+      document.head.appendChild(canonical)
+    }
+    canonical.href = canonicalUrl
+    const ogUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"]')
+    if (ogUrl) ogUrl.content = canonicalUrl
+    const twitterTitle = document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')
+    if (twitterTitle) twitterTitle.content = `${title} | Lumie`
+    const twitterDescription = document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]')
+    if (twitterDescription) twitterDescription.content = intro
   }, [title, intro])
 
   return (
