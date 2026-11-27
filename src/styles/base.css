@@ -32,7 +32,7 @@ body {
 /* Surfaces taken from the inspiration: graph paper, gingham picnic cloth, grain */
 .graph {
   background-color: var(--cream);
-  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(91, 142, 214, 0.14) 1px, transparent 1px), linear-gradient(90deg, rgba(91, 142, 214, 0.14) 1px, transparent 1px);
   background-size: 26px 26px;
 }
 .gingham {
