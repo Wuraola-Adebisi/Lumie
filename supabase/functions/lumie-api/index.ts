@@ -308,6 +308,98 @@ Deno.serve(async (req: Request) => {
       return response(200, { assetId: assetMatch[1], url: data.signedUrl, expiresAt: new Date(Date.now() + 300000).toISOString() }, origin);
     }
 
+    if (method === "POST" && path === "/v1/invitations") {
+      const body = parseJson(await req.text());
+      if (!body) return fail(400, "INVALID_BODY", "A valid JSON object is required.", origin);
+      const recipientEmail = typeof body.recipientEmail === "string" ? body.recipientEmail.trim().toLowerCase() : "";
+      const creationId = typeof body.creationId === "string" ? body.creationId : "";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
+        return fail(400, "INVALID_INVITATION", "Choose a recipient email and a saved creation.", origin);
+      }
+      if (user.email && user.email.toLowerCase() === recipientEmail) {
+        return fail(400, "SELF_SEND", "Choose someone else to receive this letter.", origin);
+      }
+      const inviteWindow = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const [recipientInviteCount, senderInviteCount] = await Promise.all([
+        admin.from("correspondence_invitations").select("id", { count: "exact", head: true })
+          .eq("sender_id", user.id).eq("recipient_email", recipientEmail).gte("created_at", inviteWindow),
+        admin.from("correspondence_invitations").select("id", { count: "exact", head: true })
+          .eq("sender_id", user.id).gte("created_at", inviteWindow),
+      ]);
+      if (recipientInviteCount.error) throw recipientInviteCount.error;
+      if (senderInviteCount.error) throw senderInviteCount.error;
+      if ((recipientInviteCount.count || 0) >= 3 || (senderInviteCount.count || 0) >= 15) {
+        return fail(429, "INVITATION_RATE_LIMIT", "You have reached the invitation limit for today. Try again later.", origin);
+      }
+
+      const { data: existingRecipient, error: recipientError } = await admin.from("profiles")
+        .select("id").eq("email", recipientEmail).maybeSingle();
+      if (recipientError) throw recipientError;
+      if (existingRecipient) return fail(409, "RECIPIENT_ALREADY_REGISTERED", "This person already has a Lumie account. Send the letter directly.", origin);
+
+      const { data: creation, error: creationError } = await admin.from("creations")
+        .select("id,title,format,document_json,revision,status")
+        .eq("id", creationId).eq("owner_id", user.id).eq("status", "draft").maybeSingle();
+      if (creationError) throw creationError;
+      if (!creation) return fail(404, "CREATION_NOT_FOUND", "That saved creation could not be found.", origin);
+
+      const document = creation.document_json as Json;
+      const elements = Array.isArray(document.elements) ? document.elements as Json[] : [];
+      const assetIds = [...new Set(elements
+        .filter((element) => element && typeof element === "object" && typeof element.imageAssetId === "string")
+        .map((element) => String(element.imageAssetId)))];
+      for (const assetId of assetIds) {
+        const { data: asset, error: assetError } = await admin.from("assets")
+          .select("id").eq("id", assetId).eq("owner_id", user.id).eq("status", "ready").maybeSingle();
+        if (assetError) throw assetError;
+        if (!asset) return fail(409, "ASSET_UNAVAILABLE", "One or more photos are no longer available. Reopen the creation and try again.", origin);
+      }
+
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      const token = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+      const tokenHash = [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+      const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      const snapshot = { title: creation.title, format: creation.format, document: creation.document_json };
+      const { error: insertError } = await admin.from("correspondence_invitations").insert({
+        sender_id: user.id,
+        recipient_email: recipientEmail,
+        token_hash: tokenHash,
+        creation_id: creation.id,
+        creation_revision: creation.revision,
+        snapshot,
+        expires_at: expiresAt,
+      });
+      if (insertError) throw insertError;
+      return response(201, {
+        inviteUrl: `https://www.lumiepost.com/invite/${token}`,
+        expiresAt,
+      }, origin);
+    }
+
+    if (method === "POST" && path === "/v1/invitations/accept") {
+      const body = parseJson(await req.text());
+      const token = typeof body?.token === "string" ? body.token : "";
+      if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+        return fail(404, "INVITATION_NOT_FOUND", "This invitation link is not valid.", origin);
+      }
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+      const tokenHash = [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
+      const { data, error } = await admin.rpc("lumie_accept_correspondence_invitation", {
+        p_token_hash: tokenHash,
+        p_recipient_id: user.id,
+      });
+      if (error) throw error;
+      const result = data as Json;
+      if (result.error === "INVITATION_NOT_FOUND") return fail(404, "INVITATION_NOT_FOUND", "This invitation link is not valid.", origin);
+      if (result.error === "INVITATION_EMAIL_MISMATCH") return fail(403, "INVITATION_EMAIL_MISMATCH", "Sign in with the email address this invitation was sent to.", origin);
+      if (result.error === "INVITATION_EXPIRED") return fail(410, "INVITATION_EXPIRED", "This invitation has expired.", origin);
+      if (result.error === "INVITATION_ALREADY_USED") return fail(409, "INVITATION_ALREADY_USED", "This invitation has already been accepted by someone else.", origin);
+      if (result.error === "INVITATION_NOT_AVAILABLE") return fail(409, "INVITATION_NOT_AVAILABLE", "This invitation is no longer available.", origin);
+      if (result.error === "ASSET_UNAVAILABLE") return fail(409, "ASSET_UNAVAILABLE", "One or more photos in this letter are no longer available.", origin);
+      return response(200, result, origin);
+    }
+
     if (method === "POST" && path === "/v1/correspondence") {
       const body = parseJson(await req.text());
       if (!body) return fail(400, "INVALID_BODY", "A valid JSON object is required.", origin);

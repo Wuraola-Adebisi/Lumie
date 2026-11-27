@@ -239,6 +239,25 @@ export async function sendCorrespondence(token: TokenProvider, recipientEmail: s
   })
 }
 
+export interface CorrespondenceInvitation {
+  inviteUrl: string
+  expiresAt: string
+}
+
+export async function createCorrespondenceInvitation(token: TokenProvider, recipientEmail: string, creationId: string) {
+  return request<CorrespondenceInvitation>(token, '/v1/invitations', {
+    method: 'POST',
+    body: JSON.stringify({ recipientEmail, creationId }),
+  })
+}
+
+export async function acceptCorrespondenceInvitation(token: TokenProvider, invitationToken: string) {
+  return request<{ threadId: string; subject?: string; senderName?: string; alreadyAccepted?: boolean }>(token, '/v1/invitations/accept', {
+    method: 'POST',
+    body: JSON.stringify({ token: invitationToken }),
+  })
+}
+
 export async function replyToCorrespondence(token: TokenProvider, id: string, body: string) {
   return request<{ id: string; sentAt: string }>(token, `/v1/threads/${encodeURIComponent(id)}/replies`, {
     method: 'POST',

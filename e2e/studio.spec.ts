@@ -47,6 +47,18 @@ test.beforeEach(async ({ page }) => {
     if (url.pathname === '/v1/assets/d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/complete' && request.method() === 'POST') { await route.fulfill({ json: { status: 'ready' } }); return }
     if (url.pathname === '/v1/assets/d7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21/download-url') { await route.fulfill({ json: { url: 'http://localhost:3001/test-photo.png' } }); return }
     if (url.pathname === '/test-photo.png') { await route.fulfill({ status: 200, contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=', 'base64') }); return }
+    if (url.pathname === '/v1/inbox' && request.method() === 'GET') {
+      await route.fulfill({ json: { items: [] } })
+      return
+    }
+    if (url.pathname === '/v1/correspondence' && request.method() === 'POST') {
+      await route.fulfill({ status: 404, json: { code: 'RECIPIENT_NOT_FOUND', message: 'No Lumie account is registered with that email address yet.' } })
+      return
+    }
+    if (url.pathname === '/v1/invitations' && request.method() === 'POST') {
+      await route.fulfill({ status: 201, json: { inviteUrl: 'https://www.lumiepost.com/invite/test-invitation-token-1234567890123456789012345678901234567890', expiresAt: new Date(Date.now() + 14 * 86400000).toISOString() } })
+      return
+    }
     if (url.pathname === '/v1/me') {
       await route.fulfill({ json: {
         id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21',
@@ -286,4 +298,16 @@ test('saves multiple account creations and reopens them from the dashboard', asy
   await page.getByRole('textbox', { name: 'Search your creations' }).fill('')
   await page.getByRole('link', { name: 'Open piece' }).first().click()
   await expect(page.getByLabel('Give it a name')).toHaveValue('First postcard')
+})
+
+test('creates a shareable invitation when sending to someone without a Lumie account', async ({ page }) => {
+  await page.getByLabel('Give it a name').fill('A letter for a friend')
+  await page.getByRole('button', { name: 'Save draft' }).click()
+  await expect(page.locator('.studio-save-state')).toContainText('Saved at')
+  await page.goto('/app/inbox')
+  await page.getByLabel('Recipient email').fill('newfriend@example.test')
+  await page.getByRole('button', { name: 'Send letter' }).click()
+  await expect(page.getByRole('status')).toContainText('An invitation link is ready')
+  await expect(page.getByLabel('Invitation link')).toHaveValue(/https:\/\/www\.lumiepost\.com\/invite\//)
+  await expect(page.getByRole('button', { name: 'Copy invitation link' })).toBeVisible()
 })
