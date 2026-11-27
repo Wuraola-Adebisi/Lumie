@@ -67,6 +67,7 @@ async function createPkceChallenge() {
   return { verifier, challenge: base64Url(new Uint8Array(digest)) };
 }
 export async function signUp(email: string, password: string, displayName: string) {
+  sessionStorage.removeItem('lumie-auth-flow');
   const { verifier, challenge } = await createPkceChallenge();
   sessionStorage.setItem(PKCE_KEY, verifier);
   const redirect = new URL('/auth/callback', window.location.origin).toString();
@@ -89,7 +90,8 @@ export async function signUp(email: string, password: string, displayName: strin
 export async function requestPasswordReset(email: string) {
   const { verifier, challenge } = await createPkceChallenge();
   sessionStorage.setItem(PKCE_KEY, verifier);
-  const redirect = new URL('/auth/callback?flow=recovery', window.location.origin).toString();
+  sessionStorage.setItem('lumie-auth-flow', 'recovery');
+  const redirect = new URL('/auth/callback', window.location.origin).toString();
   try {
     await authRequest('recover?redirect_to=' + encodeURIComponent(redirect), {
       email: email.trim().toLowerCase(),
@@ -102,6 +104,7 @@ export async function requestPasswordReset(email: string) {
   }
 }
 export async function signIn(email: string, password: string) {
+  sessionStorage.removeItem('lumie-auth-flow');
   const payload = await authRequest<Record<string, unknown>>('token?grant_type=password', { email: email.trim().toLowerCase(), password });
   const session = toSession(payload);
   publishSession(session);
