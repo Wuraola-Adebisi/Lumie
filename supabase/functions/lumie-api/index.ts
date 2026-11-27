@@ -442,7 +442,7 @@ Deno.serve(async (req: Request) => {
         admin.from("correspondence_threads").select("id,subject").in("id", threadIds),
         admin.from("correspondence_participants").select("thread_id,profile_id").in("thread_id", threadIds),
         admin.from("correspondence_invitations").select("id,recipient_email,snapshot,available_at,created_at")
-          .eq("sender_id", user.id).eq("status", "pending"),
+          .eq("sender_id", user.id).eq("status", "pending").gt("expires_at", new Date().toISOString()),
       ]);
       if (messageError) throw messageError;
       if (threadError) throw threadError;
