@@ -1,16 +1,17 @@
-import { ArrowUpRight, Image, Palette, Save } from 'lucide-react'
+import { ArrowUpRight, Image, Palette, Save, WandSparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import PublicPageLayout from '../components/marketing/PublicPageLayout'
 
 const steps = [
   { icon: Palette, title: 'Choose a starting point', body: 'Begin with a letter, postcard, photo card, collage or memory page. The format sets the size and shape. Everything on it can change.' },
   { icon: Image, title: 'Make it yours', body: 'Edit the words, change the typeface and ink, pick a paper, place a stamp or sticker and add photos from your device.' },
-  { icon: Save, title: 'Keep, print or share', body: 'Your draft is saved in this browser. Print it at true size, save a PDF, or export a picture of it laid out on a desk.' },
+  { icon: WandSparkles, title: 'Bring in the assistant when you want', body: 'Ask for a starting point, a tone to try or a visual direction. The assistant preview currently uses sample responses; live AI is not connected yet. You stay in control of every word and design choice.' },
+  { icon: Save, title: 'Keep, print or share', body: 'Save your draft in this browser, print it at true size, or export a picture of it laid out on a desk.' },
 ]
 
 export default function HowItWorksPage() {
   return (
-    <PublicPageLayout title="How Lumie works" intro="Three steps from a blank page to something you can print or share." stamp={{ tone: 'cobalt', art: 'sun' }}>
+    <PublicPageLayout title="How Lumie works" intro="Write, shape, and make something worth keeping. The assistant is there when you want a hand, never in the way when you do not." stamp={{ tone: 'cobalt', art: 'sun' }}>
       <ol className="m-0 list-none p-0">
         {steps.map(({ icon: Icon, title, body }, index) => (
           <li key={title} className="grid grid-cols-[48px_1fr] gap-5 border-b-2 border-dashed border-navy/25 py-7 sm:grid-cols-[56px_64px_1fr]">
@@ -22,7 +23,7 @@ export default function HowItWorksPage() {
       </ol>
       <section className="mt-14 rounded-2xl border-2 border-navy bg-lime p-8 shadow-[0_4px_0_#121c5a]">
         <h2 className="display text-[28px]">In the studio</h2>
-        <p className="mt-3 max-w-[640px] text-[17px] leading-relaxed">Five formats, editable text layers, stamps, stickers, photo uploads, paper colours, undo and redo, a 3D view, print and PDF output, and share images.</p>
+        <p className="mt-3 max-w-[640px] text-[17px] leading-relaxed">Five formats, editable text layers, stamps, stickers, photo uploads, paper colours, undo and redo, a 3D view, print and PDF output, share images and an assistant preview with guided sample responses.</p>
         <Link className="btn btn-primary mt-6" to="/app/create">Open the studio <ArrowUpRight size={16} /></Link>
       </section>
     </PublicPageLayout>
