@@ -447,7 +447,7 @@ Deno.serve(async (req: Request) => {
       const threadIds = (threads || []).map((item: Json) => String(item.id));
       const [{ data: participants, error: participantError }, { data: messages, error: messageError }] = await Promise.all([
         admin.from("correspondence_participants").select("thread_id,profile_id").in("thread_id", threadIds),
-        admin.from("correspondence_messages").select("thread_id,snapshot,created_at").in("thread_id", threadIds).order("created_at", { ascending: false }),
+        admin.from("correspondence_messages").select("thread_id,sender_id,snapshot,created_at,available_at").in("thread_id", threadIds).order("created_at", { ascending: false }),
       ]);
       if (participantError) throw participantError;
       if (messageError) throw messageError;
@@ -461,10 +461,19 @@ Deno.serve(async (req: Request) => {
       for (const message of messages || []) if (!latest.has(String(message.thread_id))) latest.set(String(message.thread_id), message as Json);
       const items = (threads || []).map((thread: Json) => {
         const last = latest.get(String(thread.id));
+        const availableAt = last?.available_at ? new Date(String(last.available_at)) : null;
+        const isLocked = Boolean(last && last.sender_id !== user.id && availableAt && availableAt.getTime() > Date.now());
+        const latestTitle = !isLocked && typeof last?.snapshot === "object" && last.snapshot
+          ? (last.snapshot as Json).title || null
+          : null;
         return {
-          id: thread.id, subject: thread.subject, role: roles.get(String(thread.id)) || "recipient",
+          id: thread.id,
+          subject: isLocked ? "A letter is waiting" : latestTitle || thread.subject,
+          role: roles.get(String(thread.id)) || "recipient",
           correspondentName: correspondentByThread.get(String(thread.id)) || "Lumie member",
-          latestTitle: typeof last?.snapshot === "object" && last.snapshot ? (last.snapshot as Json).title || null : null,
+          latestTitle,
+          isLocked,
+          unlockAt: isLocked ? availableAt?.toISOString() : null,
           createdAt: new Date(String(thread.created_at)).toISOString(),
           lastMessageAt: new Date(String(last?.created_at || thread.last_message_at)).toISOString(),
         };
