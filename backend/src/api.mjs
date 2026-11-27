@@ -167,12 +167,12 @@ export function createApiHandler({ pool, logger = console }) {
           else where = "WHERE status = 'draft'"
           if (cursor) {
             values.push(cursor.updatedAt, cursor.id)
-            where += \` AND (updated_at, id) < ($\${values.length - 1}::timestamptz, $\${values.length}::uuid)\`
+            where += ` AND (updated_at, id) < ($${values.length - 1}::timestamptz, $${values.length}::uuid)`
           }
           values.push(limit + 1)
           const result = await client.query(
-            \`SELECT id, title, format, document_json, revision, status, created_at, updated_at
-             FROM creations \${where} ORDER BY updated_at DESC, id DESC LIMIT $\${values.length}\`,
+            `SELECT id, title, format, document_json, revision, status, created_at, updated_at
+             FROM creations ${where} ORDER BY updated_at DESC, id DESC LIMIT $${values.length}`,
             values,
           )
           const hasMore = result.rows.length > limit
@@ -198,9 +198,9 @@ export function createApiHandler({ pool, logger = console }) {
         }
         const created = await withAccount(pool, cognitoSub, async (client, profile) => {
           const result = await client.query(
-            \`INSERT INTO creations (owner_id, title, format, document_json)
+            `INSERT INTO creations (owner_id, title, format, document_json)
              VALUES ($1, $2, $3, $4::jsonb)
-             RETURNING id, title, format, document_json, revision, status, created_at, updated_at\`,
+             RETURNING id, title, format, document_json, revision, status, created_at, updated_at`,
             [profile.id, title.trim(), document.format, JSON.stringify(document)],
           )
           const row = result.rows[0]
@@ -216,8 +216,8 @@ export function createApiHandler({ pool, logger = console }) {
       if (method === 'GET' && creationMatch) {
         const item = await withAccount(pool, cognitoSub, async (client) => {
           const result = await client.query(
-            \`SELECT id, title, format, document_json, revision, status, created_at, updated_at
-             FROM creations WHERE id = $1 AND status = 'draft'\`,
+            `SELECT id, title, format, document_json, revision, status, created_at, updated_at
+             FROM creations WHERE id = $1 AND status = 'draft'`,
             [creationMatch[1]],
           )
           return result.rowCount ? mapCreation(result.rows[0]) : null
@@ -236,10 +236,10 @@ export function createApiHandler({ pool, logger = console }) {
         }
         const result = await withAccount(pool, cognitoSub, async (client, profile) => {
           const updated = await client.query(
-            \`UPDATE creations SET title = $1, format = $2, document_json = $3::jsonb,
+            `UPDATE creations SET title = $1, format = $2, document_json = $3::jsonb,
                revision = revision + 1
              WHERE id = $4 AND revision = $5 AND status = 'draft'
-             RETURNING id, title, format, document_json, revision, status, created_at, updated_at\`,
+             RETURNING id, title, format, document_json, revision, status, created_at, updated_at`,
             [title.trim(), document.format, JSON.stringify(document), creationMatch[1], expectedRevision],
           )
           if (!updated.rowCount) {
@@ -272,10 +272,10 @@ export function createApiHandler({ pool, logger = console }) {
       if (method === 'GET' && revisionsMatch) {
         const revisions = await withAccount(pool, cognitoSub, async (client) => {
           const result = await client.query(
-            \`SELECT r.id, r.revision, r.document_json, r.created_at
+            `SELECT r.id, r.revision, r.document_json, r.created_at
              FROM creation_revisions r
              JOIN creations c ON c.id = r.creation_id
-             WHERE r.creation_id = $1 ORDER BY r.revision DESC\`,
+             WHERE r.creation_id = $1 ORDER BY r.revision DESC`,
             [revisionsMatch[1]],
           )
           return result.rows.map(row => ({
