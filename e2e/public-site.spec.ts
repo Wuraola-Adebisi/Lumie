@@ -114,3 +114,41 @@ test('shows an invitation landing page before requiring sign-in', async ({ page 
   await expect(page.getByRole('link', { name: 'Sign in or create an account' })).toHaveAttribute('href', '/sign-in')
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,nofollow')
 })
+
+test('accepts a correspondence invitation for the signed-in recipient', async ({ page }) => {
+  const token = 'a'.repeat(43)
+  await page.addInitScript(() => {
+    localStorage.setItem('lumie-supabase-session-v1', JSON.stringify({
+      access_token: 'playwright-access-token',
+      refresh_token: 'playwright-refresh-token',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: { id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', email: 'recipient@example.test', user_metadata: { display_name: 'Recipient' } },
+    }))
+  })
+  await page.route('https://lumie-e2e.supabase.co/**', async (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (path === '/auth/v1/user') {
+      await route.fulfill({ json: { id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', email: 'recipient@example.test', user_metadata: { display_name: 'Recipient' } } })
+      return
+    }
+    if (path === '/rest/v1/profiles') {
+      await route.fulfill({ json: [{ id: 'a7d3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', display_name: 'Recipient', avatar_asset_id: null, locale: 'en', time_zone: 'UTC', created_at: new Date().toISOString() }] })
+      return
+    }
+    await route.fulfill({ status: 404, json: { message: 'Not found' } })
+  })
+  await page.route('http://localhost:3001/**', async (route) => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname
+    if (path === '/v1/invitations/accept' && request.method() === 'POST') {
+      expect(request.postDataJSON()).toEqual({ token })
+      await route.fulfill({ json: { threadId: 'd7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21', senderName: 'Letter Sender' } })
+      return
+    }
+    await route.fulfill({ status: 404, json: { code: 'NOT_FOUND', message: 'Not found' } })
+  })
+  await page.goto(`/invite/${token}`)
+  await expect(page.getByRole('heading', { name: 'It found its way to you.' })).toBeVisible()
+  await expect(page.getByText('Letter Sender has sent you a letter.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Open your inbox' })).toBeVisible()
+})
