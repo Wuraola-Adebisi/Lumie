@@ -160,7 +160,13 @@ test('supports touch-pointer dragging of a composition layer', async ({ page }) 
 })
 
 test('uploads a photo and keeps only its asset identifier in cloud drafts', async ({ page }) => {
-  const saveRequestPromise = page.waitForRequest((request) => request.url() === 'http://localhost:3001/v1/creations' && request.method() === 'POST')
+  const saveRequestPromise = page.waitForRequest((request) => {
+    if (!request.url().startsWith('http://localhost:3001/v1/creations') || !['POST', 'PATCH'].includes(request.method())) return false
+    try {
+      const body = request.postDataJSON() as { document?: { elements?: Array<{ imageAssetId?: string }> } }
+      return Boolean(body.document?.elements?.some((element) => element.imageAssetId === 'd7e3d69c-2f83-4b2a-b3b1-a32c4d4a9e21'))
+    } catch { return false }
+  })
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2ioAAAAASUVORK5CYII=', 'base64')
   await page.locator('#studio-photo-upload').setInputFiles({
     name: 'tiny.png',
