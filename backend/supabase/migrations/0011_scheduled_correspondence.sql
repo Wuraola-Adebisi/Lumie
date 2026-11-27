@@ -40,7 +40,7 @@ using (
           where g.asset_id=a.id
             and cp.profile_id=(select auth.uid())
             and m.available_at<=now()
-            and m.snapshot->'document'->'elements' @> jsonb_build_array(jsonb_build_object('imageAssetId',a.id::text))
+            and (m.snapshot->'document'->'elements') @> jsonb_build_array(jsonb_build_object('imageAssetId',a.id::text))
         )
       )
   )
