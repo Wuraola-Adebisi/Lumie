@@ -63,6 +63,6 @@ describe('cloud API client', () => {
     }), { status: 409 })))
 
     await expect(updateCloudCreation(async () => 'token', 'creation-id', createDocument(), 2))
-      .rejects.toMatchObject<Partial<CloudApiError>>({ status: 409, code: 'REVISION_CONFLICT' })
+      .rejects.toMatchObject({ status: 409, code: 'REVISION_CONFLICT' })
   })
 })
