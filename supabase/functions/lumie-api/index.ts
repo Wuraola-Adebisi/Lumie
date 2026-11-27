@@ -316,6 +316,22 @@ Deno.serve(async (req: Request) => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail) || !/^[0-9a-f-]{36}$/i.test(creationId)) {
         return fail(400, "INVALID_INVITATION", "Choose a recipient email and a saved creation.", origin);
       }
+      if (user.email && user.email.toLowerCase() === recipientEmail) {
+        return fail(400, "SELF_SEND", "Choose someone else to receive this letter.", origin);
+      }
+      const inviteWindow = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const [recipientInviteCount, senderInviteCount] = await Promise.all([
+        admin.from("correspondence_invitations").select("id", { count: "exact", head: true })
+          .eq("sender_id", user.id).eq("recipient_email", recipientEmail).gte("created_at", inviteWindow),
+        admin.from("correspondence_invitations").select("id", { count: "exact", head: true })
+          .eq("sender_id", user.id).gte("created_at", inviteWindow),
+      ]);
+      if (recipientInviteCount.error) throw recipientInviteCount.error;
+      if (senderInviteCount.error) throw senderInviteCount.error;
+      if ((recipientInviteCount.count || 0) >= 3 || (senderInviteCount.count || 0) >= 15) {
+        return fail(429, "INVITATION_RATE_LIMIT", "You have reached the invitation limit for today. Try again later.", origin);
+      }
+
       const { data: existingRecipient, error: recipientError } = await admin.from("profiles")
         .select("id").eq("email", recipientEmail).maybeSingle();
       if (recipientError) throw recipientError;
