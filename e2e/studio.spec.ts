@@ -491,7 +491,9 @@ test('creates a private collection and adds a saved creation', async ({ page }) 
   await page.getByRole('button', { name: 'Delete collection' }).click()
   await expect(page.getByText('Are you sure?')).toBeVisible()
   await page.getByRole('button', { name: 'Delete collection' }).click()
-  await expect(page).toHaveURL(new RegExp('/app/collections
+  await expect(page).toHaveURL(new RegExp('/app/collections$'))
+  await expect(page.getByRole('heading', { name: 'Collections' })).toBeVisible()
+})
 
 test('lets a guest contribute a note through a collection link', async ({ page }) => {
   await page.route('**/functions/v1/lumie-guest', async route => {
