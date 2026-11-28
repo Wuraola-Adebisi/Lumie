@@ -66,13 +66,15 @@ async function createPkceChallenge() {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
   return { verifier, challenge: base64Url(new Uint8Array(digest)) };
 }
+function authRedirectUrl() {
+  return new URL('/auth/callback', window.location.origin).toString();
+}
 export async function signUp(email: string, password: string, displayName: string) {
   sessionStorage.removeItem('lumie-auth-flow');
   const { verifier, challenge } = await createPkceChallenge();
   sessionStorage.setItem(PKCE_KEY, verifier);
-  const redirect = new URL('/auth/callback', window.location.origin).toString();
   try {
-    const payload = await authRequest<Record<string, unknown>>(`signup?redirect_to=${encodeURIComponent(redirect)}`, {
+    const payload = await authRequest<Record<string, unknown>>(`signup?redirect_to=${encodeURIComponent(authRedirectUrl())}`, {
       email: email.trim().toLowerCase(), password,
       data: { display_name: displayName.trim().slice(0, 80) },
       code_challenge: challenge, code_challenge_method: 's256',
@@ -87,11 +89,29 @@ export async function signUp(email: string, password: string, displayName: strin
     throw error;
   }
 }
+export async function resendConfirmationEmail(email: string) {
+  const { verifier, challenge } = await createPkceChallenge();
+  sessionStorage.setItem(PKCE_KEY, verifier);
+  try {
+    await authRequest('resend', {
+      type: 'signup',
+      email: email.trim().toLowerCase(),
+      options: {
+        emailRedirectTo: authRedirectUrl(),
+        codeChallenge: challenge,
+        codeChallengeMethod: 's256',
+      },
+    });
+  } catch (error) {
+    sessionStorage.removeItem(PKCE_KEY);
+    throw error;
+  }
+}
 export async function requestPasswordReset(email: string) {
   const { verifier, challenge } = await createPkceChallenge();
   sessionStorage.setItem(PKCE_KEY, verifier);
   sessionStorage.setItem('lumie-auth-flow', 'recovery');
-  const redirect = new URL('/auth/callback', window.location.origin).toString();
+  const redirect = authRedirectUrl();
   try {
     await authRequest('recover?redirect_to=' + encodeURIComponent(redirect), {
       email: email.trim().toLowerCase(),
