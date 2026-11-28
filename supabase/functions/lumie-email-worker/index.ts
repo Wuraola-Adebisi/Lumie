@@ -22,9 +22,10 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 });
 
 function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => ({
+  const entities: Record<string, string> = {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[character] || character);
+  };
+  return value.replace(/[&<>"']/g, (character) => entities[character] || character);
 }
 
 function messageFor(item: QueuedEmail) {
@@ -60,6 +61,7 @@ async function deliver(item: QueuedEmail) {
     headers: {
       "authorization": `Bearer ${DELIVERY_API_KEY}`,
       "content-type": "application/json",
+      "idempotency-key": item.id,
     },
     body: JSON.stringify({
       from: EMAIL_FROM,
@@ -82,7 +84,9 @@ Deno.serve(async (request) => {
   if (request.headers.get("authorization") !== `Bearer ${SERVICE_ROLE_KEY}`) {
     return new Response("Unauthorized", { status: 401 });
   }
-  if (!DELIVERY_URL || !DELIVERY_API_KEY || !EMAIL_FROM) {
+  let deliveryUrl: URL | null = null;
+  try { if (DELIVERY_URL) deliveryUrl = new URL(DELIVERY_URL); } catch { /* invalid configuration */ }
+  if (!deliveryUrl || deliveryUrl.protocol !== "https:" || !DELIVERY_API_KEY || !EMAIL_FROM) {
     return Response.json({ error: "EMAIL_DELIVERY_NOT_CONFIGURED" }, { status: 503 });
   }
 
