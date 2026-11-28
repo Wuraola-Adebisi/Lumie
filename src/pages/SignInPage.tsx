@@ -7,7 +7,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 type Mode = 'sign-in' | 'sign-up' | 'forgot-password'
 
 export default function SignInPage() {
-  const { configured, signIn, signUp, requestPasswordReset } = useAuth()
+  const { configured, signIn, signUp, resendConfirmationEmail, requestPasswordReset } = useAuth()
   const [mode, setMode] = useState<Mode>('sign-in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,12 +15,13 @@ export default function SignInPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [confirmationPending, setConfirmationPending] = useState(false)
   const location = useLocation()
   const destination = (location.state as { from?: string } | null)?.from || '/app'
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setBusy(true); setError(''); setNotice('')
+    setBusy(true); setError(''); setNotice(''); setConfirmationPending(false)
     try {
       if (mode === 'forgot-password') {
         await requestPasswordReset(email)
@@ -28,14 +29,26 @@ export default function SignInPage() {
       } else if (mode === 'sign-up') {
         sessionStorage.setItem('lumie-after-sign-in', destination)
         const result = await signUp(email, password, displayName)
-        if (result.needsEmailConfirmation) setNotice('Check your email for a confirmation link. Once confirmed, you can sign in to your desk.')
-        else window.location.assign(destination)
+        if (result.needsEmailConfirmation) {
+          setConfirmationPending(true)
+          setNotice('Check your email for a confirmation link. You can request another one if it does not arrive.')
+        } else window.location.assign(destination)
       } else {
         await signIn(email, password)
         window.location.assign(destination)
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'The request could not be completed.')
+    } finally { setBusy(false) }
+  }
+
+  const resend = async () => {
+    setBusy(true); setError(''); setNotice('')
+    try {
+      await resendConfirmationEmail(email)
+      setNotice('If this address has an unconfirmed account, a new confirmation email has been requested. Check your inbox and spam folder.')
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'The confirmation email could not be requested.')
     } finally { setBusy(false) }
   }
 
@@ -73,12 +86,13 @@ export default function SignInPage() {
               </button>
             </form>
           )}
-          {mode === 'sign-in' && configured && <button type="button" className="mt-4 text-sm font-bold text-cobalt underline" onClick={() => { setMode('forgot-password'); setError(''); setNotice('') }}>Forgot your password?</button>}
+          {mode === 'sign-in' && configured && <button type="button" className="mt-4 text-sm font-bold text-cobalt underline" onClick={() => { setMode('forgot-password'); setError(''); setNotice(''); setConfirmationPending(false) }}>Forgot your password?</button>}
           {notice && <p role="status" className="mt-4 rounded-xl border border-cobalt/20 bg-cobalt/5 p-3 text-sm leading-relaxed">{notice}</p>}
+          {confirmationPending && mode === 'sign-up' && <button type="button" className="mt-3 text-sm font-bold text-cobalt underline disabled:opacity-50" disabled={busy || !email.trim()} onClick={resend}>{busy ? 'Requesting…' : 'Resend confirmation email'}</button>}
           {error && <p role="alert" className="mt-4 text-sm font-semibold text-tomato">{error}</p>}
           <p className="mt-6 text-sm text-muted">
             {mode === 'forgot-password' ? 'Remember your password?' : mode === 'sign-in' ? 'New to Lumie?' : 'Already have an account?'}{' '}
-            <button type="button" className="font-bold text-cobalt underline" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setNotice('') }}>
+            <button type="button" className="font-bold text-cobalt underline" onClick={() => { setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in'); setError(''); setNotice(''); setConfirmationPending(false) }}>
               {mode === 'sign-in' ? 'Create an account' : 'Sign in'}
             </button>
           </p>
