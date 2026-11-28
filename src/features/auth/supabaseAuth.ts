@@ -93,7 +93,7 @@ export async function resendConfirmationEmail(email: string) {
   const { verifier, challenge } = await createPkceChallenge();
   sessionStorage.setItem(PKCE_KEY, verifier);
   try {
-    await authRequest('resend', {
+    await authRequest(`resend?redirect_to=${encodeURIComponent(authRedirectUrl())}`, {
       type: 'signup',
       email: email.trim().toLowerCase(),
       code_challenge: challenge,
