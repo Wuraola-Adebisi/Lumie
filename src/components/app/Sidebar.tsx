@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Archive, ArrowLeft, BookOpen, Clock3, Grid2X2, Inbox, Plus, Stamp } from 'lucide-react'
+import { Archive, ArrowLeft, BookOpen, Clock3, Grid2X2, Inbox, Plus, Settings2, Stamp } from 'lucide-react'
 import BrandMark from '../mail/BrandMark'
 import { useAuth } from '../../features/auth/AuthProvider'
 
@@ -10,6 +10,7 @@ const links = [
   { to: '/app/archive', label: 'Archive', icon: Archive },
   { to: '/app/collections', label: 'Collections', icon: Stamp },
   { to: '/app/open-when', label: 'Open when', icon: Clock3 },
+  { to: '/app/settings/notifications', label: 'Email preferences', icon: Settings2 },
 ]
 
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
