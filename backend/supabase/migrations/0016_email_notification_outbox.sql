@@ -68,8 +68,8 @@ begin
     where (status = 'pending' and available_at <= now())
        or (status = 'processing' and locked_at < now() - interval '10 minutes')
     order by available_at asc, created_at asc
-    for update skip locked
     limit least(greatest(coalesce(p_limit, 25), 1), 100)
+    for update skip locked
   )
   update public.email_notification_outbox as queued
   set status = 'processing',
