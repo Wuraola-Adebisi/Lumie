@@ -23,6 +23,7 @@ import AuthCallbackPage from './pages/AuthCallbackPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import InvitationPage from './pages/InvitationPage'
 import GuestContributionPage from './pages/GuestContributionPage'
+import NotificationSettingsPage from './pages/NotificationSettingsPage'
 
 export default function App() {
   return (
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="collections" element={<CollectionsPage />} />
         <Route path="collections/:id" element={<CollectionDetailPage />} />
         <Route path="open-when" element={<OpenWhenPage />} />
+        <Route path="settings/notifications" element={<NotificationSettingsPage />} />
       </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

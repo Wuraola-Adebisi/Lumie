@@ -384,3 +384,22 @@ export async function replyToCorrespondence(token: TokenProvider, id: string, bo
     body: JSON.stringify({ snapshot: { title: 'A reply', body } }),
   })
 }
+
+
+export interface EmailNotificationPreferences {
+  emailCorrespondence: boolean
+}
+
+export async function getEmailNotificationPreferences(token: TokenProvider): Promise<EmailNotificationPreferences> {
+  return request<EmailNotificationPreferences>(token, '/v1/notification-preferences')
+}
+
+export async function updateEmailNotificationPreferences(
+  token: TokenProvider,
+  preferences: EmailNotificationPreferences,
+): Promise<EmailNotificationPreferences> {
+  return request<EmailNotificationPreferences>(token, '/v1/notification-preferences', {
+    method: 'PATCH',
+    body: JSON.stringify(preferences),
+  })
+}

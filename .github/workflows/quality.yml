@@ -54,3 +54,9 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f backend/local/30-correspondence-grants.sql
       - name: Verify correspondence isolation and shared media access
         run: psql -v ON_ERROR_STOP=1 -f backend/tests/0002_correspondence.sql
+      - name: Prepare Supabase auth roles for notification migration tests
+        run: psql -v ON_ERROR_STOP=1 -f backend/tests/0003_email_notifications_setup.sql
+      - name: Apply email notification outbox migration
+        run: psql -v ON_ERROR_STOP=1 -f backend/supabase/migrations/0016_email_notification_outbox.sql
+      - name: Verify notification privacy, preferences and scheduled queue
+        run: psql -v ON_ERROR_STOP=1 -f backend/tests/0003_email_notifications.sql

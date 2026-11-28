@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDocument } from '../studio/studioTypes'
-import { createCloudCreation, listCloudCreations, updateCloudCreation, uploadCreationAsset, resolveCreationAssets, toCloudDocument } from './cloudApi'
+import { createCloudCreation, listCloudCreations, updateCloudCreation, uploadCreationAsset, resolveCreationAssets, toCloudDocument, getEmailNotificationPreferences, updateEmailNotificationPreferences } from './cloudApi'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -94,5 +94,31 @@ describe('cloud API client', () => {
 
     await expect(updateCloudCreation(async () => 'token', 'creation-id', createDocument(), 2))
       .rejects.toMatchObject({ status: 409, code: 'REVISION_CONFLICT' })
+  })
+})
+
+
+describe('email notification preferences API', () => {
+  it('loads the account preference with an authenticated request', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ emailCorrespondence: true }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getEmailNotificationPreferences(async () => 'access-token')).resolves.toEqual({ emailCorrespondence: true })
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3001/v1/notification-preferences',
+      expect.objectContaining({ headers: expect.objectContaining({ authorization: 'Bearer access-token' }) }),
+    )
+  })
+
+  it('updates the correspondence email preference', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ emailCorrespondence: false }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(updateEmailNotificationPreferences(async () => 'access-token', { emailCorrespondence: false }))
+      .resolves.toEqual({ emailCorrespondence: false })
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3001/v1/notification-preferences',
+      expect.objectContaining({ method: 'PATCH', body: JSON.stringify({ emailCorrespondence: false }) }),
+    )
   })
 })

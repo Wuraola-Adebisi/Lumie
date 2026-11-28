@@ -152,6 +152,28 @@ Deno.serve(async (req: Request) => {
       }, origin);
     }
 
+    if (method === "GET" && path === "/v1/notification-preferences") {
+      const { data, error } = await userClient.from("email_notification_preferences")
+        .select("email_correspondence").eq("user_id", user.id).maybeSingle();
+      if (error) throw error;
+      return response(200, { emailCorrespondence: data?.email_correspondence ?? true }, origin);
+    }
+
+    if (method === "PATCH" && path === "/v1/notification-preferences") {
+      const body = parseJson(await req.text());
+      if (!body || (body.emailCorrespondence !== undefined && typeof body.emailCorrespondence !== "boolean")) {
+        return fail(400, "INVALID_PREFERENCES", "Choose whether to receive correspondence email.", origin);
+      }
+      if (body.emailCorrespondence === undefined) {
+        return fail(400, "INVALID_PREFERENCES", "There are no notification preference changes to save.", origin);
+      }
+      const { data, error } = await userClient.from("email_notification_preferences")
+        .upsert({ user_id: user.id, email_correspondence: body.emailCorrespondence, updated_at: new Date().toISOString() }, { onConflict: "user_id" })
+        .select("email_correspondence").single();
+      if (error) throw error;
+      return response(200, { emailCorrespondence: data.email_correspondence }, origin);
+    }
+
     if (method === "GET" && path === "/v1/creations") {
       const status = url.searchParams.get("status") || "draft";
       if (!["draft", "archived"].includes(status)) return fail(400, "INVALID_STATUS", "The requested status is invalid.", origin);
@@ -370,6 +392,7 @@ Deno.serve(async (req: Request) => {
       const expiryBase = availableAt ? new Date(availableAt).getTime() + 14 * 24 * 60 * 60 * 1000 : Date.now() + 14 * 24 * 60 * 60 * 1000;
       const expiresAt = new Date(Math.max(Date.now() + 14 * 24 * 60 * 60 * 1000, expiryBase)).toISOString();
       const snapshot = { title: creation.title, format: creation.format, document: creation.document_json };
+      const inviteUrl = `https://www.lumiepost.com/invite/${token}`;
       const { error: insertError } = await admin.from("correspondence_invitations").insert({
         sender_id: user.id,
         recipient_email: recipientEmail,
@@ -381,11 +404,28 @@ Deno.serve(async (req: Request) => {
         available_at: availableAt || new Date().toISOString(),
       });
       if (insertError) throw insertError;
-      return response(201, {
-        inviteUrl: `https://www.lumiepost.com/invite/${token}`,
-        expiresAt,
-        availableAt: availableAt || new Date().toISOString(),
-      }, origin);
+
+      const { data: senderProfile, error: senderProfileError } = await admin.from("profiles")
+        .select("display_name").eq("id", user.id).maybeSingle();
+      if (senderProfileError) {
+        await admin.from("correspondence_invitations").delete().eq("token_hash", tokenHash);
+        throw senderProfileError;
+      }
+      const { error: notificationError } = await admin.from("email_notification_outbox").insert({
+        event_type: "invitation_received",
+        recipient_email: recipientEmail,
+        payload: {
+          senderName: senderProfile?.display_name || "A Lumie member",
+          inviteUrl,
+          availableAt: availableAt || new Date().toISOString(),
+        },
+        dedupe_key: `invitation:${tokenHash}`,
+      });
+      if (notificationError) {
+        await admin.from("correspondence_invitations").delete().eq("token_hash", tokenHash);
+        throw notificationError;
+      }
+      return response(201, { inviteUrl, expiresAt, availableAt: availableAt || new Date().toISOString() }, origin);
     }
 
     if (method === "POST" && path === "/v1/invitations/accept") {
