@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 
-const titles: Record<string, string> = { '/app': 'Your desk', '/app/create': 'New piece', '/app/inbox': 'Inbox', '/app/archive': 'Archive', '/app/library': 'Your creations', '/app/collections': 'Collections', '/app/open-when': 'Open when' }
+const titles: Record<string, string> = { '/app': 'Your desk', '/app/create': 'New piece', '/app/inbox': 'Inbox', '/app/archive': 'Archive', '/app/library': 'Your creations', '/app/collections': 'Collections', '/app/open-when': 'Open when', '/app/settings/notifications': 'Email preferences' }
 
 export default function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false)
