@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { getAccessToken, getLumieProfile, getUser, hasSession, isSupabaseConfigured, onAuthStateChange, signIn as authenticate, signOut as endSession, signUp as register, completeSignIn, requestPasswordReset as requestReset, updatePassword as savePassword } from './supabaseAuth'
+import { getAccessToken, getLumieProfile, getUser, hasSession, isSupabaseConfigured, onAuthStateChange, signIn as authenticate, signOut as endSession, signUp as register, completeSignIn, requestPasswordReset as requestReset, resendConfirmationEmail as resendConfirmation, updatePassword as savePassword } from './supabaseAuth'
 import type { SupabaseUser } from './supabaseAuth'
 import type { LumieProfile } from './authContract'
 
@@ -12,6 +12,7 @@ interface AuthContextValue {
   configured: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, displayName: string) => Promise<{ needsEmailConfirmation: boolean }>
+  resendConfirmationEmail: (email: string) => Promise<void>
   signOut: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<void>
   updatePassword: (password: string) => Promise<void>
@@ -73,6 +74,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError('')
     return register(email, password, displayName)
   }, [])
+  const resendConfirmationEmail = useCallback(async (email: string) => {
+    setError('')
+    await resendConfirmation(email)
+  }, [])
   const signOut = useCallback(async () => {
     await endSession()
     setProfile(null)
@@ -90,9 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await reloadProfile()
   }, [reloadProfile])
   const value = useMemo<AuthContextValue>(() => ({
-    status, profile, error, configured, signIn, signUp, signOut, requestPasswordReset, updatePassword,
+    status, profile, error, configured, signIn, signUp, resendConfirmationEmail, signOut, requestPasswordReset, updatePassword,
     completeCallback, getToken: getAccessToken, reloadProfile,
-  }), [status, profile, error, configured, signIn, signUp, signOut, requestPasswordReset, updatePassword, completeCallback, reloadProfile])
+  }), [status, profile, error, configured, signIn, signUp, resendConfirmationEmail, signOut, requestPasswordReset, updatePassword, completeCallback, reloadProfile])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 export function useAuth() {
