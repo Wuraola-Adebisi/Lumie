@@ -13,6 +13,7 @@ type QueuedEmail = {
   id: string;
   event_type: "correspondence_received" | "invitation_received";
   recipient_email: string;
+  recipient_profile_id: string | null;
   payload: Record<string, unknown>;
   attempts: number;
 };
@@ -29,7 +30,7 @@ function escapeHtml(value: string) {
 }
 
 function messageFor(item: QueuedEmail) {
-  const sender = typeof item.payload.senderName === "string" ? item.payload.senderName : "Someone";
+  const sender = (typeof item.payload.senderName === "string" ? item.payload.senderName : "Someone").replace(/[\\r\\n]+/g, " ").slice(0, 80);
   if (item.event_type === "invitation_received") {
     const inviteUrl = typeof item.payload.inviteUrl === "string" ? item.payload.inviteUrl : "";
     if (!/^https:\/\/www\.lumiepost\.com\/invite\/[A-Za-z0-9_-]{43}$/.test(inviteUrl)) {
@@ -100,6 +101,18 @@ Deno.serve(async (request) => {
   const results = { claimed: items.length, sent: 0, retried: 0, failed: 0 };
   for (const item of items) {
     try {
+      if (item.event_type === "correspondence_received" && item.recipient_profile_id) {
+        const { data: preference, error: preferenceError } = await admin.from("email_notification_preferences")
+          .select("email_correspondence").eq("user_id", item.recipient_profile_id).maybeSingle();
+        if (preferenceError) throw preferenceError;
+        if (preference?.email_correspondence === false) {
+          const { error: suppressError } = await admin.from("email_notification_outbox").update({
+            status: "suppressed", locked_at: null, last_error: null, updated_at: new Date().toISOString(),
+          }).eq("id", item.id).eq("status", "processing");
+          if (suppressError) throw suppressError;
+          continue;
+        }
+      }
       const providerMessageId = await deliver(item);
       const { error: updateError } = await admin.from("email_notification_outbox").update({
         status: "sent",
