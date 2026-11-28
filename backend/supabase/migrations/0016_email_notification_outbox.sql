@@ -30,7 +30,7 @@ create table public.email_notification_outbox (
   recipient_profile_id uuid references public.profiles(id) on delete set null,
   payload jsonb not null default '{}'::jsonb check (jsonb_typeof(payload) = 'object'),
   dedupe_key text not null unique,
-  status text not null default 'pending' check (status in ('pending', 'processing', 'sent', 'failed')),
+  status text not null default 'pending' check (status in ('pending', 'processing', 'sent', 'failed', 'suppressed')),
   attempts smallint not null default 0 check (attempts >= 0 and attempts <= 20),
   available_at timestamptz not null default now(),
   locked_at timestamptz,
