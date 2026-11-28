@@ -96,11 +96,8 @@ export async function resendConfirmationEmail(email: string) {
     await authRequest('resend', {
       type: 'signup',
       email: email.trim().toLowerCase(),
-      options: {
-        emailRedirectTo: authRedirectUrl(),
-        codeChallenge: challenge,
-        codeChallengeMethod: 's256',
-      },
+      code_challenge: challenge,
+      code_challenge_method: 's256',
     });
   } catch (error) {
     sessionStorage.removeItem(PKCE_KEY);
