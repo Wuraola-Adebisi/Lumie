@@ -22,6 +22,7 @@ create policy "Users can update their email notification preferences"
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 grant select, insert, update on public.email_notification_preferences to authenticated;
+grant select on public.email_notification_preferences to service_role;
 
 create table public.email_notification_outbox (
   id uuid primary key default gen_random_uuid(),
