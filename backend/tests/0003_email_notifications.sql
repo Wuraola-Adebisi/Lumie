@@ -12,11 +12,11 @@ DECLARE
   scheduled_at timestamptz := now() + interval '2 hours';
 BEGIN
   INSERT INTO profiles (cognito_sub, email, display_name)
-  VALUES ('notification-sender', 'sender@lumie.test', 'Sender')
+  VALUES ('notification-sender', 'notification-sender@lumie.test', 'Sender')
   RETURNING id INTO sender_id;
 
   INSERT INTO profiles (cognito_sub, email, display_name)
-  VALUES ('notification-recipient', 'recipient@lumie.test', 'Recipient')
+  VALUES ('notification-recipient', 'notification-recipient@lumie.test', 'Recipient')
   RETURNING id INTO recipient_id;
 
   INSERT INTO correspondence_threads (created_by, subject)
